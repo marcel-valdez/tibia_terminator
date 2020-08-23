@@ -33,6 +33,19 @@ function mana_potion_count {
   echo $(( (mana_per_rune / 100) - 1))
 }
 
+function get_current_window_id {
+  echo $(xdotool getactivewindow)
+}
+
+function get_tibia_window_id {
+  echo $(xdotool search --class Tibia)
+}
+
+function focus_window {
+  local window_id=$1
+  xdotool windowactivate --sync "${window_id}"
+}
+
 function drink_mana_potions {
   local window=$1
   local potion_count=$(random ${min_mana_potions_per_turn} ${max_mana_potions_per_turn})
@@ -83,19 +96,6 @@ function make_rune {
   send_keystroke "${window}" 'n' 0 2
 
   drink_mana_potions "${window}"
-}
-
-function get_current_window_id {
-  echo $(xdotool getactivewindow)
-}
-
-function get_tibia_window_id {
-  echo $(xdotool search --class Tibia)
-}
-
-function focus_window {
-  local window_id=$1
-  xdotool windowactivate --sync "${window_id}"
 }
 
 function wait_for_mana {
