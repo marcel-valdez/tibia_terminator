@@ -24,39 +24,49 @@ parser.add_argument('--only_monitor',
 PPOOL = None
 # demnok lannik
 DEMNOK = {
-    'total_hp': 620,
-    'total_mana': 2700,
-    'base_speed': 204,
-    'desired_speed': 240,
-    # healing at the minimum exura heal
-    'heal_at_missing': 121,
+    'total_hp': 630,
+    'total_mana': 2730,
+    'base_speed': 205,
+    # will use utani hur whenever speed is below this
+    'desired_speed': 241,
+    # will heal whenever there is this much hp missing (min exura heal)
+    'heal_at_missing': 100,
+    # will use a mana potion whenever there is this much mana missing
     'mana_at_missing': 1000,
-    'exura_heal': 136,
+    # average heal of exura
+    'exura_heal': 137,
     'exura_key': 'b',
-    'exura_gran_heal': 337,
+    # average heal of exura gran
+    'exura_gran_heal': 342,
     'exura_gran_key': 'g',
-    'exura_sio_heal': 780,
+    # average heal of exura sio
+    'exura_sio_heal': 790,
     'exura_sio_key': 't',
-    'mana_potion_recover': 100,
+    'mana_potion_recover': 200,
     'mana_potion_key': 'Home',
     'utani_hur_key': '4',
     'utani_gran_hur_key': '5'
 }
 
+# To get the min average heal of your character use:
+# http://www.tibia-stats.com/index.php?akcja=spellDmgCalc
 ULTIMATE = {
-    'total_hp': 400,
-    'total_mana': 1380,
+    'total_hp': 420,
+    'total_mana': 1410,
     'base_speed': 160,
     # will use utani hur whenever speed is below this
-    'desired_speed': 191,
-    # will heal whenever there is this much hp missing
+    'desired_speed': 200,
+    # will heal whenever there is this much hp missing (min exura heal)
     'heal_at_missing': 88,
     # will use a mana potion whenever there is this much mana missing
-    'mana_at_missing': 380,
+    'mana_at_missing': 410,
+    # average heal of exura
     'exura_heal': 100,
     'exura_key': 'b',
+    # average heal of exura
     'exura_gran_heal': 255,
     'exura_gran_key': 'g',
+    # average heal of exura sio
     'exura_sio_heal': 595,
     'exura_sio_key': 't',
     'mana_potion_recover': 100,
@@ -65,7 +75,7 @@ ULTIMATE = {
     'utani_gran_hur_key': '5'
 }
 
-CHAR = ULTIMATE
+CHAR = DEMNOK
 
 # this value is obtained by running scanmem on the tibia process
 MANA_MEMORY_ADDRESS = "5244f00"  # [I32 I16 ]
@@ -75,22 +85,20 @@ HP_MEMORY_ADDRESS = "51dbf78"   # [I32 I16 ]
 # 187c810100000000, line: 2038 out of 2048
 # 2038 * 8 = 16304, 2048 * 8 = 16384
 # 16384 - 16304 = 80 (0x50)
-SPEED_MEMORY_ADDRESS = "97e9f10" # (demnok) "9237b70"
+SPEED_MEMORY_ADDRESS = "c41aff0"  # (ultimate) "97e9f10" # (demnok) "9237b70"
 SPEED_HARDCODED_OFFSET_VALUE = (
     # 18 7c 81 01 00 00 00 00
     "187c810100000000"
 )
-SPEED_HARDCODED_OFFSET_VALUE_SIZE = 8
+SPEED_HARDCODED_OFFSET_VALUE_SIZE = len(SPEED_HARDCODED_OFFSET_VALUE) / 2
 # 88 (0x58)
 SPEED_OFFSET_AMOUNT = 88
 
-
-# HARDCODED_OFFSET_VALUE = "824994C7F27F00002E0070006E006700"
 MANA_HARDCODED_OFFSET_VALUE = (
     "824994C7F27F00002E0070006E006700"
     "A0000000000000006100000000000000"
 )
-MANA_HARDCODED_OFFSET_VALUE_SIZE = 32
+MANA_HARDCODED_OFFSET_VALUE_SIZE = len(MANA_HARDCODED_OFFSET_VALUE) / 2
 MANA_OFFSET_AMOUNT = 23040
 
 
