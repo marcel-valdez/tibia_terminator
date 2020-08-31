@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+function debug {
+  [[ ! -z "${DEBUG}" ]] && echo "$@" >&2
+}
+
 function random {
   local min=$1
   local max=$2
@@ -56,6 +60,7 @@ function wait_ui {
   local start_timestamp_ms=$(timestamp_ms)
   sleep "${wait_time_secs}s" & local wait_pid=$!
 
+  echo
   local prev_msg_len=0
   while kill -0 ${wait_pid} 2>/dev/null; do
     local current_timestamp_ms=$(timestamp_ms)
@@ -63,19 +68,36 @@ function wait_ui {
     local remaining_time_ms=$((wait_time_ms - elapsed_time_ms))
     if [[ ${remaining_time_ms} -gt 0 ]]; then
       local remaining_time_sec=$((remaining_time_ms / 1000))
-      local msg="Waiting ${remaining_time_sec}"
+      local msg="Waiting ${remaining_time_sec}s  "
       local overwrite=$(printf '\\b%0.s' $(seq 1 ${prev_msg_len}))
       local prev_msg_len=${#msg}
       printf "${overwrite}${msg}"
     fi
   done
   echo
+  echo
 
+}
+
+
+potions_seq_counter=0
+function get_potion_count {
+  local mana_potions_seq_len=${#mana_potions_seq[@]}
+  if [[ ${mana_potions_seq_len} -gt 0 ]]; then
+    debug "mana_potions_seq_len=${mana_potions_seq_len}"
+    debug "potions_seq_counter=${potions_seq_counter}"
+    local seq_idx=$((potions_seq_counter % mana_potions_seq_len))
+    debug "seq_idx=${seq_idx}"
+    echo ${mana_potions_seq[seq_idx]}
+  else
+    echo $(random ${min_mana_potions_per_turn} ${max_mana_potions_per_turn})
+  fi
 }
 
 function drink_mana_potions {
   local window=$1
-  local potion_count=$(random ${min_mana_potions_per_turn} ${max_mana_potions_per_turn})
+  local potion_count=$(get_potion_count)
+  potions_seq_counter=$((potions_seq_counter + 1))
 
   echo '-----------------------'
   echo "Drinking ${potion_count} mana potions"
@@ -181,6 +203,7 @@ min_mana_potions_per_turn=
 max_mana_potions_per_turn=
 max_wait_per_turn=
 min_wait_per_turn=
+mana_potions_seq=()
 function parse_args {
   while [[ $# -gt 0 ]]; do
     arg=$1
@@ -216,6 +239,11 @@ function parse_args {
         ;;
       --max-wait-per-turn)
         max_wait_per_turn=$2
+        shift
+        ;;
+      --mana-potions-seq)
+        # split space or comma separated sequence of elements as an array
+        IFS=', ' read -r -a mana_potions_seq <<< "$2"
         shift
         ;;
       *)
@@ -255,12 +283,20 @@ max-wait-per turn ${max_wait_per_turn}" >&2
     exit 1
   fi
 
-  if [[ -z "${max_mana_potions_per_turn}" ]]; then
-    max_mana_potions_per_turn=$(mana_potion_count)
-  fi
+  local mana_potions_seq_len=${#mana_potions_seq[@]}
+  if [[ ${mana_potions_seq_len} -gt 0 ]]; then
+    debug "Mana potion sequence length: ${mana_potions_seq_len}"
 
-  if [[ -z "${min_mana_potions_per_turn}" ]]; then
+    max_mana_potions_per_turn=0
     min_mana_potions_per_turn=0
+  else
+    if [[ -z "${max_mana_potions_per_turn}" ]]; then
+      max_mana_potions_per_turn=$(mana_potion_count)
+    fi
+
+    if [[ -z "${min_mana_potions_per_turn}" ]]; then
+      min_mana_potions_per_turn=0
+    fi
   fi
 
   if [[ ! -z "${cast_rune_spell_after_drinking_potion}}" ]]; then
@@ -274,8 +310,12 @@ max-wait-per turn ${max_wait_per_turn}" >&2
   echo "Mana regen per sec: ${mana_per_sec}"
   echo "Minimum wait per turn: ${min_wait_per_turn}"
   echo "Maximum wait per turn: ${max_wait_per_turn}"
-  echo "Min mana potions per turn: ${min_mana_potions_per_turn}"
-  echo "Max mana potions per turn: ${max_mana_potions_per_turn}"
+  if [[ ${mana_potions_seq_len} -gt 0 ]]; then
+    echo "Mana potion sequence: ${mana_potions_seq[@]}"
+  else
+    echo "Min mana potions per turn: ${min_mana_potions_per_turn}"
+    echo "Max mana potions per turn: ${max_mana_potions_per_turn}"
+  fi
 
 }
 
