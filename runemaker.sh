@@ -46,6 +46,33 @@ function focus_window {
   xdotool windowactivate --sync "${window_id}"
 }
 
+function timestamp_ms {
+  date "+%s%N" | cut -b1-13
+}
+
+function wait_ui {
+  local wait_time_secs="$1"
+  local wait_time_ms=$((wait_time_secs * 1000))
+  local start_timestamp_ms=$(timestamp_ms)
+  sleep "${wait_time_secs}s" & local wait_pid=$!
+
+  local prev_msg_len=0
+  while kill -0 ${wait_pid} 2>/dev/null; do
+    local current_timestamp_ms=$(timestamp_ms)
+    local elapsed_time_ms=$((current_timestamp_ms - start_timestamp_ms))
+    local remaining_time_ms=$((wait_time_ms - elapsed_time_ms))
+    if [[ ${remaining_time_ms} -gt 0 ]]; then
+      local remaining_time_sec=$((remaining_time_ms / 1000))
+      local msg="Waiting ${remaining_time_sec}"
+      local overwrite=$(printf '\\b%0.s' $(seq 1 ${prev_msg_len}))
+      local prev_msg_len=${#msg}
+      printf "${overwrite}${msg}"
+    fi
+  done
+  echo
+
+}
+
 function drink_mana_potions {
   local window=$1
   local potion_count=$(random ${min_mana_potions_per_turn} ${max_mana_potions_per_turn})
@@ -99,14 +126,22 @@ function make_rune {
 }
 
 function wait_for_mana {
-  local sit_time_secs=$( random ${min_wait_per_turn} ${max_wait_per_turn}  )
+  local window=$1
+  local total_sit_seconds=$( random ${min_wait_per_turn} ${max_wait_per_turn}  )
   # only if using mana potions
   echo
   echo '------------------------'
-  echo "| Waiting for mana ${sit_time_secs}s |"
+  echo "| Waiting for mana ${total_sit_seconds}s |"
   echo '------------------------'
   echo
-  sleep "${sit_time_secs}s"
+  local third_sit_seconds=$((total_sit_seconds / 3))
+  wait_ui "${third_sit_seconds}"
+  # cast rune spell half way through wait to make sure we don't get full mana
+  # and waste
+  cast_rune_spell "${window}"
+  wait_ui "${third_sit_seconds}"
+  cast_rune_spell "${window}"
+  wait_ui "${third_sit_seconds}"
 }
 
 function manasit {
@@ -133,7 +168,7 @@ function manasit {
     fi
 
     # sit until next rune spell with randomization
-    wait_for_mana
+    wait_for_mana ${tibia_window}
   done
 }
 
@@ -210,7 +245,7 @@ max-mana-potions-per turn ${max_mana_potions_per_turn}" >&2
 max-wait-per turn ${max_wait_per_turn}" >&2
     exit 1
   fi
-  
+
   if [[ ! -z "${half_mana_potions}" ]]; then
     echo "Using half the mana potions"
   fi
