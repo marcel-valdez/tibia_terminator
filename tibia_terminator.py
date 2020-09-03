@@ -12,8 +12,11 @@ from multiprocessing import Pool
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('pid', help='The PID of Tibia')
-parser.add_argument('--no_mana_hp',
-                    help='Do not monitor mana & hp.',
+parser.add_argument('--no_mana',
+                    help='Do not automatically recover mana.',
+                    action='store_true')
+parser.add_argument('--no_hp',
+                    help='Do not automatically recover hp.',
                     action='store_true')
 parser.add_argument('--no_speed',
                     help='Do not monitor speed.',
@@ -107,15 +110,18 @@ class ManaKeeper:
     def __init__(self,
                  proc_id,
                  tibia_wid,
-                 enable_mana_hp=True,
+                 enable_mana=True,
+                 enable_hp=True,
                  enable_speed=True,
                  only_monitor=False):
         # proc_id should be int
         self.__proc_id = proc_id
         self.tibia_wid = tibia_wid
         self.enable_speed = enable_speed
-        self.enable_mana_hp = enable_mana_hp
+        self.enable_mana = enable_mana
+        self.enable_hp = enable_hp
         self.only_monitor = only_monitor
+        self.last_cmd = {}
 
     def find_target_range(self, known_value_addr):
         target = int(known_value_addr, 16)
@@ -211,7 +217,7 @@ class ManaKeeper:
     def monitor_char(self):
         mana_address = None
         hp_address = None
-        if self.enable_mana_hp:
+        if self.enable_mana:
             print_async("Searching mana value address...")
             mana_address = int(MANA_MEMORY_ADDRESS, 16)
             #mana_range = self.get_range(MANA_MEMORY_ADDRESS)
@@ -224,6 +230,7 @@ class ManaKeeper:
             if mana_address is None:
                 raise Exception("Could not find the mana memory address. The "
                   "hardcoded offset is stale.")
+
             hp_address = mana_address - 8
             print_async(
                 "Mana memory address is - " + str(mana_address)
@@ -257,15 +264,18 @@ class ManaKeeper:
         prev_hp_value = -1
         prev_speed_value = -1
         while True:
-            if self.enable_mana_hp:
+            if self.enable_mana:
                 mana_value = self.read_address(mana_address, 4)
                 self.handle_mana_change(mana_value)
+
                 if mana_value != prev_mana_value:
                     prev_mana_value = mana_value
                     print_async("Mana: {}".format(str(mana_value)))
 
+            if self.enable_hp:
                 hp_value = self.read_address(hp_address, 4)
                 self.handle_hp_change(hp_value)
+
                 if hp_value != prev_hp_value:
                     prev_hp_value = hp_value
                     print_async("HP: {}".format(str(hp_value)))
@@ -273,15 +283,19 @@ class ManaKeeper:
             if self.enable_speed:
                 speed_value = self.read_address(speed_address, 2)
                 self.handle_speed_change(speed_value)
+
                 if speed_value != prev_speed_value:
                     prev_speed_value = speed_value
                     print_async("Speed: {}".format(str(speed_value)))
 
             time.sleep(0.1)
 
+    def timestamp_millis(self):
+        return int(round(time.time() * 1000))
+
     def handle_hp_change(self, hp):
         missing_hp = CHAR['total_hp'] - hp
-        if missing_hp >= CHAR['heal_at_missing']:
+        if missing_hp >= CHAR['heal_at_missing'] and self.throttle('hp'):
             if missing_hp <= CHAR['exura_heal']:
                 print_async('Exura!')
                 self.send_keystroke(CHAR['exura_key'])
@@ -294,14 +308,22 @@ class ManaKeeper:
 
     def handle_mana_change(self, mana):
         missing_mana = CHAR['total_mana'] - mana
-        if missing_mana >= CHAR['mana_at_missing']:
+        if missing_mana >= CHAR['mana_at_missing'] and self.throttle('mana'):
             print_async('Use mana potion!')
             self.send_keystroke(CHAR['mana_potion_key'])
 
     def handle_speed_change(self, speed):
-        if speed < CHAR['desired_speed']:
+        if speed < CHAR['desired_speed'] and self.throttle('speed'):
             print_async('Use utani hur!')
             self.send_keystroke(CHAR['utani_hur_key'])
+
+    def throttle(self, key, throttle_ms = 150):
+        timestamp = self.timestamp_millis()
+        if timestamp - self.last_cmd.get(key, 0) >= throttle_ms:
+            self.last_cmd[key] = timestamp
+            return True
+        else:
+            return False
 
     def send_keystroke(self, key):
         delay = random.randint(75, 125)
@@ -333,20 +355,21 @@ def print_async(*pargs):
         PPOOL.apply_async(fprint, tuple(pargs))
 
 
-def main(pid, no_mana_hp, no_speed, only_monitor):
+def main(pid, no_mana, no_hp, no_speed, only_monitor):
     if pid is None or pid == "":
         raise Exception("PID is required, you may use psgrep -a -l bin/Tibia "
                         "to find the process id")
 
     mana_keeper = ManaKeeper(pid,
                              get_tibia_wid(),
-                             not no_mana_hp,
-                             not no_speed,
-                             only_monitor)
+                             enable_mana=not no_mana,
+                             enable_hp=not no_hp,
+                             enable_speed=not no_speed,
+                             only_monitor=only_monitor)
     mana_keeper.monitor_char()
 
 
 if __name__ == "__main__":
     args = parser.parse_args()
     PPOOL = Pool(processes=3)
-    main(args.pid, args.no_mana_hp, args.no_speed, args.only_monitor)
+    main(args.pid, args.no_mana, args.no_hp, args.no_speed, args.only_monitor)
