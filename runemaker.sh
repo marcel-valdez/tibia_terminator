@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# requirements: xdotool
 
 function debug {
   [[ ! -z "${DEBUG}" ]] && echo "$@" >&2
@@ -9,6 +10,51 @@ function random {
   local max=$2
   local delta=$((max - min))
   echo $((min + (RANDOM%(delta+1)) ))
+}
+
+# Playable area set at Y: 696 with 2 cols on left and 2 cols on right
+# To get the realtime mouse location use:
+#   watch -t -n 0.0001 xdotool getmouselocation
+function click_mana_potion {
+  local SCREEN=0
+  local tibia_window=$1
+  local minX=1693
+  local maxX=1721
+  # with full depot box
+  local minY=278
+  local maxY=307
+  # with 1500 manas
+  #local minY=169
+  #local maxY=195
+
+  echo "Clicking mana potion" &
+  local X=$(random ${minX} ${maxX})
+  local Y=$(random ${minY} ${maxY})
+
+  local wait_time="0.$(random 250 390)s"
+  sleep ${wait_time}
+  xdotool mousemove --screen 0 ${X} ${Y}
+  xdotool click --window ${tibia_window} --delay $(random 125 250) 1
+}
+
+function click_char {
+  local tibia_window=$1
+  local X=958
+  local Y=372
+  local SCREEN=0
+
+  local minY=356
+  local maxY=403
+  local minX=935
+  local maxX=984
+
+  echo "Clicking char" &
+  local X=$(random ${minX} ${maxX})
+  local Y=$(random ${minY} ${maxY})
+  local wait_time="0.$(random 250 390)s"
+  sleep ${wait_time}
+  xdotool mousemove --screen 0 --window ${tibia_window} ${X} ${Y}
+  xdotool click --window ${tibia_window} --delay $(random 125 250) 1
 }
 
 function send_keystroke {
@@ -23,7 +69,7 @@ function send_keystroke {
     local delay="$(random 123 257)"
     echo "Sending ${keystroke} with delay 0.${delay}s"
     xdotool key --delay "${delay}" --window "${window}" "${keystroke}"
-    local wait_time="0.$(random 1 3)$(random 1 5)s"
+    local wait_time="0.$(random 110 350)s"
     echo "Pausing ${wait_time}"
     sleep "${wait_time}"
   done
@@ -94,6 +140,16 @@ function get_potion_count {
   fi
 }
 
+function drink_mana_potion {
+  local tibia_window=$1
+  if [[ ${use_mouse_for_mana_potion} ]]; then
+    click_mana_potion ${tibia_window}
+    click_char ${tibia_window}
+  else
+    send_keystroke "${window}" 'm' 1 1
+  fi
+}
+
 function drink_mana_potions {
   local window=$1
   local potion_count=$(get_potion_count)
@@ -103,8 +159,8 @@ function drink_mana_potions {
   echo "Drinking ${potion_count} mana potions"
   echo '-----------------------'
   for i in $(seq 1 ${potion_count}); do
-    send_keystroke "${window}" 'm' 1 1
-    local wait_time="0.$(random 3 5)$(random 1 6)s"
+    drink_mana_potion ${tibia_window}
+    local wait_time="0.$(random 310 560)s"
     echo "Pausing ${wait_time}"
     sleep "${wait_time}"
 
@@ -128,6 +184,66 @@ function cast_rune_spell {
   send_keystroke "${window}" 'y' ${min} ${max}
 }
 
+function hold_life_ring {
+  local tibia_window=$1
+  local minX=1760
+  local maxX=1783
+  local minY=487
+  local maxY=510
+
+  local X=$(random ${minX} ${maxX})
+  local Y=$(random ${minY} ${maxY})
+
+  local wait_time="0.$(random 250 390)s"
+  sleep ${wait_time}
+  xdotool mousemove --sync --screen 0 ${X} ${Y}
+  wait_time="0.$(random 250 390)s"
+  sleep ${wait_time}
+  #xdotool keydown --window "${tibia_window}" Pointer_Button1
+  xdotool mousedown --window "${tibia_window}" 1
+}
+
+function drop_life_ring {
+  local tibia_window=$1
+  local minX=1755
+  local maxX=1781
+  local minY=323
+  local maxY=349
+
+  local X=$(random ${minX} ${maxX})
+  local Y=$(random ${minY} ${maxY})
+
+
+  local wait_time="0.$(random 250 390)s"
+  sleep "${wait_time}"
+  for i in $(seq 1 160); do
+    xdotool mousemove_relative --sync 0 -1
+  done
+  # xdotool mousemove --screen 0 ${X} ${Y}
+  wait_time="0.$(random 250 390)s"
+  sleep "${wait_time}"
+  xdotool keyup --window "${tibia_window}" Pointer_Button1
+  # xdotool mouseup --window "${tibia_window}" 1
+}
+
+
+function equip_life_ring {
+  local tibia_window="$1"
+  if [[ ! -z "${use_mouse_for_life_ring}" ]]; then
+    #hold_life_ring "${tibia_window}"
+    #drop_life_ring "${tibia_window}"
+    drag_drop_ring ${tibia_window}
+  else
+    # equip secondary ring
+    send_keystroke "${tibia_window}}" 'u' 1
+    # small wait to make sure primary gets equipped
+    wait_time="0.$(random 250 390)s"
+    sleep "${wait_time}"
+    # equip primary ring
+    send_keystroke "${tibia_window}}" 'n' 1
+  fi
+}
+
 function make_rune {
   local window=$1
   cast_rune_spell "${window}"
@@ -142,8 +258,7 @@ function make_rune {
   echo '-------------------'
   echo 'Equipping life ring'
   echo '-------------------'
-  send_keystroke "${window}" 'n' 0 2
-
+  equip_life_ring "${window}"
   drink_mana_potions "${window}"
 }
 
@@ -169,7 +284,14 @@ function wait_for_mana {
 function manasit {
   while true; do
     # get current focused window
-    local curr_window=$(get_current_window_id)
+    eval "$(xdotool getmouselocation --shell)"
+    local curr_x=${X}
+    local curr_y=${Y}
+    local curr_screen=${SCREEN}
+    local curr_window=${WINDOW}
+    debug "curr_x,y: ${curr_x}, ${curr_y}"
+    debug "curr_screen=${curr_screen}"
+    debug "curr_window=${curr_window}"
 
     # focus tibia window
     local tibia_window=$(get_tibia_window_id)
@@ -186,6 +308,8 @@ function manasit {
     # return to prev window
     sleep "$(random 1 2).$(random 1 9)$(random 1 9)s"
     if [[ ${refocus_tibia_to_make_rune} ]]; then
+      xdotool mousemove --screen ${curr_screen}\
+              ${curr_x} ${curr_y}
       focus_window ${curr_window}
     fi
 
@@ -204,6 +328,7 @@ max_mana_potions_per_turn=
 max_wait_per_turn=
 min_wait_per_turn=
 mana_potions_seq=()
+use_mouse_for_mana_potion=
 function parse_args {
   while [[ $# -gt 0 ]]; do
     arg=$1
@@ -223,7 +348,7 @@ function parse_args {
         half_mana_potions=1
         ;;
       --refocus-tibia-to-make-rune)
-        refocus_window_to_make_rune=1
+        refocus_tibia_to_make_rune=1
         ;;
       --min-mana-potions-per-turn)
         min_mana_potions_per_turn=$2
@@ -245,6 +370,9 @@ function parse_args {
         # split space or comma separated sequence of elements as an array
         IFS=', ' read -r -a mana_potions_seq <<< "$2"
         shift
+        ;;
+      --use-mouse-for-mana-potion)
+        use_mouse_for_mana_potion=1
         ;;
       *)
         break
@@ -315,6 +443,10 @@ max-wait-per turn ${max_wait_per_turn}" >&2
   else
     echo "Min mana potions per turn: ${min_mana_potions_per_turn}"
     echo "Max mana potions per turn: ${max_mana_potions_per_turn}"
+  fi
+
+  if [[ ! -z ${use_mouse_for_mana_potion} ]]; then
+    echo "Using mouse for drinking mana potions"
   fi
 
 }
