@@ -27,15 +27,20 @@ parser.add_argument('--only_monitor',
 PPOOL = None
 # demnok lannik
 DEMNOK = {
-    'total_hp': 630,
-    'total_mana': 2730,
-    'base_speed': 205,
+    'total_hp': 705,
+    'total_mana': 3210,
+    'base_speed': 215,
     # will use utani hur whenever speed is below this
-    'desired_speed': 241,
+    'desired_speed': 265,
     # will heal whenever there is this much hp missing (min exura heal)
     'heal_at_missing': 100,
-    # will use a mana potion whenever there is this much mana missing
-    'mana_at_missing': 1000,
+    # whenever mana levels drop by 'mana_at_missing_hi' it will use mana
+    # potions until there is 'mana_at_missing_lo' missing mana
+    'mana_at_missing_hi': 1500,
+    'mana_at_missing_lo': 1000,
+    # critical mana at which we have to use a mana potion, even if missing hp
+    # this will make it so that drinking mana potion competes with healing
+    'critical_mana': 1000,
     # average heal of exura
     'exura_heal': 137,
     'exura_key': 'b',
@@ -54,15 +59,22 @@ DEMNOK = {
 # To get the min average heal of your character use:
 # http://www.tibia-stats.com/index.php?akcja=spellDmgCalc
 ULTIMATE = {
-    'total_hp': 420,
-    'total_mana': 1410,
+    'total_hp': 435,
+    'total_mana': 1620,
     'base_speed': 160,
     # will use utani hur whenever speed is below this
-    'desired_speed': 200,
+    'desired_speed': 205,
     # will heal whenever there is this much hp missing (min exura heal)
-    'heal_at_missing': 88,
+    'heal_at_missing': 65,
     # will use a mana potion whenever there is this much mana missing
     'mana_at_missing': 410,
+    # whenever mana levels drop by 'mana_at_missing_hi' it will use mana
+    # potions until there is 'mana_at_missing_lo' missing mana
+    'mana_at_missing_hi': 720,
+    'mana_at_missing_lo': 400,
+    # critical mana at which we have to use a mana potion, no matter what
+    # this will make it so that drinking mana potion competes with healing
+    'critical_mana': 550,
     # average heal of exura
     'exura_heal': 100,
     'exura_key': 'b',
@@ -78,17 +90,49 @@ ULTIMATE = {
     'utani_gran_hur_key': '5'
 }
 
+# To get the min average heal of your character use:
+# http://www.tibia-stats.com/index.php?akcja=spellDmgCalc
+TEZALOR = {
+    'total_hp': 385,
+    'total_mana': 1290,
+    'base_speed': 147,
+    # will use utani hur whenever speed is below this
+    'desired_speed': 190,
+    # will heal whenever there is this much hp missing (min exura heal)
+    'heal_at_missing': 55,
+    # whenever mana levels drop by 'mana_at_missing_hi' it will use mana
+    # potions until there is 'mana_at_missing_lo' missing mana
+    'mana_at_missing_hi': 550,
+    'mana_at_missing_lo': 250,
+    # critical mana at which we have to use a mana potion, no matter what
+    # this will make it so that drinking mana potion competes with healing
+    'critical_mana': 500,
+    # average heal of exura
+    'exura_heal': 60,
+    'exura_key': 'b',
+    # average heal of exura
+    'exura_gran_heal': 160,
+    'exura_gran_key': 'g',
+    # average heal of exura sio
+    'exura_sio_heal': 373,
+    'exura_sio_key': 't',
+    'mana_potion_recover': 100,
+    'mana_potion_key': 'Home',
+    'utani_hur_key': '4',
+    'utani_gran_hur_key': '5'
+}
+
 CHAR = DEMNOK
 
 # this value is obtained by running scanmem on the tibia process
-MANA_MEMORY_ADDRESS = "5244f00"  # [I32 I16 ]
-HP_MEMORY_ADDRESS = "51dbf78"   # [I32 I16 ]
+MANA_MEMORY_ADDRESS = "567b7a0"  # [I32 I16 ]
+HP_MEMORY_ADDRESS = "567b798"   # [I32 I16 ]
 
 # common value
 # 187c810100000000, line: 2038 out of 2048
 # 2038 * 8 = 16304, 2048 * 8 = 16384
 # 16384 - 16304 = 80 (0x50)
-SPEED_MEMORY_ADDRESS = "c41aff0"  # (ultimate) "97e9f10" # (demnok) "9237b70"
+SPEED_MEMORY_ADDRESS = "e86eb70"  # "bd71070" # "90e59a0" # "c736460" # "c23d350"  #
 SPEED_HARDCODED_OFFSET_VALUE = (
     # 18 7c 81 01 00 00 00 00
     "187c810100000000"
@@ -122,6 +166,7 @@ class ManaKeeper:
         self.enable_hp = enable_hp
         self.only_monitor = only_monitor
         self.last_cmd = {}
+        self.drinking_mana = False
 
     def find_target_range(self, known_value_addr):
         target = int(known_value_addr, 16)
@@ -293,9 +338,17 @@ class ManaKeeper:
     def timestamp_millis(self):
         return int(round(time.time() * 1000))
 
-    def handle_hp_change(self, hp):
-        missing_hp = CHAR['total_hp'] - hp
-        if missing_hp >= CHAR['heal_at_missing'] and self.throttle('hp'):
+    def get_missing_hp(self, hp):
+        return CHAR['total_hp'] - hp
+
+    def get_missing_mana(self, mana):
+        return CHAR['total_mana'] - mana
+
+    def handle_hp_change(self, hp, speed, mana):
+        missing_hp = self.get_missing_hp(hp)
+        heal_throttle_ms = 100
+        if missing_hp >= CHAR['heal_at_missing'] and \
+           self.throttle('hp', heal_throttle_ms):
             if missing_hp <= CHAR['exura_heal']:
                 print_async('Exura!')
                 self.send_keystroke(CHAR['exura_key'])
@@ -306,18 +359,49 @@ class ManaKeeper:
                 self.send_keystroke(CHAR['exura_sio_key'])
                 print_async('Exura sio!')
 
-    def handle_mana_change(self, mana):
-        missing_mana = CHAR['total_mana'] - mana
-        if missing_mana >= CHAR['mana_at_missing'] and self.throttle('mana'):
+    def handle_mana_change(self, hp, speed, mana):
+        missing_hp = self.get_missing_hp(hp)
+        missing_mana = self.get_missing_mana(mana)
+
+        # Do not issue order to use mana potion if we need healing
+        # of exura gran or greater, unless we're at critical mana levels
+        # in order to avoid delaying heals.
+        if missing_hp >= CHAR['exura_gran_heal'] and \
+           missing_mana >= CHAR['critical_mana']:
+            return False
+
+        # Do not issue order to use mana potion if we need speed speed,
+        # unless we're at critical mana levels, in order to avoid delaying
+        # haste.
+        if speed < CHAR['desired_speed'] and \
+           missing_mana >= CHAR['critical_mana']:
+            return False
+
+        if missing_mana >= CHAR['mana_at_missing_hi']:
+            self.drinking_mana = True
+        elif missing_mana <= CHAR['mana_at_missing_lo']:
+            self.drinking_mana = False
+
+        mana_throttle_ms = 250
+        if self.drinking_mana and self.throttle('mana', mana_throttle_ms):
             print_async('Use mana potion!')
             self.send_keystroke(CHAR['mana_potion_key'])
 
-    def handle_speed_change(self, speed):
-        if speed < CHAR['desired_speed'] and self.throttle('speed'):
+    def handle_speed_change(self, hp, speed, mana):
+        missing_hp = self.get_missing_hp(hp)
+
+        # Do not issue order to haste if we neeed to be healed for exura gran
+        # or greater.
+        if missing_hp >= CHAR['exura_gran_heal']:
+            return False
+
+        speed_throttle_ms = 200
+        if speed < CHAR['desired_speed'] and \
+           self.throttle('speed', speed_throttle_ms):
             print_async('Use utani hur!')
             self.send_keystroke(CHAR['utani_hur_key'])
 
-    def throttle(self, key, throttle_ms = 150):
+    def throttle(self, key, throttle_ms=150):
         timestamp = self.timestamp_millis()
         if timestamp - self.last_cmd.get(key, 0) >= throttle_ms:
             self.last_cmd[key] = timestamp
