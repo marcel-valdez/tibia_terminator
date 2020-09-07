@@ -244,6 +244,12 @@ function equip_life_ring {
   fi
 }
 
+function equip_soft_boots {
+  local tibia_window="$1"
+  # equip soft boots
+  send_keystroke "${tibia_window}}" 'j' 1
+}
+
 function make_rune {
   local window=$1
   cast_rune_spell "${window}"
@@ -256,9 +262,10 @@ function make_rune {
   # equip a life ring  a random number between 0 and 2
   # we don't want to always place the ring
   echo '-------------------'
-  echo 'Equipping life ring'
+  echo 'Equipping life ring and soft boots'
   echo '-------------------'
   equip_life_ring "${window}"
+  equip_soft_boots "${window}"
   drink_mana_potions "${window}"
 }
 
