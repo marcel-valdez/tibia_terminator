@@ -18,21 +18,22 @@ function random {
 function click_mana_potion {
   local SCREEN=0
   local tibia_window=$1
-  local minX=1693
-  local maxX=1721
+  local minX=1695
+  local maxX=1719
   # with full depot box
-  local minY=278
-  local maxY=307
+  local minY=280
+  local maxY=305
   # with 1500 manas
   #local minY=169
   #local maxY=195
-
-  echo "Clicking mana potion" &
   local X=$(random ${minX} ${maxX})
   local Y=$(random ${minY} ${maxY})
 
   local wait_time="0.$(random 250 390)s"
+  echo "Pausing ${wait_time}" &
   sleep ${wait_time}
+
+  echo "Clicking mana potion (${X},${Y})" &
   xdotool mousemove --screen 0 ${X} ${Y}
   xdotool click --window ${tibia_window} --delay $(random 125 250) 1
 }
@@ -43,16 +44,18 @@ function click_char {
   local Y=372
   local SCREEN=0
 
-  local minY=356
-  local maxY=403
-  local minX=935
-  local maxX=984
-
-  echo "Clicking char" &
+  local minY=364
+  local maxY=399
+  local minX=939
+  local maxX=980
   local X=$(random ${minX} ${maxX})
   local Y=$(random ${minY} ${maxY})
+
   local wait_time="0.$(random 250 390)s"
+  echo "Pausing ${wait_time}" &
   sleep ${wait_time}
+
+  echo "Clicking char (${X},${Y})" &
   xdotool mousemove --screen 0 --window ${tibia_window} ${X} ${Y}
   xdotool click --window ${tibia_window} --delay $(random 125 250) 1
 }
