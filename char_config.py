@@ -6,88 +6,91 @@
 
 
 DEMNOK = {
-    'total_hp': 725,
-    'total_mana': 3330,
+    'total_hp': 895,
+    'total_mana': 4350,
     # if speed is below base, then this will be recognized as paralysis
     # and we will increase priority of haste.
-    'base_speed': 225,
+    'base_speed': 284,
     # will use utani hur whenever speed is below this
-    'hasted_speed': 275,
+    'hasted_speed': 437,
     # will heal whenever there is this much hp missing (min exura heal)
     'heal_at_missing': 100,
     'downtime_heal_at_missing': 50,
     # whenever mana levels drop by 'mana_at_missing_hi' it will use mana
     # potions until there is 'mana_at_missing_lo' missing mana
-    'mana_at_missing_hi': 1500,
-    'mana_at_missing_lo': 1000,
+    'mana_at_missing_hi': 1600,
+    'mana_at_missing_lo': 1100,
     # critical mana at which we have to use a mana potion, even if missing hp
     # this will make it so that drinking mana potion competes with healing
-    'critical_mana': 1000,
+    'critical_mana': 1500,
     # Slowly drink mana potions until this much is missing and only do it when
     # hp is at < 'heal_at_missing' and the char is hasted.
-    'downtime_mana_missing': 500,
+    # Tip: Make it 2.5x mana potion regen
+    'downtime_mana_missing': 700,
     # average heal of exura
-    'exura_heal': 137,
+    'exura_heal': 178,
     # average heal of exura gran
-    'exura_gran_heal': 342,
+    'exura_gran_heal': 433,
     # average heal of exura sio
-    'exura_sio_heal': 790
+    'exura_sio_heal': 997
 }
 
 ULTIMATE = {
-    'total_hp': 435,
-    'total_mana': 1620,
-    'base_speed': 160,
+    'total_hp': 465,
+    'total_mana': 1770,
+    'base_speed': 193,
     # will use utani hur whenever speed is below this
-    'hasted_speed': 205,
+    'hasted_speed': 232,
     # will heal whenever there is this much hp missing (min exura heal)
     'heal_at_missing': 65,
     'downtime_heal_at_missing': 35,
     # whenever mana levels drop by 'mana_at_missing_hi' it will use mana
     # potions until there is 'mana_at_missing_lo' missing mana
-    'mana_at_missing_hi': 720,
+    'mana_at_missing_hi': 770,
     'mana_at_missing_lo': 400,
     # critical mana at which we have to use a mana potion, no matter what
     # this will make it so that drinking mana potion competes with healing
-    'critical_mana': 550,
+    'critical_mana': 500,
     # Slowly drink mana potions until this much is missing and only do it when
     # hp is at < 'heal_at_missing' and the char is hasted.
-    'downtime_mana_missing': 200,
+    # Tip: Make it 2.5x mana potion regen
+    'downtime_mana_missing': 375,
     # average heal of exura
-    'exura_heal': 100,
+    'exura_heal': 110,
     # average heal of exura
-    'exura_gran_heal': 255,
+    'exura_gran_heal': 279,
     # average heal of exura sio
-    'exura_sio_heal': 595
+    'exura_sio_heal': 649
 }
 
 
 TEZALOR = {
-    'total_hp': 385,
-    'total_mana': 1290,
+    'total_hp': 585,
+    'total_mana': 2490,
     # this is used to determine if the char is paralized
-    'base_speed': 147,
+    'base_speed': 195,
     # will use utani hur whenever speed is below this
-    'hasted_speed': 190,
+    'hasted_speed': 260,
     # will heal whenever there is this much hp missing (min exura heal)
-    'heal_at_missing': 55,
-    'downtime_heal_at_missing': 30,
+    'heal_at_missing': 60,
+    'downtime_heal_at_missing': 50,
     # whenever mana levels drop by 'mana_at_missing_hi' it will drink mana
     # potions until there is 'mana_at_missing_lo' missing mana
-    'mana_at_missing_hi': 650,
-    'mana_at_missing_lo': 300,
+    'mana_at_missing_hi': 1070,
+    'mana_at_missing_lo': 600,
     # critical mana at which we have to use a mana potion, no matter what
     # this will make it so that drinking mana potion competes with healing
-    'critical_mana': 500,
+    'critical_mana': 810,
     # Use a mana potion until this much is missing and only do it when we're
     # nearly full HP and hasted
-    'downtime_mana_missing': 200,
+    # Tip: Make it 2.5x mana potion regen
+    'downtime_mana_missing': 500,
     # average heal of exura
-    'exura_heal': 60,
+    'exura_heal': 140,
     # average heal of exura
-    'exura_gran_heal': 160,
+    'exura_gran_heal': 355,
     # average heal of exura sio
-    'exura_sio_heal': 373
+    'exura_sio_heal': 828
 }
 
 HOTKEYS_CONFIG = {
@@ -100,4 +103,8 @@ HOTKEYS_CONFIG = {
     'utani_hur': '4'
 }
 
+# Whenever you want to switch characters, you have to specify
+# a different value in this file.
+# TODO: Use a command line parameter to specify the name of the
+# character to use, rather than hardcoding it in this file.
 CHAR_CONFIG = DEMNOK
