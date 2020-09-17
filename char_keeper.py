@@ -1,14 +1,14 @@
 #!/usr/bin/env python2.7
 
 
-import time
+from logger import debug
 
 
 class CharKeeper:
-    def __init__(self, client, char_config, print_async=lambda x: None):
+    def __init__(self, client, char_config):
         self.client = client
         self.char_config = char_config
-        self.print_async = print_async
+        self.should_drink_mana_hi_pri = False
 
     def get_missing_hp(self, hp):
         return self.char_config['total_hp'] - hp
@@ -63,16 +63,21 @@ class CharKeeper:
 
     def should_drink_mana_high_priority(self, mana):
         missing_mana = self.get_missing_mana(mana)
-        # Keep mana within the hi - lo range
+        if missing_mana < self.char_config['mana_at_missing_lo']:
+            self.should_drink_mana_hi_pri = False
+
         if missing_mana >= self.char_config['mana_at_missing_hi']:
-            return True
-        elif missing_mana <= self.char_config['mana_at_missing_lo']:
-            return False
+            self.should_drink_mana_hi_pri = True
+
+        return self.should_drink_mana_hi_pri
 
     # Drink mana until high levels when HP is 100% and already hasted
     # with an interval of 2.5 seconds so it does not affect gameplay
     def should_drink_mana_low_priority(self, hp, speed, mana):
         missing_mana = self.get_missing_mana(mana)
+        debug(
+            '[should_drink_mana_low_priority] missing_mana: ' +
+            str(missing_mana), 3)
         is_downtime = \
             self.is_healthy_hp(hp) and self.is_hasted(speed)
 
@@ -127,6 +132,3 @@ class CharKeeper:
 
         if self.is_paralized(speed) or not self.is_hasted(speed):
             self.client.cast_haste(throttle_ms)
-
-    def timestamp_millis(self):
-        return int(round(time.time() * 1000))

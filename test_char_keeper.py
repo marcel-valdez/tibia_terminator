@@ -24,36 +24,6 @@ DOWNTIME_MANA_MISSING = 10
 
 class TestCharKeeper(TestCase):
 
-    def make_char_config(self,
-                         total_hp=TOTAL_HP,
-                         total_mana=TOTAL_MANA,
-                         base_speed=BASE_SPEED,
-                         hasted_speed=HASTED_SPEED,
-                         heal_at_missing=HEAL_AT_MISSING,
-                         downtime_heal_at_missing=DOWNTIME_HEAL_AT_MISING,
-                         exura_heal=EXURA_HEAL,
-                         exura_gran_heal=EXURA_GRAN_HEAL,
-                         exura_sio_heal=EXURA_SIO_HEAL,
-                         critical_mana=CRITICAL_MANA,
-                         mana_at_missing_hi=MANA_AT_MISSING_HI,
-                         mana_at_missing_lo=MANA_AT_MISSING_LO,
-                         downtime_mana_missing=DOWNTIME_MANA_MISSING):
-        return {
-            'total_hp': total_hp,
-            'total_mana': total_mana,
-            'base_speed': base_speed,
-            'hasted_speed': hasted_speed,
-            'heal_at_missing': heal_at_missing,
-            'downtime_heal_at_missing': downtime_heal_at_missing,
-            'exura_heal': exura_heal,
-            'exura_gran_heal': exura_gran_heal,
-            'exura_sio_heal': exura_sio_heal,
-            'critical_mana': critical_mana,
-            'mana_at_missing_hi': mana_at_missing_hi,
-            'mana_at_missing_lo': mana_at_missing_lo,
-            'downtime_mana_missing': downtime_mana_missing
-        }
-
     def test_should_cast_exura(self):
         # given
         speed = HASTED_SPEED
@@ -157,16 +127,40 @@ class TestCharKeeper(TestCase):
         target.client.cast_exura_gran.assert_not_called()
         target.client.cast_exura_sio.assert_not_called()
 
-    def test_should_drink_mana(self):
+    def test_should_drink_mana_at_mana_missing_hi(self):
         # given
-        speed = HASTED_SPEED
-        mana = TOTAL_MANA - MANA_AT_MISSING_LO
-        hp = TOTAL_HP - DOWNTIME_HEAL_AT_MISING
+        speed = BASE_SPEED
+        mana = TOTAL_MANA - MANA_AT_MISSING_HI
+        hp = TOTAL_HP - EXURA_HEAL
         target = self.make_target()
         # when
         target.handle_mana_change(hp, speed, mana)
         # then
-        target.client.drink_mana(500)
+        target.client.drink_mana.called_once_with(500)
+
+    def test_should_not_drink_mana_at_mana_missing_lo(self):
+        # given
+        speed = BASE_SPEED
+        mana = TOTAL_MANA - MANA_AT_MISSING_LO
+        hp = TOTAL_HP
+        target = self.make_target()
+        # when
+        target.handle_mana_change(hp, speed, mana)
+        # then
+        target.client.drink_mana.assert_not_called()
+
+    def test_should_not_drink_hi_pri_mana_past_mana_at_missing_lo(self):
+        # given
+        speed = BASE_SPEED
+        hp = TOTAL_HP
+        target = self.make_target()
+        target.handle_mana_change(hp, speed, TOTAL_MANA - MANA_AT_MISSING_HI)
+        target.client.drink_mana.assert_called_once_with(500)
+        # when
+        target.handle_mana_change(hp, speed,
+                                  TOTAL_MANA - MANA_AT_MISSING_LO + 1)
+        # then
+        target.client.drink_mana.assert_called_once_with(500)
 
     def test_should_drink_downtime_mana(self):
         # given
@@ -177,7 +171,7 @@ class TestCharKeeper(TestCase):
         # when
         target.handle_mana_change(hp, speed, mana)
         # then
-        target.client.drink_mana(2500)
+        target.client.drink_mana.called_with(2500)
 
     def should_not_drink_mana_when_paralized(self):
         # given
@@ -232,7 +226,7 @@ class TestCharKeeper(TestCase):
         # when
         target.handle_mana_change(hp, speed, mana)
         # then
-        target.client.drink_mana(500)
+        target.client.drink_mana.assert_called_once_with(500)
 
     def test_should_haste(self):
         # given
@@ -243,7 +237,7 @@ class TestCharKeeper(TestCase):
         # when
         target.handle_speed_change(hp, speed, mana)
         # then
-        target.client.cast_haste(1000)
+        target.client.cast_haste.assert_called_once_with(1000)
 
     def test_should_spam_haste_when_paralized(self):
         # given
@@ -254,7 +248,7 @@ class TestCharKeeper(TestCase):
         # when
         target.handle_speed_change(hp, speed, mana)
         # then
-        target.client.cast_haste(500)
+        target.client.cast_haste.assert_called_once_with(500)
 
     def test_should_not_haste_when_critical_hp(self):
         # given
@@ -287,10 +281,40 @@ class TestCharKeeper(TestCase):
         # when
         target.handle_speed_change(hp, speed, mana)
         # then
-        target.client.cast_haste(500)
+        target.client.cast_haste.assert_called_once_with(500)
 
     def make_target(self):
         return CharKeeper(Mock(), self.make_char_config())
+
+    def make_char_config(self,
+                         total_hp=TOTAL_HP,
+                         total_mana=TOTAL_MANA,
+                         base_speed=BASE_SPEED,
+                         hasted_speed=HASTED_SPEED,
+                         heal_at_missing=HEAL_AT_MISSING,
+                         downtime_heal_at_missing=DOWNTIME_HEAL_AT_MISING,
+                         exura_heal=EXURA_HEAL,
+                         exura_gran_heal=EXURA_GRAN_HEAL,
+                         exura_sio_heal=EXURA_SIO_HEAL,
+                         critical_mana=CRITICAL_MANA,
+                         mana_at_missing_hi=MANA_AT_MISSING_HI,
+                         mana_at_missing_lo=MANA_AT_MISSING_LO,
+                         downtime_mana_missing=DOWNTIME_MANA_MISSING):
+        return {
+            'total_hp': total_hp,
+            'total_mana': total_mana,
+            'base_speed': base_speed,
+            'hasted_speed': hasted_speed,
+            'heal_at_missing': heal_at_missing,
+            'downtime_heal_at_missing': downtime_heal_at_missing,
+            'exura_heal': exura_heal,
+            'exura_gran_heal': exura_gran_heal,
+            'exura_sio_heal': exura_sio_heal,
+            'critical_mana': critical_mana,
+            'mana_at_missing_hi': mana_at_missing_hi,
+            'mana_at_missing_lo': mana_at_missing_lo,
+            'downtime_mana_missing': downtime_mana_missing
+        }
 
 
 if __name__ == '__main__':
