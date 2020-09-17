@@ -7,6 +7,7 @@ class MemoryReader:
     def __init__(self, proc_id, print_async=lambda x: None):
         self.proc_id = proc_id
         self.print_async = print_async
+        self.mem_file = None
 
     def find_target_range(self, known_value_addr):
         target = int(known_value_addr, 16)
@@ -68,16 +69,23 @@ class MemoryReader:
                     )
                     return signature_addr_start + offset_amount
 
+    def open(self):
+        self.mem_file = open("/proc/{}/mem".format(self.proc_id), 'rb')
+
+    def close(self):
+        self.mem_file.close()
+
     def read_address(self, address, size):
-        mem_file = open("/proc/{}/mem".format(self.proc_id), 'rb')
+        if self.mem_file is None:
+            raise "Please open_mem_file before reading an address."
         # seek to region start
-        mem_file.seek(address)
+        self.mem_file.seek(address)
         count = 0
         chunks = ""
         while count < size:
             count = count + 1
-            chunk = binascii.hexlify(mem_file.read(1))
-            chunks = chunks + str(chunk)
+            byte = self.mem_file.read(1)
+            chunks = chunks + str(binascii.hexlify(byte))
         # Split each byte and then reverse its order (but dont reverse the
         # actual byte)
         shifted_bytes = ("".join(map(
@@ -85,7 +93,7 @@ class MemoryReader:
             chunks[-2::-2],
             chunks[-1::-2])))
 
-        return (int(shifted_bytes, 16))
+        return int(shifted_bytes, 16)
 
     def get_range(self, address):
         range = self.find_target_range(address)
