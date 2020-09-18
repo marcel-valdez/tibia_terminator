@@ -103,8 +103,9 @@ function timestamp_ms() {
   date "+%s%N" | cut -b1-13
 }
 
-function wait_ui() {
+function wait_timer() {
   local wait_time_secs="$1"
+  local tibia_window="$2"
   local wait_time_ms=$((wait_time_secs * 1000))
   local start_timestamp_ms=$(timestamp_ms)
   sleep "${wait_time_secs}s" &
@@ -122,6 +123,10 @@ function wait_ui() {
       local overwrite=$(printf '\\b%0.s' $(seq 1 ${prev_msg_len}))
       local prev_msg_len=${#msg}
       printf "${overwrite}${msg}"
+      if [[ ! -z "${use_char_reader}" ]]; then
+        make_rune "${tibia_window}"
+      fi
+      sleep "0.250s"
     fi
   done
   echo
@@ -181,6 +186,7 @@ function cast_rune_spell() {
   [[ -z ${min} ]] && min=2
   local max=$3
   [[ -z ${min} ]] && max=5
+
   echo '------------------'
   echo 'Calling rune spell'
   echo '------------------'
@@ -235,7 +241,7 @@ function smart_equip_regen_ring() {
   echo "mana: ${MANA}, soul points: ${SOUL_POINTS}"
   # equip life ring
   send_keystroke "${tibia_window}}" 'u' 1
-  if [[ ${SOUL_POINTS} -gt 10  ]]; then
+  if [[ ${SOUL_POINTS} -gt 10 ]]; then
     # small wait to make sure primary gets equipped
     wait_time="0.$(random 250 390)s"
     sleep "${wait_time}"
@@ -258,15 +264,18 @@ function dumb_equip_regen_ring() {
 
 function equip_regen_ring() {
   local tibia_window="$1"
+  echo '-------------------'
+  echo 'Equipping life ring'
+  echo '-------------------'
   if [[ ! -z "${use_mouse_for_regen_ring}" ]]; then
     #hold_regen_ring "${tibia_window}"
     #drop_regen_ring "${tibia_window}"
     drag_drop_ring ${tibia_window}
   else
-    if [[ -z "${use_char_reader}" ]]; then
-      dumb_equip_regen_ring "${tibia_window}"
-    else
+    if [[ ! -z "${use_char_reader}" ]]; then
       smart_equip_regen_ring "${tibia_window}"
+    else
+      dumb_equip_regen_ring "${tibia_window}"
     fi
   fi
 }
@@ -274,30 +283,36 @@ function equip_regen_ring() {
 function equip_soft_boots() {
   local tibia_window="$1"
   # equip soft boots
+  echo '-------------------'
+  echo 'Equipping soft boots'
+  echo '-------------------'
   send_keystroke "${tibia_window}}" 'j' 1
 }
 
-function make_rune() {
-  local window=$1
-  cast_rune_spell "${window}"
+function eat_food() {
+  local tibia_window="$1"
   # call the eat command a random number between 0 and 3
   # we don't want to always issue the eat command
   echo '-----------'
   echo 'Eating food'
   echo '-----------'
-  send_keystroke "${window}" 'h' 0 3
-  # equip a life ring  a random number between 0 and 2
-  # we don't want to always place the ring
-  echo '-------------------'
-  echo 'Equipping life ring and soft boots'
-  echo '-------------------'
-  equip_regen_ring "${window}"
-  equip_soft_boots "${window}"
-  drink_mana_potions "${window}"
+  send_keystroke "${tibia_window}" 'h' 0 3
+}
+
+function make_rune() {
+  local window="$1"
+  if [[ ! -z "${use_char_reader}" ]]; then
+    eval "$(sudo ./char_reader.py)"
+    if [[ ${MANA} -gt ${mana_per_rune} ]]; then
+      cast_rune_spell "${window}"
+    fi
+  else
+    cast_rune_spell "${window}"
+  fi
 }
 
 function wait_for_mana() {
-  local window=$1
+  local tibia_window=$1
   local total_sit_seconds=$(random ${min_wait_per_turn} ${max_wait_per_turn})
   # only if using mana potions
   echo
@@ -305,14 +320,19 @@ function wait_for_mana() {
   echo "| Waiting for mana ${total_sit_seconds}s |"
   echo '------------------------'
   echo
-  local third_sit_seconds=$((total_sit_seconds / 3))
-  wait_ui "${third_sit_seconds}"
-  # cast rune spell half way through wait to make sure we don't get full mana
-  # and waste
-  cast_rune_spell "${window}"
-  wait_ui "${third_sit_seconds}"
-  cast_rune_spell "${window}"
-  wait_ui "${third_sit_seconds}"
+
+  if [[ ! -z "${use_char_reader}" ]]; then
+    wait_timer "${total_sit_seconds}" "${tibia_window}"
+  else
+    local third_sit_seconds=$((total_sit_seconds / 3))
+    wait_timer "${third_sit_seconds}"
+    # cast rune spell half way through wait to make sure we don't get full mana
+    # and waste
+    make_rune "${tibia_window}"
+    wait_timer "${third_sit_seconds}"
+    make_rune "${tibia_window}"
+    wait_timer "${third_sit_seconds}"
+  fi
 }
 
 function manasit() {
@@ -333,11 +353,13 @@ function manasit() {
       focus_window ${tibia_window}
     fi
 
-    # wait random time
-    sleep "0.$(random 2 5)$(random 1 5)s"
+    sleep "0.$(random 210 550)s"
 
-    # make the rune
     make_rune "${tibia_window}"
+    equip_regen_ring "${tibia_window}"
+    equip_soft_boots "${tibia_window}"
+    drink_mana_potions "${tibia_window}"
+    eat_food "${tibia_window}"
 
     # return to prev window
     sleep "$(random 1 2).$(random 1 9)$(random 1 9)s"
@@ -348,7 +370,7 @@ function manasit() {
     fi
 
     # sit until next rune spell with randomization
-    wait_for_mana ${tibia_window}
+    wait_for_mana "${tibia_window}"
   done
 }
 
