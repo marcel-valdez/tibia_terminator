@@ -14,7 +14,7 @@ from char_config import CHAR_CONFIG, HOTKEYS_CONFIG
 from app_config import MEM_CONFIG
 from logger import set_debug_level
 
-parser = argparse.ArgumentParser(description='Process some integers.')
+parser = argparse.ArgumentParser(description='Tibia terminator CLI parameters.')
 parser.add_argument('pid', help='The PID of Tibia')
 parser.add_argument('--no_mana',
                     help='Do not automatically recover mana.',
