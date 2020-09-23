@@ -94,8 +94,11 @@ class CharKeeper:
         should_drink_mana_hi_pri = self.should_drink_mana_high_priority(mana)
         should_drink_mana_low_pri = self.should_drink_mana_low_priority(
             hp, speed, mana)
-        if should_drink_mana_hi_pri:
-            throttle_ms = 500
+
+        if self.is_critical_mana(mana):
+            throttle_ms = 666
+        elif should_drink_mana_hi_pri:
+            throttle_ms = 1000
         else:
             throttle_ms = 2500
 

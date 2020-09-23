@@ -155,12 +155,12 @@ class TestCharKeeper(TestCase):
         hp = TOTAL_HP
         target = self.make_target()
         target.handle_mana_change(hp, speed, TOTAL_MANA - MANA_AT_MISSING_HI)
-        target.client.drink_mana.assert_called_once_with(500)
+        target.client.drink_mana.assert_called_once_with(1000)
         # when
         target.handle_mana_change(hp, speed,
                                   TOTAL_MANA - MANA_AT_MISSING_LO + 1)
         # then
-        target.client.drink_mana.assert_called_once_with(500)
+        target.client.drink_mana.assert_called_once_with(1000)
 
     def test_should_drink_downtime_mana(self):
         # given
@@ -226,7 +226,7 @@ class TestCharKeeper(TestCase):
         # when
         target.handle_mana_change(hp, speed, mana)
         # then
-        target.client.drink_mana.assert_called_once_with(500)
+        target.client.drink_mana.assert_called_once_with(666)
 
     def test_should_haste(self):
         # given

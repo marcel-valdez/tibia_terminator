@@ -123,7 +123,7 @@ function wait_timer() {
       local overwrite=$(printf '\\b%0.s' $(seq 1 ${prev_msg_len}))
       local prev_msg_len=${#msg}
       printf "${overwrite}${msg}"
-      if [[ ! -z "${use_char_reader}" ]]; then
+      if [[ ${use_char_reader} -eq 1 ]]; then
         make_rune "${tibia_window}"
       fi
       sleep "0.250s"
@@ -150,6 +150,19 @@ function get_potion_count() {
 
 function drink_mana_potion() {
   local tibia_window=$1
+  if [[ ${use_char_reader} -eq 1 ]]; then
+    eval "$(sudo ./char_reader.py)"
+    # do not drink mana if we're running out of soul points.
+    if [[ ${SOUL_POINTS} -lt 10 ]]; then
+      return 1
+    fi
+    # do not drink mana if we're at maximum char mana
+    local mana_threshold=$((${max_char_mana} - 200))
+    if [[ ${MANA} -gt ${mana_threshold} ]]; then
+      return 1
+    fi
+  fi
+
   if [[ ${use_mouse_for_mana_potion} ]]; then
     click_mana_potion ${tibia_window}
     click_char ${tibia_window}
@@ -239,6 +252,11 @@ function smart_equip_regen_ring() {
   # fetch stats using char_reader
   eval "$(sudo ./char_reader.py)"
   echo "mana: ${MANA}, soul points: ${SOUL_POINTS}"
+  # do not equip any rings if we're at max mana
+  local mana_threshold=$((${max_char_mana} - 200))
+  if [[ ${MANA} -gt ${mana_threshold} ]]; then
+      return 1
+  fi
   # equip life ring
   send_keystroke "${tibia_window}}" 'u' 1
   if [[ ${SOUL_POINTS} -gt 10 ]]; then
@@ -272,7 +290,7 @@ function equip_regen_ring() {
     #drop_regen_ring "${tibia_window}"
     drag_drop_ring ${tibia_window}
   else
-    if [[ ! -z "${use_char_reader}" ]]; then
+    if [[ ${use_char_reader} -eq 1 ]]; then
       smart_equip_regen_ring "${tibia_window}"
     else
       dumb_equip_regen_ring "${tibia_window}"
@@ -282,6 +300,14 @@ function equip_regen_ring() {
 
 function equip_soft_boots() {
   local tibia_window="$1"
+  if [[ ${use_char_reader} -eq 1 ]]; then
+    eval "$(sudo ./char_reader.py)"
+    # do not equip soft boots if we're near max mana
+    local mana_threshold=$((${max_char_mana} - 200))
+    if [[ ${MANA} -gt ${mana_threshold} ]]; then
+        return 1
+    fi
+  fi
   # equip soft boots
   echo '-------------------'
   echo 'Equipping soft boots'
@@ -293,6 +319,15 @@ function eat_food() {
   local tibia_window="$1"
   # call the eat command a random number between 0 and 3
   # we don't want to always issue the eat command
+
+  if [[ ${use_char_reader} -eq 1 ]]; then
+    eval "$(sudo ./char_reader.py)"
+    # do not eat food if we're near max mana
+    local mana_threshold=$((${max_char_mana} - 200))
+    if [[ ${MANA} -gt ${mana_threshold} ]]; then
+        return 1
+    fi
+  fi
   echo '-----------'
   echo 'Eating food'
   echo '-----------'
@@ -301,7 +336,7 @@ function eat_food() {
 
 function make_rune() {
   local window="$1"
-  if [[ ! -z "${use_char_reader}" ]]; then
+  if [[ ${use_char_reader} -eq 1 ]]; then
     eval "$(sudo ./char_reader.py)"
     if [[ ${MANA} -gt ${mana_per_rune} ]]; then
       cast_rune_spell "${window}"
@@ -321,7 +356,7 @@ function wait_for_mana() {
   echo '------------------------'
   echo
 
-  if [[ ! -z "${use_char_reader}" ]]; then
+  if [[ ${use_char_reader} -eq 1 ]]; then
     wait_timer "${total_sit_seconds}" "${tibia_window}"
   else
     local third_sit_seconds=$((total_sit_seconds / 3))
@@ -385,6 +420,8 @@ max_wait_per_turn=
 min_wait_per_turn=
 mana_potions_seq=()
 use_mouse_for_mana_potion=
+use_char_reader=0
+max_char_mana=99999
 function parse_args() {
   while [[ $# -gt 0 ]]; do
     arg=$1
@@ -432,6 +469,10 @@ function parse_args() {
       ;;
     --use-char-reader)
       use_char_reader=1
+      ;;
+    --max-char-mana)
+      max_char_mana=$2
+      shift
       ;;
     *)
       break
@@ -508,8 +549,11 @@ max-wait-per turn ${max_wait_per_turn}" >&2
     echo "Using mouse for drinking mana potions"
   fi
 
-  if [[ ! -z ${use_char_reader} ]]; then
+  if [[ ${use_char_reader} -eq 1 ]]; then
     echo "Using char_reader.py to determine whether to equip life ring or ring of healing."
+    if [[ ${max_char_mana} -lt 99999 ]]; then
+      echo "Using a maximum character mana pool of ${max_char_mana}."
+    fi
   fi
 
 }
