@@ -67,7 +67,12 @@ class ClientInterface:
         self.hotkeys_config = hotkeys_config
         self.last_cmd = {}
         self.only_monitor = only_monitor
-        self.locks = {'heal': Lock(), 'speed': Lock(), 'mana': Lock()}
+        self.locks = {
+            'heal': Lock(),
+            'speed': Lock(),
+            'mana': Lock(),
+            'item_usage': Lock()
+        }
         self.process_pool = Pool(
             processes=6,
             initargs=[self.locks, self.only_monitor, self.last_cmd],
@@ -105,3 +110,18 @@ class ClientInterface:
         debug('cast_haste' + str(throttle_ms), 2)
         self.send_keystroke_async('speed', throttle_ms,
                                   self.hotkeys_config['utani_hur'])
+
+    def equip_ring(self, throttle_ms=250):
+        debug('equip_ring' + str(throttle_ms), 2)
+        self.send_keystroke_async('item_usage', throttle_ms,
+            self.hotkeys_config['equip_ring'])
+
+    def equip_amulet(self, throttle_ms=250):
+        debug('equip_amulet' + str(throttle_ms), 2)
+        self.send_keystroke_async('item_usage', throttle_ms,
+            self.hotkeys_config['equip_amulet'])
+
+    def eat_food(self, throttle_ms=250):
+        debug('eat_food' + str(throttle_ms), 2)
+        self.send_keystroke_async('item_usage', throttle_ms,
+            self.hotkeys_config['eat_food'])

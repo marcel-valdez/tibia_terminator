@@ -108,6 +108,8 @@ class TibiaTerminator:
             prev_stats['speed'] = speed
             print_async("Speed: {}".format(str(speed)))
 
+        self.char_keeper.handle_equipment(hp, speed, mana)
+
 
 def get_tibia_wid():
     wid = subprocess.check_output(

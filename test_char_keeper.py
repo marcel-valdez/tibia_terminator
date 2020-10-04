@@ -17,9 +17,9 @@ EXURA_HEAL = 10
 EXURA_GRAN_HEAL = 20
 EXURA_SIO_HEAL = 40
 CRITICAL_MANA = 10
-MANA_AT_MISSING_HI = 50
-MANA_AT_MISSING_LO = 25
-DOWNTIME_MANA_MISSING = 10
+MANA_HI = TOTAL_MANA - 50
+MANA_LO = TOTAL_MANA - 25
+DOWNTIME_MANA = TOTAL_MANA - 10
 
 
 class TestCharKeeper(TestCase):
@@ -38,7 +38,7 @@ class TestCharKeeper(TestCase):
     def test_should_cast_exura_even_if_paralyzed_or_missing_mana(self):
         # given
         speed = BASE_SPEED - 10
-        mana = TOTAL_MANA - MANA_AT_MISSING_LO
+        mana = MANA_LO
         hp = TOTAL_HP - EXURA_HEAL
         target = self.make_target()
         # when
@@ -82,7 +82,7 @@ class TestCharKeeper(TestCase):
     def test_should_spam_exura_sio_even_if_paralyzed_or_missing_mana(self):
         # given
         speed = BASE_SPEED - 10
-        mana = TOTAL_MANA - MANA_AT_MISSING_HI
+        mana = MANA_HI
         hp = TOTAL_HP - EXURA_SIO_HEAL
         target = self.make_target()
         # when
@@ -117,7 +117,7 @@ class TestCharKeeper(TestCase):
     def test_should_not_cast_exura_downtime_if_unhealthy_mana(self):
         # given
         speed = HASTED_SPEED
-        mana = TOTAL_MANA - MANA_AT_MISSING_LO
+        mana = MANA_LO
         hp = TOTAL_HP - DOWNTIME_HEAL_AT_MISING
         target = self.make_target()
         # when
@@ -130,7 +130,7 @@ class TestCharKeeper(TestCase):
     def test_should_drink_mana_at_mana_missing_hi(self):
         # given
         speed = BASE_SPEED
-        mana = TOTAL_MANA - MANA_AT_MISSING_HI
+        mana = MANA_HI
         hp = TOTAL_HP - EXURA_HEAL
         target = self.make_target()
         # when
@@ -141,7 +141,7 @@ class TestCharKeeper(TestCase):
     def test_should_not_drink_mana_at_mana_missing_lo(self):
         # given
         speed = BASE_SPEED
-        mana = TOTAL_MANA - MANA_AT_MISSING_LO
+        mana = MANA_LO
         hp = TOTAL_HP
         target = self.make_target()
         # when
@@ -149,23 +149,23 @@ class TestCharKeeper(TestCase):
         # then
         target.client.drink_mana.assert_not_called()
 
-    def test_should_not_drink_hi_pri_mana_past_mana_at_missing_lo(self):
+    def test_should_not_drink_hi_pri_mana_past_mana_lo(self):
         # given
         speed = BASE_SPEED
         hp = TOTAL_HP
         target = self.make_target()
-        target.handle_mana_change(hp, speed, TOTAL_MANA - MANA_AT_MISSING_HI)
+        target.handle_mana_change(hp, speed, MANA_HI)
         target.client.drink_mana.assert_called_once_with(1000)
+        target.client.reset_mock()
         # when
-        target.handle_mana_change(hp, speed,
-                                  TOTAL_MANA - MANA_AT_MISSING_LO + 1)
+        target.handle_mana_change(hp, speed, MANA_LO + 1)
         # then
-        target.client.drink_mana.assert_called_once_with(1000)
+        target.client.drink_mana.assert_not_called()
 
     def test_should_drink_downtime_mana(self):
         # given
         speed = HASTED_SPEED
-        mana = TOTAL_MANA - DOWNTIME_MANA_MISSING
+        mana = DOWNTIME_MANA
         hp = TOTAL_HP - DOWNTIME_HEAL_AT_MISING
         target = self.make_target()
         # when
@@ -176,7 +176,7 @@ class TestCharKeeper(TestCase):
     def should_not_drink_mana_when_paralized(self):
         # given
         speed = BASE_SPEED - 10
-        mana = TOTAL_MANA - MANA_AT_MISSING_HI
+        mana = MANA_HI
         hp = TOTAL_HP
         target = self.make_target()
         # when
@@ -187,7 +187,7 @@ class TestCharKeeper(TestCase):
     def should_not_drink_mana_when_critical_hp(self):
         # given
         speed = HASTED_SPEED
-        mana = TOTAL_MANA - MANA_AT_MISSING_HI
+        mana = MANA_HI
         hp = TOTAL_HP - EXURA_GRAN_HEAL
         target = self.make_target()
         # when
@@ -198,7 +198,7 @@ class TestCharKeeper(TestCase):
     def test_should_not_drink_downtime_mana_when_not_hasted(self):
         # given
         speed = BASE_SPEED
-        mana = TOTAL_MANA - DOWNTIME_MANA_MISSING
+        mana = DOWNTIME_MANA
         hp = TOTAL_HP
         target = self.make_target()
         # when
@@ -209,7 +209,7 @@ class TestCharKeeper(TestCase):
     def test_should_not_drink_downtime_mana_when_not_healthy_hp(self):
         # given
         speed = HASTED_SPEED
-        mana = TOTAL_MANA - DOWNTIME_MANA_MISSING
+        mana = DOWNTIME_MANA
         hp = TOTAL_HP - HEAL_AT_MISSING
         target = self.make_target()
         # when
@@ -227,6 +227,23 @@ class TestCharKeeper(TestCase):
         target.handle_mana_change(hp, speed, mana)
         # then
         target.client.drink_mana.assert_called_once_with(666)
+
+    def test_should_drink_mana_critical_until_hi_pri_range(self):
+        # given
+        speed = BASE_SPEED
+        mana = CRITICAL_MANA
+        hp = TOTAL_HP
+        target = self.make_target()
+        target.handle_mana_change(hp, speed, mana)
+        target.client.drink_mana.assert_called_once_with(666)
+        target.client.reset_mock()
+        target.handle_mana_change(hp, speed, MANA_HI - 1)
+        target.client.drink_mana.assert_called_once_with(666)
+        target.client.reset_mock()
+        # when
+        target.handle_mana_change(hp, speed, MANA_HI)
+        # then
+        target.client.drink_mana.assert_called_once_with(1000)
 
     def test_should_haste(self):
         # given
@@ -283,8 +300,58 @@ class TestCharKeeper(TestCase):
         # then
         target.client.cast_haste.assert_called_once_with(500)
 
-    def make_target(self):
-        return CharKeeper(Mock(), self.make_char_config())
+    def test_should_equip_amulet_then_ring_then_eat(self):
+        # given
+        target = self.make_target()
+        # when
+        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP)
+        # then
+        target.client.equip_amulet.assert_called_once()
+        # when
+        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP)
+        # then
+        target.client.equip_ring.assert_called_once()
+        # when
+        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP)
+        # then
+        target.client.eat_food.assert_called_once()
+
+    def test_should_not_equip_amulet_if_configured(self):
+        # given
+        target = self.make_target(
+            self.make_char_config(should_equip_amulet=False))
+        # when
+        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP)
+        # then
+        target.client.equip_amulet.assert_not_called()
+
+    def test_should_not_equip_ring_if_configured(self):
+        # given
+        target = self.make_target(
+            self.make_char_config(should_equip_ring=False))
+        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP)
+        target.client.equip_amulet.assert_called_once()
+        # when
+        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP)
+        # then
+        target.client.equip_ring.assert_not_called()
+
+    def test_should_not_eat_food_if_configured(self):
+        # given
+        target = self.make_target(
+            self.make_char_config(should_eat_food=False))
+        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP)
+        target.client.equip_amulet.assert_called_once()
+        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP)
+        target.client.equip_ring.assert_called_once()
+        # when
+        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP)
+        # then
+        target.client.eat_food.assert_not_called()
+
+    def make_target(self, char_config=None):
+        char_config = char_config or self.make_char_config()
+        return CharKeeper(Mock(), char_config)
 
     def make_char_config(self,
                          total_hp=TOTAL_HP,
@@ -297,9 +364,12 @@ class TestCharKeeper(TestCase):
                          exura_gran_heal=EXURA_GRAN_HEAL,
                          exura_sio_heal=EXURA_SIO_HEAL,
                          critical_mana=CRITICAL_MANA,
-                         mana_at_missing_hi=MANA_AT_MISSING_HI,
-                         mana_at_missing_lo=MANA_AT_MISSING_LO,
-                         downtime_mana_missing=DOWNTIME_MANA_MISSING):
+                         mana_hi=MANA_HI,
+                         mana_lo=MANA_LO,
+                         downtime_mana=DOWNTIME_MANA,
+                         should_equip_amulet=True,
+                         should_equip_ring=True,
+                         should_eat_food=True):
         return {
             'total_hp': total_hp,
             'total_mana': total_mana,
@@ -311,9 +381,12 @@ class TestCharKeeper(TestCase):
             'exura_gran_heal': exura_gran_heal,
             'exura_sio_heal': exura_sio_heal,
             'critical_mana': critical_mana,
-            'mana_at_missing_hi': mana_at_missing_hi,
-            'mana_at_missing_lo': mana_at_missing_lo,
-            'downtime_mana_missing': downtime_mana_missing
+            'mana_hi': mana_hi,
+            'mana_lo': mana_lo,
+            'downtime_mana': downtime_mana,
+            'should_equip_amulet': should_equip_amulet,
+            'should_equip_ring': should_equip_ring,
+            'should_eat_food': should_eat_food
         }
 
 

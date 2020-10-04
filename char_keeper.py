@@ -2,6 +2,7 @@
 
 
 from logger import debug
+import time
 
 
 class CharKeeper:
@@ -9,6 +10,12 @@ class CharKeeper:
         self.client = client
         self.char_config = char_config
         self.should_drink_mana_hi_pri = False
+        self.should_drink_critical_mana = False
+        self.timestamps = {
+            'ring': 0,
+            'amulet': 0,
+            'food': 0,
+        }
 
     def get_missing_hp(self, hp):
         return self.char_config['total_hp'] - hp
@@ -42,15 +49,12 @@ class CharKeeper:
         return self.char_config['total_mana'] - mana
 
     def is_healthy_mana(self, mana):
-        missing_mana = self.get_missing_mana(mana)
-        return missing_mana < self.char_config['mana_at_missing_lo']
-
-    def is_critical_mana(self, mana):
-        return mana <= self.char_config['critical_mana']
+        return mana > self.char_config['mana_lo']
 
     def should_skip_drinking_mana(self, hp, speed, mana):
         # Do not issue order to use mana potion if we're at critical HP levels,
-        # unless we're at critical mana levels in order to avoid delaying heals.
+        # unless we're at critical mana levels in order to avoid delaying
+        # heals.
         if self.is_critical_hp(hp) and not self.is_critical_mana(mana):
             return True
 
@@ -61,49 +65,55 @@ class CharKeeper:
 
         return False
 
-    def should_drink_mana_high_priority(self, mana):
-        missing_mana = self.get_missing_mana(mana)
-        if missing_mana < self.char_config['mana_at_missing_lo']:
-            self.should_drink_mana_hi_pri = False
+    # Drink mana until high levels when HP is 100% and already hasted
+    # with an interval of 2.5 seconds so it does not affect gameplay
+    def should_drink_mana_low_priority(self, hp, speed, mana):
+        debug(
+            '[should_drink_mana_low_priority] mana: ' +
+            str(mana), 3)
+        is_downtime = \
+            self.is_healthy_hp(hp) and self.is_hasted(speed)
 
-        if missing_mana >= self.char_config['mana_at_missing_hi']:
+        if is_downtime and mana <= self.char_config['downtime_mana']:
+            return True
+        else:
+            return False
+
+
+    def should_drink_mana_high_priority(self, mana):
+        if mana > self.char_config['mana_lo']:
+            self.should_drink_mana_hi_pri = False
+        elif mana <= self.char_config['mana_hi']:
             self.should_drink_mana_hi_pri = True
 
         return self.should_drink_mana_hi_pri
 
-    # Drink mana until high levels when HP is 100% and already hasted
-    # with an interval of 2.5 seconds so it does not affect gameplay
-    def should_drink_mana_low_priority(self, hp, speed, mana):
-        missing_mana = self.get_missing_mana(mana)
-        debug(
-            '[should_drink_mana_low_priority] missing_mana: ' +
-            str(missing_mana), 3)
-        is_downtime = \
-            self.is_healthy_hp(hp) and self.is_hasted(speed)
+    def is_critical_mana(self, mana):
+        return mana <= self.char_config['critical_mana']
 
-        if is_downtime and \
-           missing_mana >= self.char_config['downtime_mana_missing']:
-            return True
-        else:
-            return False
+    def should_drink_mana_critical(self, mana):
+        if mana <= self.char_config['critical_mana']:
+            self.should_drink_critical_mana = True
+        elif mana >= self.char_config['mana_hi']:
+            self.should_drink_critical_mana = False
+
+        return self.should_drink_critical_mana
 
     def handle_mana_change(self, hp, speed, mana):
         if self.should_skip_drinking_mana(hp, speed, mana):
             return False
 
+        should_drink_mana_critical = self.should_drink_mana_critical(mana)
         should_drink_mana_hi_pri = self.should_drink_mana_high_priority(mana)
         should_drink_mana_low_pri = self.should_drink_mana_low_priority(
             hp, speed, mana)
 
-        if self.is_critical_mana(mana):
-            throttle_ms = 666
+        if should_drink_mana_critical:
+            self.client.drink_mana(666)
         elif should_drink_mana_hi_pri:
-            throttle_ms = 1000
-        else:
-            throttle_ms = 2500
-
-        if should_drink_mana_hi_pri or should_drink_mana_low_pri:
-            self.client.drink_mana(throttle_ms)
+            self.client.drink_mana(1000)
+        elif should_drink_mana_low_pri:
+            self.client.drink_mana(2500)
 
     def is_hasted(self, speed):
         return speed >= self.char_config['hasted_speed']
@@ -135,3 +145,39 @@ class CharKeeper:
 
         if self.is_paralized(speed) or not self.is_hasted(speed):
             self.client.cast_haste(throttle_ms)
+
+    def handle_equipment(self, hp, speed, mana):
+        if self.char_config.get('should_equip_amulet', False) and \
+                self.secs_since_equip_amulet() >= 5:
+            self.equip_amulet()
+        elif self.char_config.get('should_equip_ring', False) and \
+                self.secs_since_equip_ring() >= \
+                self.char_config.get('equip_ring_secs', 6):
+            self.equip_ring()
+        elif self.char_config.get('should_eat_food', True) and \
+                self.secs_since_eat_food() >= 60:
+            self.eat_food()
+
+    def secs_since_equip_ring(self):
+        return self.timestamp_secs() - self.timestamps['ring']
+
+    def equip_ring(self):
+        self.timestamps['ring'] = self.timestamp_secs()
+        self.client.equip_ring()
+
+    def secs_since_equip_amulet(self):
+        return self.timestamp_secs() - self.timestamps['amulet']
+
+    def equip_amulet(self):
+        self.timestamps['amulet'] = self.timestamp_secs()
+        self.client.equip_amulet()
+
+    def secs_since_eat_food(self):
+        return self.timestamp_secs() - self.timestamps['food']
+
+    def eat_food(self):
+        self.timestamps['food'] = self.timestamp_secs()
+        self.client.eat_food()
+
+    def timestamp_secs(self):
+        return time.time()
