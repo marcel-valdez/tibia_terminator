@@ -134,6 +134,20 @@ function wait_timer() {
 
 }
 
+function is_out_of_souls_or_mana() {
+    if [[ ${use_char_reader} -eq 1 ]]; then
+      eval "$(sudo ./char_reader.py)"
+      echo "mana: ${MANA}, soul points: ${SOUL_POINTS}"
+    else
+      MANA=0
+      SOUL_POINTS=200
+    fi
+
+    # do not drink mana if we're at /maximum char mana
+    # do not drink mana if we're running out of soul points.
+    [[ ${MANA} -gt ${max_mana_threshold} ]] || [[ ${SOUL_POINTS} -lt 6 ]]
+}
+
 potions_seq_counter=0
 function get_potion_count() {
   local mana_potions_seq_len=${#mana_potions_seq[@]}
@@ -150,17 +164,8 @@ function get_potion_count() {
 
 function drink_mana_potion() {
   local tibia_window=$1
-  if [[ ${use_char_reader} -eq 1 ]]; then
-    eval "$(sudo ./char_reader.py)"
-    # do not drink mana if we're running out of soul points.
-    if [[ ${SOUL_POINTS} -lt 10 ]]; then
-      return 1
-    fi
-    # do not drink mana if we're at maximum char mana
-    local mana_threshold=$((${max_char_mana} - 200))
-    if [[ ${MANA} -gt ${mana_threshold} ]]; then
-      return 1
-    fi
+  if is_out_of_souls_or_mana; then
+    return 1
   fi
 
   if [[ ${use_mouse_for_mana_potion} ]]; then
@@ -173,7 +178,14 @@ function drink_mana_potion() {
 
 function drink_mana_potions() {
   local window=$1
+  if is_out_of_souls_or_mana; then
+    return 1
+  fi
+
   local potion_count=$(get_potion_count)
+  if [[ ${potion_count} -eq 0 ]]; then
+    return 1
+  fi
   potions_seq_counter=$((potions_seq_counter + 1))
 
   echo '-----------------------'
@@ -187,7 +199,7 @@ function drink_mana_potions() {
 
     # cast rune spell in case we have enough mana to use it again
     if [[ ! -z "${cast_rune_spell_after_drinking_potion}" ]]; then
-      cast_rune_spell "${window}" 1 2
+      make_rune "${window}" 1 2
     fi
   done
 }
@@ -249,28 +261,31 @@ function drop_regen_ring() {
 
 function smart_equip_regen_ring() {
   local tibia_window="$1"
-  # fetch stats using char_reader
-  eval "$(sudo ./char_reader.py)"
-  echo "mana: ${MANA}, soul points: ${SOUL_POINTS}"
-  # do not equip any rings if we're at max mana
-  local mana_threshold=$((${max_char_mana} - 200))
-  if [[ ${MANA} -gt ${mana_threshold} ]]; then
-      return 1
+  if is_out_of_souls_or_mana; then
+    return 1
   fi
-  # equip life ring
+
+  echo '-------------------'
+  echo 'Equipping life ring'
+  echo '-------------------'
   send_keystroke "${tibia_window}}" 'u' 1
+  eval "$(sudo ./char_reader.py)"
   if [[ ${SOUL_POINTS} -gt 10 ]]; then
-    # small wait to make sure primary gets equipped
+    echo '-------------------------'
+    echo 'Equipping ring of healing'
+    echo '-------------------------'
     wait_time="0.$(random 250 390)s"
     sleep "${wait_time}"
     # equip ring of healing
     send_keystroke "${tibia_window}}" 'n' 1
   fi
-
 }
 
 function dumb_equip_regen_ring() {
   local tibia_window="$1"
+  echo '-------------------'
+  echo 'Equipping life ring'
+  echo '-------------------'
   # equip life ring
   send_keystroke "${tibia_window}}" 'u' 1
   # small wait to make sure primary gets equipped
@@ -282,9 +297,6 @@ function dumb_equip_regen_ring() {
 
 function equip_regen_ring() {
   local tibia_window="$1"
-  echo '-------------------'
-  echo 'Equipping life ring'
-  echo '-------------------'
   if [[ ! -z "${use_mouse_for_regen_ring}" ]]; then
     #hold_regen_ring "${tibia_window}"
     #drop_regen_ring "${tibia_window}"
@@ -300,13 +312,8 @@ function equip_regen_ring() {
 
 function equip_soft_boots() {
   local tibia_window="$1"
-  if [[ ${use_char_reader} -eq 1 ]]; then
-    eval "$(sudo ./char_reader.py)"
-    # do not equip soft boots if we're near max mana
-    local mana_threshold=$((${max_char_mana} - 200))
-    if [[ ${MANA} -gt ${mana_threshold} ]]; then
-        return 1
-    fi
+  if is_out_of_souls_or_mana; then
+    return 1
   fi
   # equip soft boots
   echo '-------------------'
@@ -317,17 +324,11 @@ function equip_soft_boots() {
 
 function eat_food() {
   local tibia_window="$1"
+  if is_out_of_souls_or_mana; then
+    return 1
+  fi
   # call the eat command a random number between 0 and 3
   # we don't want to always issue the eat command
-
-  if [[ ${use_char_reader} -eq 1 ]]; then
-    eval "$(sudo ./char_reader.py)"
-    # do not eat food if we're near max mana
-    local mana_threshold=$((${max_char_mana} - 200))
-    if [[ ${MANA} -gt ${mana_threshold} ]]; then
-        return 1
-    fi
-  fi
   echo '-----------'
   echo 'Eating food'
   echo '-----------'
@@ -336,13 +337,15 @@ function eat_food() {
 
 function make_rune() {
   local window="$1"
+  local min_wait="$2"
+  local max_wait="$3"
   if [[ ${use_char_reader} -eq 1 ]]; then
     eval "$(sudo ./char_reader.py)"
     if [[ ${MANA} -gt ${mana_per_rune} ]]; then
-      cast_rune_spell "${window}"
+      cast_rune_spell "${window}" "${min_wait}" "${max_wait}"
     fi
   else
-    cast_rune_spell "${window}"
+    cast_rune_spell "${window}" "${min_wait}" "${max_wait}"
   fi
 }
 
@@ -422,6 +425,7 @@ mana_potions_seq=()
 use_mouse_for_mana_potion=
 use_char_reader=0
 max_char_mana=99999
+max_mana_threshold=99999
 function parse_args() {
   while [[ $# -gt 0 ]]; do
     arg=$1
@@ -472,6 +476,7 @@ function parse_args() {
       ;;
     --max-char-mana)
       max_char_mana=$2
+      max_mana_threshold=$((${max_char_mana} - 200))
       shift
       ;;
     *)
