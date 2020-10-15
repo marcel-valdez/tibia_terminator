@@ -112,12 +112,12 @@ function train {
     fi
 
     click_weapon "${tibia_window}"
-    sleep "0.$(random 2 5)$(random 1 5)s"
+    sleep "0.$(random 210 550)s"
     click_dummy "${tibia_window}"
 
 
     # return to prev window
-    sleep "$(random 1 2).$(random 1 9)$(random 1 9)s"
+    sleep "1.$(random 110 990)s"
     if [[ ${refocus_tibia_to_make_rune} ]]; then
       xdotool mousemove --screen ${curr_screen}\
               ${curr_x} ${curr_y}
