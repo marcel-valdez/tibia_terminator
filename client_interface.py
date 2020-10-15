@@ -69,7 +69,7 @@ class ClientInterface:
         self.only_monitor = only_monitor
         self.locks = {
             'heal': Lock(),
-            'speed': Lock(),
+            'utility_spell': Lock(),
             'mana': Lock(),
             'item_usage': Lock()
         }
@@ -108,7 +108,7 @@ class ClientInterface:
 
     def cast_haste(self, throttle_ms):
         debug('cast_haste' + str(throttle_ms), 2)
-        self.send_keystroke_async('speed', throttle_ms,
+        self.send_keystroke_async('utility_spell', throttle_ms,
                                   self.hotkeys_config['utani_hur'])
 
     def equip_ring(self, throttle_ms=250):
@@ -125,3 +125,8 @@ class ClientInterface:
         debug('eat_food' + str(throttle_ms), 2)
         self.send_keystroke_async('item_usage', throttle_ms,
             self.hotkeys_config['eat_food'])
+
+    def cast_magic_shield(self, throttle_ms=250):
+        debug('cast_magic_shield' + str(throttle_ms), 2)
+        self.send_keystroke_async('utility_spell', throttle_ms,
+            self.hotkeys_config['magic_shield'])

@@ -4,6 +4,7 @@
 from logger import debug
 import time
 
+MAGIC_SHIELD_DURATION_SECS = 210
 
 class CharKeeper:
     def __init__(self, client, char_config):
@@ -15,7 +16,10 @@ class CharKeeper:
             'ring': 0,
             'amulet': 0,
             'food': 0,
+            'magic_shield': 0
         }
+        self.magic_shield_counter = 0
+        self.eat_food_counter = 0
 
     def get_missing_hp(self, hp):
         return self.char_config['total_hp'] - hp
@@ -147,14 +151,17 @@ class CharKeeper:
             self.client.cast_haste(throttle_ms)
 
     def handle_equipment(self, hp, speed, mana):
+        if self.char_config.get('should_cast_magic_shield', False) and \
+                self.secs_since_magic_shield() >= (MAGIC_SHIELD_DURATION_SECS - 40):
+            self.cast_magic_shield()
         if self.char_config.get('should_equip_amulet', False) and \
                 self.secs_since_equip_amulet() >= 5:
             self.equip_amulet()
-        elif self.char_config.get('should_equip_ring', False) and \
+        if self.char_config.get('should_equip_ring', False) and \
                 self.secs_since_equip_ring() >= \
                 self.char_config.get('equip_ring_secs', 6):
             self.equip_ring()
-        elif self.char_config.get('should_eat_food', True) and \
+        if self.char_config.get('should_eat_food', True) and \
                 self.secs_since_eat_food() >= 60:
             self.eat_food()
 
@@ -176,8 +183,28 @@ class CharKeeper:
         return self.timestamp_secs() - self.timestamps['food']
 
     def eat_food(self):
-        self.timestamps['food'] = self.timestamp_secs()
+        self.eat_food_counter += 1
+        if self.eat_food_counter == 4:
+            self.timestamps['food'] = self.timestamp_secs()
+            self.eat_food_counter = 0
+        else:
+            self.timestamps['food'] += 9
+
         self.client.eat_food()
+
+    def secs_since_magic_shield(self):
+        return self.timestamp_secs() - self.timestamps['magic_shield']
+
+    def cast_magic_shield(self):
+        self.magic_shield_counter += 1
+        if self.magic_shield_counter == 4:
+            self.timestamps['magic_shield'] = self.timestamp_secs()
+            self.magic_shield_counter = 0
+        else:
+            # cast magic shield every 8 seconds 4 times
+            self.timestamps['magic_shield'] += 8
+
+        self.client.cast_magic_shield()
 
     def timestamp_secs(self):
         return time.time()
