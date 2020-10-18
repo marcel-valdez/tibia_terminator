@@ -10,11 +10,13 @@ from client_interface import ClientInterface
 from memory_reader import MemoryReader
 from char_keeper import CharKeeper
 from char_reader import CharReader
+from equipment_reader import EquipmentReader
 from char_config import CHAR_CONFIG, HOTKEYS_CONFIG
 from app_config import MEM_CONFIG
 from logger import set_debug_level
 
-parser = argparse.ArgumentParser(description='Tibia terminator CLI parameters.')
+parser = argparse.ArgumentParser(
+    description='Tibia terminator CLI parameters.')
 parser.add_argument('pid', help='The PID of Tibia')
 parser.add_argument('--no_mana',
                     help='Do not automatically recover mana.',
@@ -42,6 +44,7 @@ class TibiaTerminator:
                  tibia_wid,
                  char_keeper,
                  char_reader,
+                 equipment_reader,
                  enable_mana=True,
                  enable_hp=True,
                  enable_speed=True,
@@ -49,6 +52,7 @@ class TibiaTerminator:
         self.tibia_wid = tibia_wid
         self.char_keeper = char_keeper
         self.char_reader = char_reader
+        self.equipment_reader = equipment_reader
         self.enable_speed = enable_speed
         self.enable_mana = enable_mana
         self.enable_hp = enable_hp
@@ -71,12 +75,27 @@ class TibiaTerminator:
             self.char_reader.init_speed_address(speed_address)
 
         prev_stats = {'mana': -1, 'hp': -1, 'speed': -1}
-        while True:
-            stats = self.char_reader.get_stats()
-            self.handle_stats(stats, prev_stats)
-            time.sleep(0.1)
+        self.equipment_reader.open()
+        try:
+            while True:
+                stats = self.char_reader.get_stats()
+                # 20-30 ms
+                is_amulet_slot_empty = self.equipment_reader.is_amulet_empty()
+                # 20-30 ms
+                is_ring_slot_empty = self.equipment_reader.is_ring_empty()
+                self.handle_stats(
+                    stats,
+                    prev_stats,
+                    is_amulet_slot_empty,
+                    is_ring_slot_empty)
+                # Sleep 60 ms
+                time.sleep(0.06)
+        finally:
+            self.equipment_reader.close()
 
-    def handle_stats(self, stats, prev_stats):
+    def handle_stats(self, stats, prev_stats,
+                     is_amulet_slot_empty,
+                     is_ring_slot_empty):
         mana = stats['mana']
         hp = stats['hp']
         speed = stats['speed']
@@ -108,7 +127,13 @@ class TibiaTerminator:
             prev_stats['speed'] = speed
             print_async("Speed: {}".format(str(speed)))
 
-        self.char_keeper.handle_equipment(hp, speed, mana)
+        self.char_keeper.handle_equipment(
+            hp,
+            speed,
+            mana,
+            is_amulet_slot_empty,
+            is_ring_slot_empty
+        )
 
 
 def get_tibia_wid():
@@ -144,9 +169,11 @@ def main(pid, enable_mana, enable_hp, enable_speed, only_monitor):
     memory_reader = MemoryReader(pid, print_async)
     char_keeper = CharKeeper(client, CHAR_CONFIG)
     char_reader = CharReader(memory_reader)
+    eq_reader = EquipmentReader()
     tibia_terminator = TibiaTerminator(tibia_wid,
                                        char_keeper,
                                        char_reader,
+                                       eq_reader,
                                        enable_mana=enable_mana,
                                        enable_hp=enable_hp,
                                        enable_speed=enable_speed,

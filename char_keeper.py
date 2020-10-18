@@ -150,17 +150,24 @@ class CharKeeper:
         if self.is_paralized(speed) or not self.is_hasted(speed):
             self.client.cast_haste(throttle_ms)
 
-    def handle_equipment(self, hp, speed, mana):
+    def handle_equipment(self, hp, speed, mana,
+        is_amulet_slot_empty=False, is_ring_slot_empty=False):
         if self.char_config.get('should_cast_magic_shield', False) and \
                 self.secs_since_magic_shield() >= (MAGIC_SHIELD_DURATION_SECS - 40):
             self.cast_magic_shield()
+
         if self.char_config.get('should_equip_amulet', False) and \
-                self.secs_since_equip_amulet() >= 5:
+                is_amulet_slot_empty and \
+                self.secs_since_equip_amulet() >= \
+                    self.char_config.get('equip_amulet_secs', 1):
             self.equip_amulet()
+
         if self.char_config.get('should_equip_ring', False) and \
+                is_ring_slot_empty and \
                 self.secs_since_equip_ring() >= \
-                self.char_config.get('equip_ring_secs', 6):
+                self.char_config.get('equip_ring_secs', 1):
             self.equip_ring()
+
         if self.char_config.get('should_eat_food', True) and \
                 self.secs_since_eat_food() >= 60:
             self.eat_food()

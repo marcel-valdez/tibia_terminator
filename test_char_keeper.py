@@ -304,24 +304,24 @@ class TestCharKeeper(TestCase):
         # given
         target = self.make_target()
         # when
-        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP)
+        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP, True, False)
         # then
         target.client.equip_amulet.assert_called_once()
         # when
-        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP)
+        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP, False, True)
         # then
         target.client.equip_ring.assert_called_once()
         # when
-        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP)
+        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP, False, False)
         # then
-        target.client.eat_food.assert_called_once()
+        self.assertEqual(target.client.eat_food.call_count, 3)
 
     def test_should_not_equip_amulet_if_configured(self):
         # given
         target = self.make_target(
             self.make_char_config(should_equip_amulet=False))
         # when
-        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP)
+        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP, True)
         # then
         target.client.equip_amulet.assert_not_called()
 
@@ -329,7 +329,7 @@ class TestCharKeeper(TestCase):
         # given
         target = self.make_target(
             self.make_char_config(should_equip_ring=False))
-        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP)
+        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP, True)
         target.client.equip_amulet.assert_called_once()
         # when
         target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP)
@@ -340,9 +340,9 @@ class TestCharKeeper(TestCase):
         # given
         target = self.make_target(
             self.make_char_config(should_eat_food=False))
-        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP)
+        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP, True, False)
         target.client.equip_amulet.assert_called_once()
-        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP)
+        target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP, False, True)
         target.client.equip_ring.assert_called_once()
         # when
         target.handle_equipment(BASE_SPEED, TOTAL_MANA, TOTAL_HP)

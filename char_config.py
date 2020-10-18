@@ -4,35 +4,57 @@
 # To get the min average heal of your character use:
 # http://www.tibia-stats.com/index.php?akcja=spellDmgCalc
 
+DEMNOK_TOTAL_HP = 1175
+DEMNOK_TOTAL_MANA = 6030
+DEMNOK_BASE_SPEED = 324
+DEMNOK_UTANI_HUR_SPEED = 380
+DEMNOK_UTANI_GRAN_HUR_SPEED = 509
 
-DEMNOK = {
-    'total_hp': 895,
-    'total_mana': 4350,
+
+DEMNOK_DEFAULT = {
+    'total_hp': DEMNOK_TOTAL_HP,
+    'total_mana': DEMNOK_TOTAL_MANA,
+
+    # SPEED CONFIG
     # if speed is below base, then this will be recognized as paralysis
     # and we will increase priority of haste.
-    'base_speed': 284,
+    'base_speed': DEMNOK_BASE_SPEED,
     # will use utani hur whenever speed is below this
-    'hasted_speed': 437,
-    # will heal whenever there is this much hp missing (min exura heal)
-    'heal_at_missing': 100,
-    'downtime_heal_at_missing': 50,
-    # whenever mana levels drop by 'mana_at_missing_hi' it will use mana
-    # potions until there is 'mana_at_missing_lo' missing mana
-    'mana_at_missing_hi': 1600,
-    'mana_at_missing_lo': 1100,
+    'hasted_speed': 4,
+
+    # MANA CONFIG
+    # whenever mana levels drop to 'mana_hi' it will use mana
+    # potions until 'mana_lo'
+    'mana_hi': DEMNOK_TOTAL_MANA - 2000,
+    'mana_lo': DEMNOK_TOTAL_MANA - 1500,
     # critical mana at which we have to use a mana potion, even if missing hp
     # this will make it so that drinking mana potion competes with healing
     'critical_mana': 1500,
+    # will heal whenever there is this much hp missing (min exura heal)
     # Slowly drink mana potions until this much is missing and only do it when
     # hp is at < 'heal_at_missing' and the char is hasted.
     # Tip: Make it 2.5x mana potion regen
-    'downtime_mana_missing': 700,
+    'downtime_mana': DEMNOK_TOTAL_MANA - 920,
+
+    # HP CONFIG
+    # will cast heal *promptly* (250 ms) whenever this much HP is missing.
+    'heal_at_missing': DEMNOK_TOTAL_HP * 0.1,
+    # will cast heal *with a delay* (2.5 s) whenever this much HP is missing.
+    'downtime_heal_at_missing': DEMNOK_TOTAL_HP * 0.025,
+    # The numbers below are used to determine which heal spell to use,
+    # depending on how much HP is missing.
     # average heal of exura
-    'exura_heal': 178,
+    'exura_heal': (168 + 187)/2,
     # average heal of exura gran
-    'exura_gran_heal': 433,
+    'exura_gran_heal': (333 + 437)/2,
     # average heal of exura sio
-    'exura_sio_heal': 997
+    'exura_sio_heal': (622 + 989)/2,
+    # it will press the equip amulet key whenever the amulet slot is empty
+    'should_equip_amulet': False,
+    # it will press the equip ring key whenever the ring slot is *empty*
+    'should_equip_ring': False,
+    # it will press the eat food key every 60 seconds
+    'should_eat_food': True
 }
 
 ULTIMATE = {
