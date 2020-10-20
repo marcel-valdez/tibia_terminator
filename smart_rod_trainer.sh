@@ -247,15 +247,37 @@ function use_exercise_rod() {
   fi
 }
 
+function is_logged_out {
+  ! ./tibia_reconnector.py --check_if_ingame "${tibia_pid}"
+}
+
+function login {
+ ./tibia_reconnector.py --login \
+    --credentials_profile "${credentials_profile}" \
+    "${tibia_pid}"
+
+  if [[ $? -ne 0 ]]; then
+    echo "Failed log back into the game." >&2
+    echo "Smart rod trainer is quitting." >&2
+    exit 1
+  fi
+}
+
 function train() {
   local tibia_window=$(get_tibia_window_id)
   while true; do
+    if is_logged_out; then
+      login
+    fi
     sleep "0.$(random 210 550)s"
     consume_mana_for_runes "${tibia_window}"
     equip_regen_ring "${tibia_window}"
     equip_soft_boots "${tibia_window}"
     eat_food "${tibia_window}"
     use_exercise_rod "${tibia_window}"
+    if is_logged_out; then
+      login
+    fi
     wait_for_mana "${tibia_window}"
   done
 }
@@ -264,12 +286,18 @@ refocus_tibia_to_train=
 mana_per_rune=
 max_char_mana=
 max_mana_threshold=
+credentials_profile=
+tibia_pid=
 function parse_args() {
   while [[ $# -gt 0 ]]; do
     arg=$1
     case ${arg} in
     --tibia-pid)
       tibia_pid=$2
+      shift
+      ;;
+    --credentials-profile)
+      credentials_profile=$2
       shift
       ;;
     --mana-per-rune)
