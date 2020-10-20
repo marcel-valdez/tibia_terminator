@@ -13,7 +13,11 @@ function random() {
 }
 
 function get_tibia_window_id() {
-  echo $(xdotool search --class Tibia)
+  if [[ ! -z ${tibia_pid} ]]; then
+    echo $(xdotool search --pid ${tibia_pid})
+  else
+    echo $(xdotool search --class Tibia)
+  fi
 }
 
 function focus_window() {
@@ -22,18 +26,30 @@ function focus_window() {
 }
 
 function get_mana() {
-  eval "$(sudo ./char_reader.py)"
+  if [[ ! -z ${tibia_pid} ]]; then
+    eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
+  else
+    eval "$(sudo ./char_reader.py)"
+  fi
   echo "${MANA}"
 }
 
 function get_soul_pts() {
-  eval "$(sudo ./char_reader.py)"
+  if [[ ! -z ${tibia_pid} ]]; then
+    eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
+  else
+    eval "$(sudo ./char_reader.py)"
+  fi
   echo "${SOUL_POINTS}"
 }
 
 function is_out_of_souls_or_max_mana() {
+  if [[ ! -z ${tibia_pid} ]]; then
+    eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
+  else
     eval "$(sudo ./char_reader.py)"
-    [[ ${MANA} -gt ${max_mana_threshold} ]] || [[ ${SOUL_POINTS} -lt 6 ]]
+  fi
+  [[ ${MANA} -gt ${max_mana_threshold} ]] || [[ ${SOUL_POINTS} -lt 6 ]]
 }
 
 function send_keystroke() {
@@ -66,7 +82,11 @@ function equip_regen_ring() {
     return 1
   fi
 
-  eval "$(sudo ./char_reader.py)"
+  if [[ ! -z ${tibia_pid} ]]; then
+    eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
+  else
+    eval "$(sudo ./char_reader.py)"
+  fi
   if [[ ${SOUL_POINTS} -le 10 ]]; then
     echo '-------------------'
     echo 'Equipping life ring'
@@ -248,6 +268,10 @@ function parse_args() {
   while [[ $# -gt 0 ]]; do
     arg=$1
     case ${arg} in
+    --tibia-pid)
+      tibia_pid=$2
+      shift
+      ;;
     --mana-per-rune)
       mana_per_rune=$2
       shift
