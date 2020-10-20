@@ -26,24 +26,29 @@ def focus_tibia(wid):
 
 def get_pixel_color_slow(tibia_wid, x, y):
     """Get color of a pixel very slowly, only use for runemaking."""
-    tmp_filepath = "/tmp/%s.snapshot.png" % random.randint(0, 9999999)
-    subprocess.check_output(
+    snapshot_proc = subprocess.Popen(
         [
             "/usr/bin/import",
             "-window", str(tibia_wid),
             "-crop", "1x1+%s+%s" % (x, y),
-            "+repage",
-            tmp_filepath
+            "-depth", "8",
+            "rgba:-",
         ],
-        stderr=subprocess.STDOUT
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
     )
-    image = PIL.Image.open(tmp_filepath)
+    stdout, stderr = snapshot_proc.communicate()
+    if snapshot_proc.returncode != 0:
+        print("Unable to fetch window snapshot")
+        print(stderr)
+
+    rgb_image = PIL.Image.frombytes("RGB", (1, 1), stdout, "raw")
     try:
-        rgb_image = image.convert('RGB')
-        r, g, b = rgb_image.getpixel((0, 0))
+        color = PIL.ImageStat.Stat(rgb_image).mean
+        r, g, b = int(color[0]), int(color[1]), int(color[2])
         return "%s%s%s" % (hex(r)[2:], hex(g)[2:], hex(b)[2:])
     finally:
-        image.close()
+        rgb_image.close()
 
 
 def send_key(tibia_wid, key):
