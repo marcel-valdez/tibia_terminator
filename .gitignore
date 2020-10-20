@@ -1,3 +1,5 @@
 *.pyc
 *.bak
 \#*\#
+credentials.py
+.tibia_reconnector.lock
