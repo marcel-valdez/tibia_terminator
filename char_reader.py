@@ -155,8 +155,10 @@ def main(pid,
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    main(args.pid or MEM_CONFIG['pid'],
-         args.mana_address or MEM_CONFIG['mana_memory_address'],
-         args.hp_address or MEM_CONFIG['hp_memory_address'],
-         args.speed_address or MEM_CONFIG['speed_memory_address'],
-         args.soul_points_address or MEM_CONFIG['soul_points_memory_address'])
+    pid = args.pid or MEM_CONFIG['default_pid']
+    mem_config = MEM_CONFIG[str(pid)]
+    main(pid,
+         args.mana_address or mem_config['mana_memory_address'],
+         args.hp_address or mem_config['hp_memory_address'],
+         args.speed_address or mem_config['speed_memory_address'],
+         args.soul_points_address or mem_config['soul_points_memory_address'])

@@ -45,6 +45,7 @@ class TibiaTerminator:
                  char_keeper,
                  char_reader,
                  equipment_reader,
+                 mem_config,
                  enable_mana=True,
                  enable_hp=True,
                  enable_speed=True,
@@ -52,6 +53,7 @@ class TibiaTerminator:
         self.tibia_wid = tibia_wid
         self.char_keeper = char_keeper
         self.char_reader = char_reader
+        self.mem_config = mem_config
         self.equipment_reader = equipment_reader
         self.enable_speed = enable_speed
         self.enable_mana = enable_mana
@@ -64,9 +66,9 @@ class TibiaTerminator:
         # only challenge is that they're likely to change with every Tibia
         # update.
         # We should consider using OCR instead of reading the mana address.
-        mana_address = int(MEM_CONFIG['mana_memory_address'], 16)
+        mana_address = int(self.mem_config['mana_memory_address'], 16)
         hp_address = mana_address - 8
-        speed_address = int(MEM_CONFIG['speed_memory_address'], 16)
+        speed_address = int(self.mem_config['speed_memory_address'], 16)
         if self.enable_mana:
             self.char_reader.init_mana_address(mana_address)
         if self.enable_hp:
@@ -162,7 +164,8 @@ def main(pid, enable_mana, enable_hp, enable_speed, only_monitor):
     if pid is None or pid == "":
         raise Exception("PID is required, you may use psgrep -a -l bin/Tibia "
                         "to find the process id")
-    tibia_wid = get_tibia_wid()
+    mem_config = MEM_CONFIG[str(pid)]
+    tibia_wid = get_tibia_wid(pid)
     client = ClientInterface(tibia_wid,
                              HOTKEYS_CONFIG,
                              only_monitor=only_monitor)
@@ -174,6 +177,7 @@ def main(pid, enable_mana, enable_hp, enable_speed, only_monitor):
                                        char_keeper,
                                        char_reader,
                                        eq_reader,
+                                       mem_config,
                                        enable_mana=enable_mana,
                                        enable_hp=enable_hp,
                                        enable_speed=enable_speed,
