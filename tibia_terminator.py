@@ -2,10 +2,10 @@
 
 import argparse
 import time
-import subprocess
 
 from multiprocessing import Pool
 
+from window_utils import get_tibia_wid
 from client_interface import ClientInterface
 from memory_reader import MemoryReader
 from char_keeper import CharKeeper
@@ -136,14 +136,6 @@ class TibiaTerminator:
             is_amulet_slot_empty,
             is_ring_slot_empty
         )
-
-
-def get_tibia_wid():
-    wid = subprocess.check_output(
-        ["/usr/bin/xdotool", "search", "--class", "Tibia"],
-        stderr=subprocess.STDOUT)
-    print_async('tibia wid:' + str(wid))
-    return wid
 
 
 def fprint(fargs):
