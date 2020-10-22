@@ -2,7 +2,7 @@
 # requirements: xdotool
 
 function debug() {
-  [[ ! -z "${DEBUG}" ]] && echo "$@" >&2
+  [[ "${DEBUG}" ]] && echo "$@" >&2
 }
 
 function random() {
@@ -13,7 +13,7 @@ function random() {
 }
 
 function get_tibia_window_id() {
-  if [[ ! -z ${tibia_pid} ]]; then
+  if [[ "${tibia_pid}" ]]; then
     echo $(xdotool search --pid ${tibia_pid})
   else
     echo $(xdotool search --class Tibia)
@@ -26,7 +26,7 @@ function focus_window() {
 }
 
 function get_mana() {
-  if [[ ! -z ${tibia_pid} ]]; then
+  if [[ "${tibia_pid}" ]]; then
     eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
   else
     eval "$(sudo ./char_reader.py)"
@@ -35,7 +35,7 @@ function get_mana() {
 }
 
 function get_soul_pts() {
-  if [[ ! -z ${tibia_pid} ]]; then
+  if [[ "${tibia_pid}" ]]; then
     eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
   else
     eval "$(sudo ./char_reader.py)"
@@ -44,7 +44,7 @@ function get_soul_pts() {
 }
 
 function is_out_of_souls_or_max_mana() {
-  if [[ ! -z ${tibia_pid} ]]; then
+  if [[ "${tibia_pid}" ]]; then
     eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
   else
     eval "$(sudo ./char_reader.py)"
@@ -56,9 +56,9 @@ function send_keystroke() {
   local window="$1"
   local keystroke="$2"
   local min="$3"
-  [[ -z ${min} ]] && min=2
+  [[ -z "${min}" ]] && min=2
   local max="$4"
-  [[ -z ${max} ]] && max=2
+  [[ -z "${max}" ]] && max=2
   local reps=$(random ${min} ${max})
   for i in $(seq 1 ${reps}); do
     local delay="$(random 123 257)"
@@ -82,7 +82,7 @@ function equip_regen_ring() {
     return 1
   fi
 
-  if [[ ! -z ${tibia_pid} ]]; then
+  if [[ "${tibia_pid}" ]]; then
     eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
   else
     eval "$(sudo ./char_reader.py)"
@@ -137,15 +137,15 @@ function eat_food() {
 
 function cast_rune_spell() {
   local window="$1"
-  local min=$2
-  [[ -z ${min} ]] && min=1
-  local max=$3
-  [[ -z ${min} ]] && max=3
+  local min="$2"
+  [[ -z "${min}" ]] && min=1
+  local max="$3"
+  [[ -z "${min}" ]] && max=3
 
   echo '------------------'
   echo 'Calling rune spell'
   echo '------------------'
-  send_keystroke "${window}" 'y' ${min} ${max}
+  send_keystroke "${window}" 'y' "${min}" "${max}"
 }
 
 function make_rune() {
@@ -266,18 +266,20 @@ function login {
 function train() {
   local tibia_window=$(get_tibia_window_id)
   while true; do
-    if is_logged_out; then
-      login
+    if [[ "${credentials_profile}" ]] && is_logged_out; then
+        login
     fi
+
     sleep "0.$(random 210 550)s"
     consume_mana_for_runes "${tibia_window}"
     equip_regen_ring "${tibia_window}"
     equip_soft_boots "${tibia_window}"
     eat_food "${tibia_window}"
     use_exercise_rod "${tibia_window}"
-    if is_logged_out; then
-      login
+    if [[ "${credentials_profile}" ]] && is_logged_out; then
+        login
     fi
+
     wait_for_mana "${tibia_window}"
   done
 }
@@ -330,7 +332,7 @@ function parse_args() {
     exit 1
   fi
 
-  if [[ ! -z "${refocus_tibia_to_train}" ]]; then
+  if [[ "${refocus_tibia_to_train}" ]]; then
     echo "We will refocus the Tibia window to make a rune (and then return focus to the original window)."
   else
     echo "We will not refocus the Tibia window to use the exercise dummy (risky / unpredictable)."
