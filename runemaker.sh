@@ -408,10 +408,8 @@ function login {
 function manasit() {
   local tibia_window=$(get_tibia_window_id)
   while true; do
-    if [[ "${credentials_profile}" ]]; then
-      if is_logged_out; then
-        login
-      fi
+    if [[ "${credentials_profile}" ]] && is_logged_out; then
+      login
     fi
     # get current focused window
     eval "$(xdotool getmouselocation --shell)"
@@ -424,7 +422,7 @@ function manasit() {
     debug "curr_window=${curr_window}"
 
     # focus tibia window
-    if [[ ${refocus_tibia_to_make_rune} ]]; then
+    if [[ "${refocus_tibia_to_make_rune}" ]]; then
       focus_window ${tibia_window}
     fi
 
@@ -438,16 +436,14 @@ function manasit() {
 
     # return to prev window
     sleep "$(random 1 2).$(random 1 9)$(random 1 9)s"
-    if [[ ${refocus_tibia_to_make_rune} ]]; then
+    if [[ "${refocus_tibia_to_make_rune}" ]]; then
       xdotool mousemove --screen ${curr_screen} \
         ${curr_x} ${curr_y}
       focus_window ${curr_window}
     fi
 
-    if [[ "${credentials_profile}" ]]; then
-      if is_logged_out; then
-        login
-      fi
+    if [[ "${credentials_profile}" ]] && is_logged_out; then
+      login
     fi
     # sit until next rune spell with randomization
     wait_for_mana "${tibia_window}"
