@@ -2,7 +2,7 @@
 # requirements: xdotool
 
 function debug() {
-  [[ ! -z "${DEBUG}" ]] && echo "$@" >&2
+  [[ "${DEBUG}" ]] && echo "$@" >&2
 }
 
 function random() {
@@ -64,9 +64,9 @@ function send_keystroke() {
   local tibia_window="$1"
   local keystroke="$2"
   local min="$3"
-  [[ -z ${min} ]] && min=2
+  [[ -z "${min}" ]] && min=2
   local max="$4"
-  [[ -z ${max} ]] && max=2
+  [[ -z "${max}" ]] && max=2
   local reps=$(random ${min} ${max})
   for i in $(seq 1 ${reps}); do
     local delay="$(random 123 257)"
@@ -91,7 +91,7 @@ function get_current_window_id() {
 }
 
 function get_tibia_window_id() {
-  if [[ ! -z ${tibia_pid} ]]; then
+  if [[ "${tibia_pid}" ]]; then
     echo $(xdotool search --pid ${tibia_pid})
   else
     echo $(xdotool search --class Tibia)
@@ -140,7 +140,7 @@ function wait_timer() {
 
 function is_out_of_souls_or_mana() {
     if [[ ${use_char_reader} -eq 1 ]]; then
-      if [[ ! -z ${tibia_pid} ]]; then
+      if [[ "${tibia_pid}" ]]; then
         eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
       else
         eval "$(sudo ./char_reader.py)"
@@ -206,7 +206,7 @@ function drink_mana_potions() {
     sleep "${wait_time}"
 
     # cast rune spell in case we have enough mana to use it again
-    if [[ ! -z "${cast_rune_spell_after_drinking_potion}" ]]; then
+    if [[ "${cast_rune_spell_after_drinking_potion}" ]]; then
       make_rune "${tibia_window}" 1 2
     fi
   done
@@ -216,9 +216,9 @@ function cast_rune_spell() {
   # call the rune spell a random number of times between 2 and 5
   local tibia_window="$1"
   local min=$2
-  [[ -z ${min} ]] && min=2
+  [[ -z "${min}" ]] && min=2
   local max=$3
-  [[ -z ${min} ]] && max=5
+  [[ -z "${min}" ]] && max=5
 
   echo '------------------'
   echo 'Calling rune spell'
@@ -277,7 +277,7 @@ function smart_equip_regen_ring() {
   echo 'Equipping life ring'
   echo '-------------------'
   send_keystroke "${tibia_window}}" 'u' 1
-  if [[ ! -z ${tibia_pid} ]]; then
+  if [[ "${tibia_pid}" ]]; then
     eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
   else
     eval "$(sudo ./char_reader.py)"
@@ -309,7 +309,7 @@ function dumb_equip_regen_ring() {
 
 function equip_regen_ring() {
   local tibia_window="$1"
-  if [[ ! -z "${use_mouse_for_regen_ring}" ]]; then
+  if [[ "${use_mouse_for_regen_ring}" ]]; then
     #hold_regen_ring "${tibia_window}"
     #drop_regen_ring "${tibia_window}"
     drag_drop_ring ${tibia_window}
@@ -352,7 +352,7 @@ function make_rune() {
   local min_wait="$2"
   local max_wait="$3"
   if [[ ${use_char_reader} -eq 1 ]]; then
-    if [[ ! -z ${tibia_pid} ]]; then
+    if [[ "${tibia_pid}" ]]; then
       eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
     else
       eval "$(sudo ./char_reader.py)"
@@ -408,8 +408,10 @@ function login {
 function manasit() {
   local tibia_window=$(get_tibia_window_id)
   while true; do
-    if is_logged_out; then
-      login
+    if [[ "${credentials_profile}" ]]; then
+      if is_logged_out; then
+        login
+      fi
     fi
     # get current focused window
     eval "$(xdotool getmouselocation --shell)"
@@ -442,8 +444,10 @@ function manasit() {
       focus_window ${curr_window}
     fi
 
-    if is_logged_out; then
-      login
+    if [[ "${credentials_profile}" ]]; then
+      if is_logged_out; then
+        login
+      fi
     fi
     # sit until next rune spell with randomization
     wait_for_mana "${tibia_window}"
@@ -555,7 +559,7 @@ max-wait-per turn ${max_wait_per_turn}" >&2
     exit 1
   fi
 
-  if [[ ! -z "${half_mana_potions}" ]]; then
+  if [[ "${half_mana_potions}" ]]; then
     echo "Using half the mana potions"
   fi
 
@@ -580,11 +584,11 @@ max-wait-per turn ${max_wait_per_turn}" >&2
     fi
   fi
 
-  if [[ ! -z "${cast_rune_spell_after_drinking_potion}}" ]]; then
+  if [[ "${cast_rune_spell_after_drinking_potion}}" ]]; then
     echo "We will cast the rune spell right after drinking potions."
   fi
 
-  if [[ ! -z "${refocus_tibia_to_make_rune}" ]]; then
+  if [[ "${refocus_tibia_to_make_rune}" ]]; then
     echo "We will refocus the Tibia window to make a rune (and then return focus to the original window)."
   fi
   echo "Mana per rune spell: ${mana_per_rune}"
@@ -598,7 +602,7 @@ max-wait-per turn ${max_wait_per_turn}" >&2
     echo "Max mana potions per turn: ${max_mana_potions_per_turn}"
   fi
 
-  if [[ ! -z ${use_mouse_for_mana_potion} ]]; then
+  if [[ "${use_mouse_for_mana_potion}" ]]; then
     echo "Using mouse for drinking mana potions"
   fi
 
