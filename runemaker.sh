@@ -409,6 +409,10 @@ function manasit() {
   local tibia_window=$(get_tibia_window_id)
   while true; do
     if [[ "${credentials_profile}" ]] && is_logged_out; then
+      # Sleep 4-6 minutes before attempting to log back in, otherwise we may get
+      # an exceptional disconnection message from which we can't recover (yet)
+      # in the Tibia client.
+      sleep "$(random 240 420)s"
       login
     fi
     # get current focused window
@@ -443,6 +447,7 @@ function manasit() {
     fi
 
     if [[ "${credentials_profile}" ]] && is_logged_out; then
+      sleep "$(random 240 420)s"
       login
     fi
     # sit until next rune spell with randomization
@@ -613,6 +618,9 @@ max-wait-per turn ${max_wait_per_turn}" >&2
 
 function main() {
   parse_args "$@"
+  if [[ "${credentials_profile}" ]] && is_logged_out; then
+    login
+  fi
   manasit
 }
 
