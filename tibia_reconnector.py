@@ -72,30 +72,32 @@ def check_ingame(tibia_pid):
 
 
 def login(tibia_pid, credentials):
-    # 1. Focus tibia window
+    # Focus tibia window
     tibia_wid = get_tibia_wid(tibia_pid)
     focus_tibia(tibia_wid)
-    # 2. Press Escape key
+    # Press Escape key in case the character Menu is displayed.
     send_key(tibia_wid, 'Escape')
-    #   - Pause 0.5 second
     time.sleep(0.5)
-    # 3. Click on the password field (x:973, y:506)
+    # Press Enter key in case we're stuck in an Error screen.
+    send_key(tibia_wid, 'Enter')
+    time.sleep(0.5)
+    # Click on the password field (x:973, y:506)
     left_click(tibia_wid, 973, 506)
     time.sleep(0.1)
-    # 3. Send keypress: End
+    # Send keypress: End
     send_key(tibia_wid, 'End')
     time.sleep(0.1)
-    # 4. Send keypress: Ctrl + Backspace
+    # Send keypress: Ctrl + Backspace
     send_key(tibia_wid, 'Ctrl+Backspace')
     time.sleep(0.1)
-    # 5. Type in password with 250ms between keypress
+    # Type in password with 250ms between keypress
     send_text(tibia_wid, credentials['password'])
     time.sleep(0.1)
-    # 6. Click [Login] button
+    # Click [Login] button
     left_click(tibia_wid, 1040, 610)
     time.sleep(5)
     #   - Focus should be on the 1st char on the list.
-    # 7. Click [OK] in char menu
+    # Click [OK] in char menu
     left_click(tibia_wid, 1216, 725)
     #   - Spin-wait for 30 seconds waiting for character to be in-game
     for i in range(1, 30):

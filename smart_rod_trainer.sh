@@ -267,6 +267,7 @@ function train() {
   local tibia_window=$(get_tibia_window_id)
   while true; do
     if [[ "${credentials_profile}" ]] && is_logged_out; then
+        sleep "$(random 180 300)s"
         login
     fi
 
@@ -277,6 +278,7 @@ function train() {
     eat_food "${tibia_window}"
     use_exercise_rod "${tibia_window}"
     if [[ "${credentials_profile}" ]] && is_logged_out; then
+        sleep "$(random 180 300)s"
         login
     fi
 
