@@ -66,20 +66,35 @@ class IntroScreenReader():
         return self.is_screen(tibia_wid, 'logged_out')
 
 
-def check_ingame(tibia_pid):
+def check_ingame(tibia_wid):
     reader = IntroScreenReader()
-    return not reader.is_logged_out_screen(get_tibia_wid(tibia_pid))
+    return not reader.is_logged_out_screen(tibia_wid)
 
-
-def login(tibia_pid, credentials):
-    # Focus tibia window
-    tibia_wid = get_tibia_wid(tibia_pid)
-    focus_tibia(tibia_wid)
+def close_dialogs(tibia_wid):
     # Press Escape key in case the character Menu is displayed.
     send_key(tibia_wid, 'Escape')
     time.sleep(0.5)
     # Press Enter key in case we're stuck in an Error screen.
     send_key(tibia_wid, 'Enter')
+    time.sleep(0.5)
+    # Press Escape key in case the character Menu is displayed.
+    send_key(tibia_wid, 'Escape')
+    time.sleep(0.5)
+    # Press Enter key in case we're stuck in an Error screen.
+    send_key(tibia_wid, 'Enter')
+    time.sleep(0.5)
+    # Press Escape key in case the character Menu is displayed.
+    send_key(tibia_wid, 'Escape')
+    time.sleep(0.5)
+    # Press Enter key in case we're stuck in an Error screen.
+    send_key(tibia_wid, 'Enter')
+
+
+def login(tibia_wid, credentials):
+    # Focus tibia window
+    focus_tibia(tibia_wid)
+    time.sleep(0.5)
+    close_dialogs(tibia_wid)
     time.sleep(0.5)
     # Click on the password field (x:973, y:506)
     left_click(tibia_wid, 973, 506)
@@ -101,7 +116,7 @@ def login(tibia_pid, credentials):
     left_click(tibia_wid, 1216, 725)
     #   - Spin-wait for 30 seconds waiting for character to be in-game
     for i in range(1, 30):
-        if check_ingame(tibia_pid):
+        if check_ingame(tibia_wid):
             return True
         time.sleep(1)
     # 8a. If after 30 seconds char is not in-game, return False
@@ -128,7 +143,7 @@ def wait_for_lock():
     return False
 
 
-def handle_login(tibia_pid, credentials):
+def handle_login(tibia_wid, credentials):
     if not wait_for_lock():
         print('Unable to acquire reconnector lock, quitting.')
         exit(1)
@@ -136,14 +151,14 @@ def handle_login(tibia_pid, credentials):
         open('.tibia_reconnector.lock', 'a').close()
 
     try:
-        if check_ingame(tibia_pid):
+        if check_ingame(tibia_wid):
             print('A character is already in-game.')
             exit(0)
 
         max_wait_retry_secs = 60 * 32
         wait_retry_secs = 60
         while wait_retry_secs <= max_wait_retry_secs:
-            success = login(tibia_pid, credentials)
+            success = login(tibia_wid, credentials)
             if success:
                 print('Login succeeded.')
                 exit(0)
@@ -157,10 +172,10 @@ def handle_login(tibia_pid, credentials):
         os.remove('./.tibia_reconnector.lock')
 
 
-def handle_check(tibia_pid):
+def handle_check(tibia_wid):
     """Handles the case where the user only wants to check if the character is
     in-game."""
-    if check_ingame(tibia_pid):
+    if check_ingame(tibia_wid):
         exit(0)
     else:
         exit(1)
@@ -168,8 +183,9 @@ def handle_check(tibia_pid):
 
 def main(tibia_pid, credentials_profile, only_check=False, login=False):
     """Main entry point of the program."""
+    tibia_wid = get_tibia_wid(tibia_pid)
     if only_check:
-        handle_check(tibia_pid)
+        handle_check(tibia_wid)
     if login:
         if credentials_profile is None:
             print("We require a profile to login. See credentials.py")
@@ -178,7 +194,7 @@ def main(tibia_pid, credentials_profile, only_check=False, login=False):
         if credentials is None:
             print("Unknown credentials profile " + credentials_profile)
             exit(1)
-        handle_login(tibia_pid, credentials)
+        handle_login(tibia_wid, credentials)
 
 
 if __name__ == '__main__':
