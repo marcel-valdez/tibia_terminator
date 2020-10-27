@@ -75,19 +75,13 @@ def close_dialogs(tibia_wid):
     send_key(tibia_wid, 'Escape')
     time.sleep(0.5)
     # Press Enter key in case we're stuck in an Error screen.
-    send_key(tibia_wid, 'Enter')
+    send_key(tibia_wid, 'Return')
     time.sleep(0.5)
     # Press Escape key in case the character Menu is displayed.
     send_key(tibia_wid, 'Escape')
     time.sleep(0.5)
     # Press Enter key in case we're stuck in an Error screen.
-    send_key(tibia_wid, 'Enter')
-    time.sleep(0.5)
-    # Press Escape key in case the character Menu is displayed.
-    send_key(tibia_wid, 'Escape')
-    time.sleep(0.5)
-    # Press Enter key in case we're stuck in an Error screen.
-    send_key(tibia_wid, 'Enter')
+    send_key(tibia_wid, 'Return')
 
 
 def login(tibia_wid, credentials):
@@ -128,7 +122,7 @@ def wait_for_lock():
         return True
 
     print('Another Tibia account is reconnecting, waiting.')
-    max_wait_retry_secs = 60 * 32
+    max_wait_retry_secs = 60 * 16
     wait_retry_secs = 60
     while wait_retry_secs <= max_wait_retry_secs:
         locked = os.path.exists('.tibia_reconnector.lock')
