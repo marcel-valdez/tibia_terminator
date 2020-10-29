@@ -71,18 +71,24 @@ def check_ingame(tibia_wid):
     return not reader.is_logged_out_screen(tibia_wid)
 
 def close_dialogs(tibia_wid):
-    # Menus are closed by either of these 3 keys.
+    # Menus are closed by either of these 2 keys.
     send_key(tibia_wid, Key.ESCAPE)
-    time.sleep(0.5)
+    time.sleep(2)
     send_key(tibia_wid, Key.ENTER)
-    time.sleep(0.5)
+    time.sleep(2)
+    send_key(tibia_wid, Key.ENTER)
+    time.sleep(2)
+    send_key(tibia_wid, Key.ENTER)
+    time.sleep(2)
     send_key(tibia_wid, Key.ESCAPE)
-    time.sleep(0.5)
+    time.sleep(2)
     send_key(tibia_wid, Key.ENTER)
-    time.sleep(0.5)
-    send_key(tibia_wid, Key.ESCAPE)
-    time.sleep(0.5)
+    time.sleep(2)
     send_key(tibia_wid, Key.ENTER)
+    time.sleep(2)
+    send_key(tibia_wid, Key.ENTER)
+    time.sleep(2)
+
 
 
 def login(tibia_wid, credentials):
