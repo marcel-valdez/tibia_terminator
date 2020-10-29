@@ -7,7 +7,7 @@ import time
 from credentials import CREDENTIALS
 from window_utils import (
     get_tibia_wid, focus_tibia, ScreenReader, send_key, send_text, left_click,
-    get_pixel_color_slow
+    get_pixel_color_slow, Key
 )
 
 parser = argparse.ArgumentParser(
@@ -71,17 +71,18 @@ def check_ingame(tibia_wid):
     return not reader.is_logged_out_screen(tibia_wid)
 
 def close_dialogs(tibia_wid):
-    # Press Escape key in case the character Menu is displayed.
-    send_key(tibia_wid, 'Escape')
+    # Menus are closed by either of these 3 keys.
+    send_key(tibia_wid, Key.ESCAPE)
     time.sleep(0.5)
-    # Press Enter key in case we're stuck in an Error screen.
-    send_key(tibia_wid, 'Return')
+    send_key(tibia_wid, Key.ENTER)
     time.sleep(0.5)
-    # Press Escape key in case the character Menu is displayed.
-    send_key(tibia_wid, 'Escape')
+    send_key(tibia_wid, Key.ESCAPE)
     time.sleep(0.5)
-    # Press Enter key in case we're stuck in an Error screen.
-    send_key(tibia_wid, 'Return')
+    send_key(tibia_wid, Key.ENTER)
+    time.sleep(0.5)
+    send_key(tibia_wid, Key.ESCAPE)
+    time.sleep(0.5)
+    send_key(tibia_wid, Key.ENTER)
 
 
 def login(tibia_wid, credentials):
@@ -93,11 +94,10 @@ def login(tibia_wid, credentials):
     # Click on the password field (x:973, y:506)
     left_click(tibia_wid, 973, 506)
     time.sleep(0.1)
-    # Send keypress: End
-    send_key(tibia_wid, 'End')
+    # Delete the password field contents
+    send_key(tibia_wid, Key.END)
     time.sleep(0.1)
-    # Send keypress: Ctrl + Backspace
-    send_key(tibia_wid, 'Ctrl+Backspace')
+    send_key(tibia_wid, Key.CTRL + '+' + Key.BACKSPACE)
     time.sleep(0.1)
     # Type in password with 250ms between keypress
     send_text(tibia_wid, credentials['password'])

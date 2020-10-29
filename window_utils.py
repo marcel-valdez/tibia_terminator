@@ -6,6 +6,16 @@ import PIL.Image  # python-imaging
 import PIL.ImageStat  # python-imaging
 import random
 from functools import reduce
+from enum import Enum
+
+
+class Key:
+    BACKSPACE = 'BackSpace'
+    SPACE = 'space'
+    ENTER = 'Return'
+    ESCAPE = 'Escape'
+    CTRL = 'Ctrl'
+    END = 'End'
 
 
 def get_tibia_wid(pid):
@@ -52,8 +62,8 @@ def get_pixel_color_slow(tibia_wid, x, y):
 
 
 def send_key(tibia_wid, key):
-    # asynchronously send the keystroke
-    subprocess.check_output(
+    # synchronously send the keystroke
+    output = subprocess.check_output(
         [
             "/usr/bin/xdotool", "key", "--window",
             str(tibia_wid),
@@ -62,9 +72,12 @@ def send_key(tibia_wid, key):
         stderr=subprocess.STDOUT
     )
 
+    if output is not None and output != '':
+        print(output)
+
 
 def send_text(tibia_wid, text):
-    subprocess.check_output(
+    output = subprocess.check_output(
         [
             '/usr/bin/xdotool', 'type', '--window',
             str(tibia_wid),
@@ -75,9 +88,12 @@ def send_text(tibia_wid, text):
         stderr=subprocess.STDOUT
     )
 
+    if output is not None and output != '':
+        print(output)
+
 
 def left_click(tibia_wid, x, y):
-    subprocess.check_output(
+    output = subprocess.check_output(
         [
             '/usr/bin/xdotool', 'mousemove', '--window',
             str(tibia_wid),
@@ -86,7 +102,9 @@ def left_click(tibia_wid, x, y):
         ],
         stderr=subprocess.STDOUT
     )
-    subprocess.check_output(
+    if output is not None and output != '':
+        print(output)
+    output  = subprocess.check_output(
         [
             '/usr/bin/xdotool', 'click', '--window',
             str(tibia_wid),
@@ -96,6 +114,8 @@ def left_click(tibia_wid, x, y):
         ],
         stderr=subprocess.STDOUT
     )
+    if output is not None and output != '':
+        print(output)
 
 
 class ScreenReader():
