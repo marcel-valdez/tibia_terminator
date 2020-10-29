@@ -1,12 +1,26 @@
-"""Utilities to interact with the Tibia Window."""
+"""Utilities to interact with the Tibia Window.
+
+Requires python-xlib, python-imaging and imagemagick
+"""
 
 import subprocess
 import Xlib.display  # python-xlib
 import PIL.Image  # python-imaging
 import PIL.ImageStat  # python-imaging
-import random
-from functools import reduce
-from enum import Enum
+import os
+
+
+def get_debug_level():
+    level = os.environ.get('DEBUG_LEVEL')
+    if level is not None and isinstance(level, str) and level.isdigit():
+        return int(level)
+    else:
+        return -1
+
+
+def debug(msg, debug_level=0):
+    if get_debug_level() >= debug_level:
+        print(msg)
 
 
 class Key:
@@ -20,26 +34,34 @@ class Key:
 
 def get_tibia_wid(pid):
     """Get the Tibia window id belonging to the process with PID."""
+    debug("/usr/bin/xdotool search --pid %s" % (pid))
     wid = subprocess.check_output(
         ["/usr/bin/xdotool", "search", "--pid", str(pid)],
         stderr=subprocess.STDOUT)
+    debug(wid)
     return wid.strip()
 
 
 def focus_tibia(wid):
     """Bring the tibia window to the front by focusing it."""
+    debug("/usr/bin/xdotool windowactivate --sync %s" % (wid))
     wid = subprocess.check_output(
         ["/usr/bin/xdotool", "windowactivate", "--sync", str(wid)],
         stderr=subprocess.STDOUT)
+    debug(wid)
     return wid
 
 
-def get_pixel_color_slow(tibia_wid, x, y):
-    """Get color of a pixel very slowly, only use for runemaking."""
-    snapshot_proc = subprocess.Popen(
+def rgb_color_to_hex_str(rgb_color):
+    r, g, b = int(rgb_color[0]), int(rgb_color[1]), int(rgb_color[2])
+    return "%s%s%s" % (hex(r)[2:], hex(g)[2:], hex(b)[2:])
+
+
+def get_pixel_rgb_bytes_imagemagick(wid, x, y):
+    pixel_snapshot_proc = subprocess.Popen(
         [
             "/usr/bin/import",
-            "-window", str(tibia_wid),
+            "-window", str(wid),
             "-crop", "1x1+%s+%s" % (x, y),
             "-depth", "8",
             "rgba:-",
@@ -47,26 +69,33 @@ def get_pixel_color_slow(tibia_wid, x, y):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
-    stdout, stderr = snapshot_proc.communicate()
-    if snapshot_proc.returncode != 0:
-        print("Unable to fetch window snapshot")
-        print(stderr)
+    pixel_rgb_bytes, stderr = pixel_snapshot_proc.communicate()
+    if pixel_snapshot_proc.returncode != 0:
+        print(str(stderr) + "\nUnable to fetch window snapshot.")
+        raise
 
-    rgb_image = PIL.Image.frombytes("RGB", (1, 1), stdout, "raw")
+    return pixel_rgb_bytes
+
+
+def get_pixel_color_slow(wid, x, y):
+    """Get color of a pixel very slowly, only use for runemaking."""
+    pixel_rgb_bytes = get_pixel_rgb_bytes_imagemagick(wid, x, y)
+    pixel_rgb_image = \
+        PIL.Image.frombytes("RGB", (1, 1), pixel_rgb_bytes, "raw")
     try:
-        color = PIL.ImageStat.Stat(rgb_image).mean
-        r, g, b = int(color[0]), int(color[1]), int(color[2])
-        return "%s%s%s" % (hex(r)[2:], hex(g)[2:], hex(b)[2:])
+        pixel_rgb_color = PIL.ImageStat.Stat(pixel_rgb_image).mean
+        return rgb_color_to_hex_str(pixel_rgb_color)
     finally:
-        rgb_image.close()
+        pixel_rgb_image.close()
 
 
-def send_key(tibia_wid, key):
+def send_key(wid, key):
     # synchronously send the keystroke
+    debug("/usr/bin/xdotool key --window %s %s" % (wid, key))
     output = subprocess.check_output(
         [
             "/usr/bin/xdotool", "key", "--window",
-            str(tibia_wid),
+            str(wid),
             str(key)
         ],
         stderr=subprocess.STDOUT
@@ -76,11 +105,12 @@ def send_key(tibia_wid, key):
         print(output)
 
 
-def send_text(tibia_wid, text):
+def send_text(wid, text):
+    debug("/usr/bin/xdotool type --window %s --delay 50 <text>" % (wid))
     output = subprocess.check_output(
         [
             '/usr/bin/xdotool', 'type', '--window',
-            str(tibia_wid),
+            str(wid),
             '--delay',
             '50',
             text
@@ -92,11 +122,12 @@ def send_text(tibia_wid, text):
         print(output)
 
 
-def left_click(tibia_wid, x, y):
+def left_click(wid, x, y):
+    debug("/usr/bin/xdotool mousemove --window %s --sync %s %s" % (wid, x, y))
     output = subprocess.check_output(
         [
             '/usr/bin/xdotool', 'mousemove', '--window',
-            str(tibia_wid),
+            str(wid),
             '--sync',
             str(x), str(y)
         ],
@@ -104,10 +135,11 @@ def left_click(tibia_wid, x, y):
     )
     if output is not None and output != '':
         print(output)
-    output  = subprocess.check_output(
+    debug("/usr/bin/xdotool click --window %s --delay 50 1" % (wid))
+    output = subprocess.check_output(
         [
             '/usr/bin/xdotool', 'click', '--window',
-            str(tibia_wid),
+            str(wid),
             '--delay',
             '50',
             '1'
@@ -137,13 +169,14 @@ class ScreenReader():
         self.display.close()
         self.display = None
 
-    # use this to get the color profile of a given amulet (or empty)
+    def get_pixel_rgb_bytes_xlib(self, x, y):
+        return self.screen.root.get_image(
+            x, y, 1, 1, Xlib.X.ZPixmap, 0xffffffff)
+
     def get_pixel_color(self, x, y):
         """TODO."""
-        raw_screen_pixels = self.screen.root.get_image(
-            x, y, 1, 1, Xlib.X.ZPixmap, 0xffffffff)
-        rgb_screen_pixels = PIL.Image.frombytes(
-            "RGB", (1, 1), raw_screen_pixels.data, "raw", "BGRX")
-        rgb_pixel_color = PIL.ImageStat.Stat(rgb_screen_pixels).mean
-        return reduce(lambda a, b: a[1:] + b[2:],
-                      map(hex, map(int, rgb_pixel_color)))
+        pixel_rgb_bytes = self.get_pixel_rgb_bytes_xlib(x, y)
+        pixel_rgb_image = PIL.Image.frombytes(
+            "RGB", (1, 1), pixel_rgb_bytes.data, "raw", "BGRX")
+        pixel_rgb_color = PIL.ImageStat.Stat(pixel_rgb_image).mean
+        return rgb_color_to_hex_str(pixel_rgb_color)
