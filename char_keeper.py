@@ -2,6 +2,7 @@
 
 from char_status import CharStatus
 from equipment_keeper import EquipmentKeeper
+from equipment_reader import MagicShieldStatus
 from hp_keeper import HpKeeper
 from magic_shield_keeper import MagicShieldKeeper
 from mana_keeper import ManaKeeper
@@ -62,28 +63,27 @@ class CharKeeper:
             self.equipment_keeper = equipment_keeper
 
     def init_magic_shield_keeper(self, client, char_config, magic_shield_keeper=None):
-        if char_config.get('should_cast_magic_shield', False):
+        if not char_config.get('should_cast_magic_shield', False):
             self.magic_shield_keeper = NoopKeeper()
         elif magic_shield_keeper is None:
-            self.magic_shield_keeper = MagicShieldKeeper(client)
+            self.magic_shield_keeper = MagicShieldKeeper(
+                client, char_config['total_hp'],
+                char_config['magic_shield_treshold'])
         else:
             self.magic_shield_keeper = magic_shield_keeper
 
-    def handle_hp_change(self, hp, speed, mana):
-        is_downtime = self.speed_keeper.is_hasted(speed) and \
-            self.mana_keeper.is_healthy_mana(mana)
+    def handle_hp_change(self, char_status):
+        is_downtime = self.speed_keeper.is_hasted(char_status.speed) and \
+            self.mana_keeper.is_healthy_mana(char_status.mana)
 
-        self.hp_keeper.handle_status_change(
-            CharStatus(hp, speed, mana),
-            is_downtime)
+        self.hp_keeper.handle_status_change(char_status, is_downtime)
 
-    def handle_mana_change(self, hp, speed, mana):
-        char_status = CharStatus(hp, speed, mana)
+    def handle_mana_change(self, char_status):
         if self.should_skip_drinking_mana(char_status):
             return False
 
-        is_downtime = self.hp_keeper.is_healthy_hp(hp) and \
-            self.speed_keeper.is_hasted(speed)
+        is_downtime = self.hp_keeper.is_healthy_hp(char_status.hp) and \
+            self.speed_keeper.is_hasted(char_status.speed)
         self.mana_keeper.handle_status_change(char_status, is_downtime)
 
     def should_skip_drinking_mana(self, char_status):
@@ -102,8 +102,7 @@ class CharKeeper:
 
         return False
 
-    def handle_speed_change(self, hp, speed, mana):
-        char_status = CharStatus(hp, speed, mana)
+    def handle_speed_change(self, char_status):
         if self.should_skip_haste(char_status):
             return False
         self.speed_keeper.handle_status_change(char_status)
@@ -121,10 +120,7 @@ class CharKeeper:
         else:
             return False
 
-    def handle_equipment(self, hp, speed, mana, is_amulet_slot_empty=False,
-                         is_ring_slot_empty=False):
-        char_status = CharStatus(
-            hp, speed, mana, is_amulet_slot_empty, is_ring_slot_empty)
+    def handle_equipment(self, char_status):
         self.magic_shield_keeper.handle_status_change(char_status)
         self.equipment_keeper.handle_status_change(char_status)
 

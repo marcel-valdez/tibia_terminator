@@ -48,5 +48,9 @@ DEFAULT = {
     # it will press the equip ring key whenever the ring slot is *empty*
     'should_equip_ring': False,
     # it will press the eat food key every 60 seconds
-    'should_eat_food': True
+    'should_eat_food': True,
+    # it will make sure to keep magic shield ON, whenever available
+    'should_cast_magic_shield': False,
+    # it will refresh magic shield if it is below 90%
+    'magic_shield_treshold': 90
 }

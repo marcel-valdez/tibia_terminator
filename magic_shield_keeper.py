@@ -1,39 +1,65 @@
 """Keeps the magic shield (utamo vita) up."""
 
 import time
+from equipment_reader import MagicShieldStatus
 
-MAGIC_SHIELD_DURATION_SECS = 14
+MAGIC_SHIELD_DURATION_SECS = 60
+MAGIC_SHIELD_CD_SECS = 14
 
 
 class MagicShieldKeeper:
-    def __init__(self, client):
+    def __init__(self, client, total_hp, magic_shield_treshold, time_fn=None):
         self.client = client
+        self.total_hp = total_hp
+        self.magic_shield_treshold = magic_shield_treshold
         self.last_cast_timestamp = 0
         self.cast_counter = 0
+        self.prev_magic_shield_status = MagicShieldStatus.ON_COOLDOWN
+        if time_fn is None:
+            self.time = time.time
+        else:
+            self.time = time_fn
 
     def handle_status_change(self, char_status):
-        if self.should_cast():
+        # WARNING: NOT THREAD SAFE
+        magic_shield_status = char_status.magic_shield_status
+        if self.prev_magic_shield_status is MagicShieldStatus.OFF_COOLDOWN and\
+           magic_shield_status is MagicShieldStatus.RECENTLY_CAST:
+            self.last_cast_timestamp = self.timestamp_secs() - 0.5
+        self.prev_magic_shield_status = magic_shield_status
+
+        if char_status.magic_shield_status is MagicShieldStatus.OFF_COOLDOWN \
+           and self.should_cast(char_status):
             self.cast()
 
-    def should_cast(self):
-        return self.secs_since_cast() >= (MAGIC_SHIELD_DURATION_SECS - 2)
+        if self.should_cast_cancel(char_status):
+            self.cast_cancel()
+
+    def should_cast(self, char_status):
+        # Do not cast magic shield if mana is at less than or equal to 125% HP.
+        # In that case we have better chances casting healing spells.
+        if char_status.mana <= self.total_hp * 1.5:
+            return False
+
+        return (
+            char_status.magic_shield_level <= self.magic_shield_treshold or \
+            self.secs_since_cast() >= MAGIC_SHIELD_DURATION_SECS - 10
+        ) and char_status.mana >= self.total_hp
+
+    def should_cast_cancel(self, char_status):
+        # cancel magic shield  if we have less mana than 125% total HP
+        # and there is more than 21% of magic shield left.
+        return char_status.mana <= self.total_hp * 1.25 and  \
+            char_status.magic_shield_level > 21
 
     def secs_since_cast(self):
         return self.timestamp_secs() - self.last_cast_timestamp
 
     def cast(self):
-        if self.last_cast_timestamp == 0:
-            self.last_cast_timestamp = self.timestamp_secs()
-
-        self.cast_counter += 1
-        if self.cast_counter == 4:
-            self.last_cast_timestamp = self.timestamp_secs()
-            self.cast_counter = 0
-        else:
-            # cast magic shield every 2 seconds 4 times
-            self.last_cast_timestamp += 2
-
         self.client.cast_magic_shield()
 
+    def cast_cancel(self):
+        self.client.cancel_magic_shield()
+
     def timestamp_secs(self):
-        return time.time()
+        return self.time()

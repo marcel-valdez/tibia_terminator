@@ -130,3 +130,8 @@ class ClientInterface:
         debug('cast_magic_shield' + str(throttle_ms), 2)
         self.send_keystroke_async('utility_spell', throttle_ms,
             self.hotkeys_config['magic_shield'])
+
+    def cancel_magic_shield(self, throttle_ms=250):
+        debug('cancel_magic_shield' + str(throttle_ms), 2)
+        self.send_keystroke_async('utility_spell', throttle_ms,
+            self.hotkeys_config['cancel_magic_shield'])
