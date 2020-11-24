@@ -51,6 +51,6 @@ DEFAULT = {
     'should_eat_food': True,
     # it will make sure to keep magic shield ON, whenever available
     'should_cast_magic_shield': False,
-    # it will refresh magic shield if it is below 90%
-    'magic_shield_treshold': 90
+    # it will refresh magic shield if it is below 1000 points
+    'magic_shield_treshold': 1000
 }

@@ -68,7 +68,7 @@ class CharReader():
                     self.hp_address, 4)
             if self.magic_shield_address is not None:
                 stats['magic_shield'] = self.memory_reader.read_address(
-                    self.magic_shield_address, 4)
+                    self.magic_shield_address, 2)
             if self.speed_address is not None:
                 stats['speed'] = self.memory_reader.read_address(
                     self.speed_address, 2)
@@ -118,12 +118,9 @@ class CharReader():
         if override_value is not None:
             self.magic_shield_address = override_value
         elif self.magic_shield_address is None:
-            if self.mana_address is None:
-                self.init_mana_address()
-                self.magic_shield_address = self.mana_address + 8
-                self.mana_address = None
-            else:
-                self.magic_shield_address = self.mana_address + 8
+            # TODO: Implement automated mechanism
+            raise Exception("Could not find the magic shield memory address. "
+                            "The hardcoded offset is stale.")
 
         if self.verbose:
             print("Magic shield memory address is - {} ({})".format(
@@ -167,7 +164,6 @@ def main(pid,
     if mana_address is not None:
         reader.init_mana_address(int(mana_address, 16))
         reader.init_hp_address()
-        reader.init_magic_shield_address()
     if hp_address is not None:
         reader.init_hp_address(int(hp_address, 16))
     if speed_address is not None:
