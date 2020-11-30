@@ -196,10 +196,11 @@ function click_dummy() {
   local SCREEN=0
   local tibia_window=$1
   # x:941 y:257
-  local minX=931
-  local maxX=951
-  local minY=247
-  local maxY=267
+  # x:846 y:213 (mitigera)
+  local minX=842
+  local maxX=850
+  local minY=209
+  local maxY=217
   local X=$(random ${minX} ${maxX})
   local Y=$(random ${minY} ${maxY})
 
