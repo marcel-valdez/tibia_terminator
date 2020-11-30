@@ -34,9 +34,9 @@ parser.add_argument(
 
 SCREEN_SPECS = {
     "logged_out": [
-        "f59afa",
-        "fbe422",
-        "ce4ff6",
+        "6b5e6f",
+        "59343c",
+        "57453b",
         "41e8fb"
     ]
 }
