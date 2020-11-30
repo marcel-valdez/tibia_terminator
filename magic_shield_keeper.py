@@ -31,8 +31,7 @@ class MagicShieldKeeper:
         if char_status.magic_shield_status is MagicShieldStatus.OFF_COOLDOWN \
            and self.should_cast(char_status):
             self.cast()
-
-        if self.should_cast_cancel(char_status):
+        elif self.should_cast_cancel(char_status):
             self.cast_cancel()
 
     def should_cast(self, char_status):
@@ -47,10 +46,11 @@ class MagicShieldKeeper:
         ) and char_status.mana >= self.total_hp
 
     def should_cast_cancel(self, char_status):
-        # cancel magic shield  if we have less mana than 125% total HP
-        # and there is more than 21% of magic shield left.
+        # cancel magic shield if we have less mana than 125% total HP
+        # and there is more than half the current mana points left in the
+        # shield.
         return char_status.mana <= self.total_hp * 1.25 and  \
-            char_status.magic_shield_level > 21
+            char_status.magic_shield_level > char_status.mana / 2
 
     def secs_since_cast(self):
         return self.timestamp_secs() - self.last_cast_timestamp

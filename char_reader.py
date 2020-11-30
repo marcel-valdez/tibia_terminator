@@ -43,6 +43,8 @@ parser.add_argument('--magic_shield_address',
                     type=str,
                     default=None)
 parser.add_argument('--pid', help='The PID of Tibia', type=int, default=None)
+parser.add_argument('--verbose', help='Show verbose output.',
+                    action='store_true', default=False)
 
 
 class CharReader():
@@ -59,7 +61,7 @@ class CharReader():
         self.memory_reader.open()
         try:
             stats = {'mana': 99999, 'hp': 99999,
-                     'speed': 999, 'soul_points': 0, 'magic_shield': 100}
+                     'speed': 999, 'soul_points': 0, 'magic_shield': 9999}
             if self.mana_address is not None:
                 stats['mana'] = self.memory_reader.read_address(
                     self.mana_address, 4)
@@ -102,30 +104,14 @@ class CharReader():
     def init_hp_address(self, override_value=None):
         if override_value is not None:
             self.hp_address = override_value
-        elif self.hp_address is None:
-            if self.mana_address is None:
-                self.init_mana_address()
-                self.hp_address = self.mana_address - 8
-                self.mana_address = None
-            else:
-                self.hp_address = self.mana_address - 8
+        elif self.hp_address is None and self.mana_address is not None:
+            self.hp_address = self.mana_address - 8
+        else:
+            raise Exception("No mana address value provided.")
 
         if self.verbose:
             print("HP memory address is - {} ({})".format(
                   str(self.hp_address), hex(self.hp_address)))
-
-    def init_magic_shield_address(self, override_value=None):
-        if override_value is not None:
-            self.magic_shield_address = override_value
-        elif self.magic_shield_address is None:
-            # TODO: Implement automated mechanism
-            raise Exception("Could not find the magic shield memory address. "
-                            "The hardcoded offset is stale.")
-
-        if self.verbose:
-            print("Magic shield memory address is - {} ({})".format(
-                  str(self.magic_shield_address),
-                  hex(self.magic_shield_address)))
 
     def init_speed_address(self, override_value=None):
         if override_value is not None:
@@ -138,6 +124,22 @@ class CharReader():
         if self.verbose:
             print("Speed memory address is - {} ({})".format(
                   str(self.speed_address), hex(self.speed_address)))
+
+
+    def init_magic_shield_address(self, override_value=None):
+        if override_value is not None:
+            self.magic_shield_address = override_value
+        elif self.magic_shield_address is None and \
+             self.speed_address is not None:
+            self.magic_shield_address = self.speed_address + 196
+        else:
+            # TODO: Implement automated mechanism
+            raise Exception("No magic shield memory address provided.")
+
+        if self.verbose:
+            print("Magic shield memory address is - {} ({})".format(
+                  str(self.magic_shield_address),
+                  hex(self.magic_shield_address)))
 
     def init_soul_points_address(self, override_value=None):
         if override_value is not None:
@@ -158,9 +160,10 @@ def main(pid,
          hp_address=None,
          magic_shield_address=None,
          speed_address=None,
-         soul_points_address=None):
+         soul_points_address=None,
+         verbose=False):
     memory_reader = MemoryReader(pid)
-    reader = CharReader(memory_reader, verbose=False)
+    reader = CharReader(memory_reader, verbose=verbose)
     if mana_address is not None:
         reader.init_mana_address(int(mana_address, 16))
         reader.init_hp_address()
@@ -168,6 +171,7 @@ def main(pid,
         reader.init_hp_address(int(hp_address, 16))
     if speed_address is not None:
         reader.init_speed_address(int(speed_address, 16))
+        reader.init_magic_shield_address()
     if soul_points_address is not None:
         reader.init_soul_points_address(int(soul_points_address, 16))
     if magic_shield_address is not None:
@@ -188,4 +192,5 @@ if __name__ == "__main__":
          args.hp_address or config['hp_memory_address'],
          args.magic_shield_address or config['magic_shield_memory_address'],
          args.speed_address or config['speed_memory_address'],
-         args.soul_points_address or config['soul_points_memory_address'])
+         args.soul_points_address or config['soul_points_memory_address'],
+         args.verbose)

@@ -2,8 +2,9 @@
 
 
 class CharStatus:
-    def __init__(self, hp, speed, mana, magic_shield_level, is_amulet_slot_empty=False,
-                 is_ring_slot_empty=False, magic_shield_status=None):
+    def __init__(self, hp, speed, mana, magic_shield_level,
+                 is_amulet_slot_empty=False, is_ring_slot_empty=False,
+                 magic_shield_status=None):
         self.hp = hp
         self.speed = speed
         self.mana = mana

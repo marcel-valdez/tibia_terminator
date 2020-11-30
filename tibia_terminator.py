@@ -72,10 +72,29 @@ class TibiaTerminator:
         # only challenge is that they're likely to change with every Tibia
         # update.
         # We should consider using OCR instead of reading the mana address.
-        mana_address = int(self.mem_config['mana_memory_address'], 16)
-        hp_address = mana_address - 8
-        magic_shield_address = mana_address + 8
-        speed_address = int(self.mem_config['speed_memory_address'], 16)
+
+        if self.enable_mana:
+            mana_address = int(self.mem_config['mana_memory_address'], 16)
+        else:
+            mana_address = None
+
+        if self.enable_hp and self.mem_config['hp_memory_address'] is not None:
+            hp_address = int(self.mem_config['hp_memory_address'], 16)
+        else:
+            hp_address = None
+
+
+        if self.enable_speed:
+            speed_address = int(self.mem_config['speed_memory_address'], 16)
+        else:
+            speed_address = None
+
+        if self.mem_config['magic_shield_memory_address'] is not None:
+            magic_shield_address = int(
+                self.mem_config['magic_shield_memory_address'], 16)
+        else:
+            magic_shield_address = None
+
         if self.enable_mana:
             self.char_reader.init_mana_address(mana_address)
         if self.enable_hp:
@@ -85,7 +104,7 @@ class TibiaTerminator:
         if self.enable_magic_shield:
             self.char_reader.init_magic_shield_address(magic_shield_address)
 
-        prev_stats = {'mana': -1, 'hp': -1, 'speed': -1}
+        prev_stats = {'mana': -1, 'hp': -1, 'speed': -1, 'magic_shield': -1}
         self.equipment_reader.open()
         try:
             while True:
@@ -145,6 +164,11 @@ class TibiaTerminator:
         if speed != prev_speed:
             prev_stats['speed'] = speed
             print_async("Speed: {}".format(str(speed)))
+
+        prev_magic_shield_level = prev_stats['magic_shield']
+        if magic_shield_level != prev_magic_shield_level:
+            prev_stats['magic_shield'] = magic_shield_level
+            print_async("Magic Shield: {}".format(str(magic_shield_level)))
 
         self.char_keeper.handle_equipment(char_status)
 
