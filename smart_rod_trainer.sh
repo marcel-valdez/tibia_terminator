@@ -12,6 +12,10 @@ function random() {
   echo $((min + (RANDOM % (delta + 1))))
 }
 
+function timestamp_secs() {
+  date "+%s"
+}
+
 function get_tibia_window_id() {
   if [[ "${tibia_pid}" ]]; then
     echo $(xdotool search --pid ${tibia_pid})
@@ -105,6 +109,10 @@ function equip_regen_ring() {
   fi
 }
 
+function is_ring_slot_empty() {
+  ./equipment_reader.py --check_slot_empty 'ring'
+}
+
 function equip_soft_boots() {
   local tibia_window="$1"
   if is_out_of_souls_or_max_mana; then
@@ -174,6 +182,7 @@ function consume_mana_for_runes() {
 }
 
 function wait_for_mana() {
+  local tibia_window="$1"
   # Wait until mana is nearly full
   echo
   echo '-------------------------------'
@@ -182,7 +191,29 @@ function wait_for_mana() {
   echo
   local mana=$(get_mana)
   while [[ ${mana} -lt ${max_mana_threshold} ]]; do
+    # Warning: If we run out of life rings, the ring slot will be empty
+    # every time we're under 10 soul points. So we'd end up using the exercise
+    # rod very often and thereby switching windows very often as well.
+    if is_ring_slot_empty; then
+      local secs_since_last_use=$((secs_since_last_rod_use))
+      # only equip regen ring if it has been at least 30 seconds since the last
+      # time we used the exercise rod.
+      if secs_since_last_rod_use -gt 30; then
+        equip_regen_ring "${tibia_window}"
+        # We have to re-use the rod, since equipping the ring will stops the
+        # rod training.
+        use_exercise_rod "${tibia_window}"
+      fi
+    fi
+
+    if [[ "${pending_rod_usage}" ]];  then
+        use_exercise_rod "${tibia_window}"
+    fi
     sleep "3s"
+    if [[ "${credentials_profile}" ]] && is_logged_out; then
+        sleep "$(random 180 300)s"
+        login
+    fi
     local msg="Mana: ${mana}/${max_mana_threshold}  "
     local overwrite=$(printf '\\b%0.s' $(seq 1 ${prev_msg_len}))
     local prev_msg_len=${#msg}
@@ -204,16 +235,33 @@ function click_dummy() {
   local X=$(random ${minX} ${maxX})
   local Y=$(random ${minY} ${maxY})
 
-  local wait_time="0.$(random 250 390)s"
+  local wait_time="0.$(random 100 250)s"
   echo "Pausing ${wait_time}" &
   sleep ${wait_time}
 
   echo "Clicking dummy (${X},${Y})" &
   xdotool mousemove --screen 0 ${X} ${Y}
-  xdotool click --window "${tibia_window}" --delay $(random 125 250) 1
+  xdotool click --window "${tibia_window}" --delay $(random 100 250) 1
+}
+
+last_rod_usage=0
+pending_rod_usage=
+function secs_since_last_rod_use() {
+  local curr_timestamp=$(timestamp_secs)
+  local secs_since_last_use=$((curr_timestamp-last_rod_usage))
+  echo ${secs_since_last_use}
 }
 
 function use_exercise_rod() {
+  local secs_since_last_use=$(secs_since_last_rod_use)
+  if [[ ${secs_since_last_use} -le 30 ]]; then
+    printf "Unable to use exercise rod yet, it has only been " >&2
+    echo "${secs_since_last_use} secs since last use." >&2
+    pending_rod_usage=1
+    return 1
+  else
+    pending_rod_usage=
+  fi
   # get current focused window
   local tibia_window="$1"
   eval "$(xdotool getmouselocation --shell)"
@@ -238,10 +286,11 @@ function use_exercise_rod() {
 
   send_keystroke "${tibia_window}" 'k' 1 1
   click_dummy "${tibia_window}"
+  last_rod_usage=$(timestamp_secs)
 
   # return to prev window
   if [[ ${refocus_tibia_to_train} ]]; then
-    sleep "0.$(random 110 550)s"
+    sleep "0.$(random 100 250)s"
     xdotool mousemove --screen ${curr_screen} \
             ${curr_x} ${curr_y}
     focus_window ${curr_window}
@@ -268,7 +317,6 @@ function train() {
   local tibia_window=$(get_tibia_window_id)
   while true; do
     if [[ "${credentials_profile}" ]] && is_logged_out; then
-        sleep "$(random 180 300)s"
         login
     fi
 
