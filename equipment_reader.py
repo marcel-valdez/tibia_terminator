@@ -1,6 +1,25 @@
-# /usr/bin/env python3
+#!/usr/bin/env python2.7
 
+
+import argparse
+import sys
+import time
 from window_utils import ScreenReader
+
+
+parser = argparse.ArgumentParser(
+    description='Reads equipment status for the Tibia window')
+parser.add_argument('--check_specs',
+                    help='Checks the color specs for the different equipment.',
+                    action='store_true')
+parser.add_argument('--check_slot_empty',
+                    help=('Returns exit code 0 if it is empty, 1 otherwise.\n'
+                          'Options: ring, amulet'),
+                    type=str,
+                    default=None)
+parser.add_argument('--magic_shield_status',
+                    help='Prints the magic shield status.',
+                    action='store_true')
 
 
 class MagicShieldStatus:
@@ -66,14 +85,6 @@ MAGIC_SHIELD_COORDS = [
 
 
 class EquipmentReader(ScreenReader):
-
-    def matches_screen(self, coords, color_spec):
-        pixels = map(lambda (x, y): self.get_pixel_color(x, y), coords)
-        match = True
-        for i in range(0, len(pixels)):
-            match &= pixels[i].lower() == color_spec[i].lower()
-        return match
-
     def is_amulet(self, name):
         return self.matches_screen(AMULET_COORDS, AMULET_SPEC[name])
 
@@ -81,7 +92,7 @@ class EquipmentReader(ScreenReader):
         return self.is_amulet('empty')
 
     def is_ring(self, name):
-      return self.matches_screen(RING_COORDS, RING_SPEC[name])
+        return self.matches_screen(RING_COORDS, RING_SPEC[name])
 
     def is_ring_empty(self):
         return self.is_ring('empty')
@@ -95,8 +106,7 @@ class EquipmentReader(ScreenReader):
         return MagicShieldStatus.ON_COOLDOWN
 
 
-if __name__ == '__main__':
-    import time
+def check_specs():
     eq_reader = EquipmentReader()
     eq_reader.open()
     try:
@@ -129,3 +139,40 @@ if __name__ == '__main__':
         print("Elapsed time: " + str(end_ms - start_ms) + " ms")
     finally:
         eq_reader.close()
+
+def check_slot_empty(slot):
+    eq_reader = EquipmentReader()
+    eq_reader.open()
+    try:
+        if slot == 'ring':
+            return eq_reader.is_ring_empty()
+        elif slot == 'amulet':
+            return eq_reader.is_amulet_empty()
+        else:
+            raise Exception('Unknown slot: {}'.format(slot))
+    finally:
+        eq_reader.close()
+
+def check_magic_shield_status():
+    eq_reader = EquipmentReader()
+    eq_reader.open()
+    try:
+        print(eq_reader.get_magic_shield_status())
+    finally:
+        eq_reader.close()
+
+def main(args):
+    if args.check_specs is True:
+        check_specs()
+
+    if args.check_slot_empty is not None:
+        if check_slot_empty(args.check_slot_empty):
+            sys.exit(0)
+        else:
+            sys.exit(1)
+
+    if args.magic_shield_status:
+        check_magic_shield_status()
+
+if __name__ == '__main__':
+    main(parser.parse_args())
