@@ -3,7 +3,7 @@
 import time
 from equipment_reader import MagicShieldStatus
 
-MAGIC_SHIELD_DURATION_SECS = 60
+MAGIC_SHIELD_DURATION_SECS = 180
 MAGIC_SHIELD_CD_SECS = 14
 
 
