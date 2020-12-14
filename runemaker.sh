@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 # requirements: xdotool
 
+
+EQUIP_RING_ROH_KEY='n'
+EQUIP_RING_LR_KEY='u'
+EAT_FOOD_KEY='h'
+DRINK_POTION_KEY='m'
+CAST_RUNE_SPELL_KEY='y'
+EQUIP_SOFT_BOOTS_KEY='j'
+
 function debug() {
   [[ "${DEBUG}" ]] && echo "$@" >&2
 }
@@ -17,7 +25,7 @@ function random() {
 #   watch -t -n 0.0001 xdotool getmouselocation
 function click_mana_potion() {
   local SCREEN=0
-  local tibia_window=$1
+  local tibia_wid=$1
   local minX=1695
   local maxX=1719
   # with full depot box
@@ -35,11 +43,11 @@ function click_mana_potion() {
 
   echo "Clicking mana potion (${X},${Y})" &
   xdotool mousemove --screen 0 ${X} ${Y}
-  xdotool click --window ${tibia_window} --delay $(random 125 250) 1
+  xdotool click --window ${tibia_wid} --delay $(random 125 250) 1
 }
 
 function click_char() {
-  local tibia_window=$1
+  local tibia_wid=$1
   local X=958
   local Y=372
   local SCREEN=0
@@ -56,12 +64,12 @@ function click_char() {
   sleep ${wait_time}
 
   echo "Clicking char (${X},${Y})" &
-  xdotool mousemove --screen 0 --window ${tibia_window} ${X} ${Y}
-  xdotool click --window ${tibia_window} --delay $(random 125 250) 1
+  xdotool mousemove --screen 0 --window ${tibia_wid} ${X} ${Y}
+  xdotool click --window ${tibia_wid} --delay $(random 125 250) 1
 }
 
 function send_keystroke() {
-  local tibia_window="$1"
+  local tibia_wid="$1"
   local keystroke="$2"
   local min="$3"
   [[ -z "${min}" ]] && min=2
@@ -71,7 +79,7 @@ function send_keystroke() {
   for i in $(seq 1 ${reps}); do
     local delay="$(random 123 257)"
     echo "Sending ${keystroke} with delay 0.${delay}s"
-    xdotool key --delay "${delay}" --window "${tibia_window}" "${keystroke}"
+    xdotool key --delay "${delay}" --window "${tibia_wid}" "${keystroke}"
     local wait_time="0.$(random 110 350)s"
     echo "Pausing ${wait_time}"
     sleep "${wait_time}"
@@ -90,7 +98,7 @@ function get_current_window_id() {
   echo $(xdotool getactivewindow)
 }
 
-function get_tibia_window_id() {
+function get_tibia_wid() {
   if [[ "${tibia_pid}" ]]; then
     echo $(xdotool search --pid ${tibia_pid})
   else
@@ -109,7 +117,7 @@ function timestamp_ms() {
 
 function wait_timer() {
   local wait_time_secs="$1"
-  local tibia_window="$2"
+  local tibia_wid="$2"
   local wait_time_ms=$((wait_time_secs * 1000))
   local start_timestamp_ms=$(timestamp_ms)
   sleep "${wait_time_secs}s" &
@@ -127,8 +135,17 @@ function wait_timer() {
       local overwrite=$(printf '\\b%0.s' $(seq 1 ${prev_msg_len}))
       local prev_msg_len=${#msg}
       printf "${overwrite}${msg}"
+      local elapsed_time_s=$((elapsed_time_ms/1000))
+      # check ring slot every 5 seconds
+      # only enable this if you're not playing the game, because each check
+      # freezes BOTH client's rendering.
+      if [[ ${check_empty_slots} ]] && \
+        [[ $((elapsed_time_s%5)) -eq 0 ]] && \
+        is_ring_slot_empty "${tibia_wid}"; then
+        equip_regen_ring "${tibia_wid}"
+      fi
       if [[ ${use_char_reader} -eq 1 ]]; then
-        make_rune "${tibia_window}"
+        make_rune "${tibia_wid}"
       fi
       sleep "0.250s"
     fi
@@ -156,6 +173,11 @@ function is_out_of_souls_or_mana() {
     [[ ${MANA} -gt ${max_mana_threshold} ]] || [[ ${SOUL_POINTS} -lt 6 ]]
 }
 
+function is_ring_slot_empty() {
+  local tibia_wid="$1"
+  ./equipment_reader.py --check_slot_empty 'ring' "${tibia_wid}"
+}
+
 potions_seq_counter=0
 function get_potion_count() {
   local mana_potions_seq_len=${#mana_potions_seq[@]}
@@ -171,21 +193,21 @@ function get_potion_count() {
 }
 
 function drink_mana_potion() {
-  local tibia_window=$1
+  local tibia_wid=$1
   if is_out_of_souls_or_mana; then
     return 1
   fi
 
   if [[ ${use_mouse_for_mana_potion} ]]; then
-    click_mana_potion ${tibia_window}
-    click_char ${tibia_window}
+    click_mana_potion ${tibia_wid}
+    click_char ${tibia_wid}
   else
-    send_keystroke "${tibia_window}" 'm' 1 1
+    send_keystroke "${tibia_wid}" "${DRINK_POTION_KEY}" 1 1
   fi
 }
 
 function drink_mana_potions() {
-  local tibia_window=$1
+  local tibia_wid=$1
   if is_out_of_souls_or_mana; then
     return 1
   fi
@@ -200,21 +222,21 @@ function drink_mana_potions() {
   echo "Drinking ${potion_count} mana potions"
   echo '-----------------------'
   for i in $(seq 1 ${potion_count}); do
-    drink_mana_potion ${tibia_window}
+    drink_mana_potion ${tibia_wid}
     local wait_time="0.$(random 310 560)s"
     echo "Pausing ${wait_time}"
     sleep "${wait_time}"
 
     # cast rune spell in case we have enough mana to use it again
     if [[ "${cast_rune_spell_after_drinking_potion}" ]]; then
-      make_rune "${tibia_window}" 1 2
+      make_rune "${tibia_wid}" 1 2
     fi
   done
 }
 
 function cast_rune_spell() {
   # call the rune spell a random number of times between 2 and 5
-  local tibia_window="$1"
+  local tibia_wid="$1"
   local min=$2
   [[ -z "${min}" ]] && min=2
   local max=$3
@@ -223,11 +245,11 @@ function cast_rune_spell() {
   echo '------------------'
   echo 'Calling rune spell'
   echo '------------------'
-  send_keystroke "${tibia_window}" 'y' ${min} ${max}
+  send_keystroke "${tibia_wid}" "${CAST_RUNE_SPELL_KEY}" ${min} ${max}
 }
 
 function hold_regen_ring() {
-  local tibia_window=$1
+  local tibia_wid=$1
   local minX=1760
   local maxX=1783
   local minY=487
@@ -241,12 +263,12 @@ function hold_regen_ring() {
   xdotool mousemove --sync --screen 0 ${X} ${Y}
   wait_time="0.$(random 250 390)s"
   sleep ${wait_time}
-  #xdotool keydown --window "${tibia_window}" Pointer_Button1
-  xdotool mousedown --window "${tibia_window}" 1
+  #xdotool keydown --window "${tibia_wid}" Pointer_Button1
+  xdotool mousedown --window "${tibia_wid}" 1
 }
 
 function drop_regen_ring() {
-  local tibia_window=$1
+  local tibia_wid=$1
   local minX=1755
   local maxX=1781
   local minY=323
@@ -263,12 +285,12 @@ function drop_regen_ring() {
   # xdotool mousemove --screen 0 ${X} ${Y}
   wait_time="0.$(random 250 390)s"
   sleep "${wait_time}"
-  xdotool keyup --window "${tibia_window}" Pointer_Button1
-  # xdotool mouseup --window "${tibia_window}" 1
+  xdotool keyup --window "${tibia_wid}" Pointer_Button1
+  # xdotool mouseup --window "${tibia_wid}" 1
 }
 
 function smart_equip_regen_ring() {
-  local tibia_window="$1"
+  local tibia_wid="$1"
   if is_out_of_souls_or_mana; then
     return 1
   fi
@@ -276,7 +298,7 @@ function smart_equip_regen_ring() {
   echo '-------------------'
   echo 'Equipping life ring'
   echo '-------------------'
-  send_keystroke "${tibia_window}}" 'u' 1
+  send_keystroke "${tibia_wid}}" "${EQUIP_RING_LR_KEY}" 1
   if [[ "${tibia_pid}" ]]; then
     eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
   else
@@ -289,41 +311,41 @@ function smart_equip_regen_ring() {
     wait_time="0.$(random 250 390)s"
     sleep "${wait_time}"
     # equip ring of healing
-    send_keystroke "${tibia_window}}" 'n' 1
+    send_keystroke "${tibia_wid}}" "${EQUIP_RING_ROH_KEY}" 1
   fi
 }
 
 function dumb_equip_regen_ring() {
-  local tibia_window="$1"
+  local tibia_wid="$1"
   echo '-------------------'
   echo 'Equipping life ring'
   echo '-------------------'
   # equip life ring
-  send_keystroke "${tibia_window}}" 'u' 1
+  send_keystroke "${tibia_wid}}" "${EQUIP_RING_LR_KEY}" 1
   # small wait to make sure primary gets equipped
   wait_time="0.$(random 250 390)s"
   sleep "${wait_time}"
   # equip ring of healing
-  send_keystroke "${tibia_window}}" 'n' 1
+  send_keystroke "${tibia_wid}}" "${EQUIP_RING_ROH_KEY}" 1
 }
 
 function equip_regen_ring() {
-  local tibia_window="$1"
+  local tibia_wid="$1"
   if [[ "${use_mouse_for_regen_ring}" ]]; then
-    #hold_regen_ring "${tibia_window}"
-    #drop_regen_ring "${tibia_window}"
-    drag_drop_ring ${tibia_window}
+    #hold_regen_ring "${tibia_wid}"
+    #drop_regen_ring "${tibia_wid}"
+    drag_drop_ring ${tibia_wid}
   else
     if [[ ${use_char_reader} -eq 1 ]]; then
-      smart_equip_regen_ring "${tibia_window}"
+      smart_equip_regen_ring "${tibia_wid}"
     else
-      dumb_equip_regen_ring "${tibia_window}"
+      dumb_equip_regen_ring "${tibia_wid}"
     fi
   fi
 }
 
 function equip_soft_boots() {
-  local tibia_window="$1"
+  local tibia_wid="$1"
   if is_out_of_souls_or_mana; then
     return 1
   fi
@@ -331,11 +353,11 @@ function equip_soft_boots() {
   echo '-------------------'
   echo 'Equipping soft boots'
   echo '-------------------'
-  send_keystroke "${tibia_window}}" 'j' 1
+  send_keystroke "${tibia_wid}}" "${EQUIP_SOFT_BOOTS_KEY}" 1
 }
 
 function eat_food() {
-  local tibia_window="$1"
+  local tibia_wid="$1"
   if is_out_of_souls_or_mana; then
     return 1
   fi
@@ -344,11 +366,11 @@ function eat_food() {
   echo '-----------'
   echo 'Eating food'
   echo '-----------'
-  send_keystroke "${tibia_window}" 'h' 0 3
+  send_keystroke "${tibia_wid}" "${EAT_FOOD_KEY}" 0 3
 }
 
 function make_rune() {
-  local tibia_window="$1"
+  local tibia_wid="$1"
   local min_wait="$2"
   local max_wait="$3"
   if [[ ${use_char_reader} -eq 1 ]]; then
@@ -358,15 +380,15 @@ function make_rune() {
       eval "$(sudo ./char_reader.py)"
     fi
     if [[ ${MANA} -gt ${mana_per_rune} ]]; then
-      cast_rune_spell "${tibia_window}" "${min_wait}" "${max_wait}"
+      cast_rune_spell "${tibia_wid}" "${min_wait}" "${max_wait}"
     fi
   else
-    cast_rune_spell "${tibia_window}" "${min_wait}" "${max_wait}"
+    cast_rune_spell "${tibia_wid}" "${min_wait}" "${max_wait}"
   fi
 }
 
 function wait_for_mana() {
-  local tibia_window=$1
+  local tibia_wid=$1
   local total_sit_seconds=$(random ${min_wait_per_turn} ${max_wait_per_turn})
   # only if using mana potions
   echo
@@ -376,16 +398,16 @@ function wait_for_mana() {
   echo
 
   if [[ ${use_char_reader} -eq 1 ]]; then
-    wait_timer "${total_sit_seconds}" "${tibia_window}"
+    wait_timer "${total_sit_seconds}" "${tibia_wid}"
   else
     local third_sit_seconds=$((total_sit_seconds / 3))
-    wait_timer "${third_sit_seconds}" "${tibia_window}"
+    wait_timer "${third_sit_seconds}" "${tibia_wid}"
     # cast rune spell half way through wait to make sure we don't get full mana
     # and waste
-    make_rune "${tibia_window}"
-    wait_timer "${third_sit_seconds}" "${tibia_window}"
-    make_rune "${tibia_window}"
-    wait_timer "${third_sit_seconds}" "${tibia_window}"
+    make_rune "${tibia_wid}"
+    wait_timer "${third_sit_seconds}" "${tibia_wid}"
+    make_rune "${tibia_wid}"
+    wait_timer "${third_sit_seconds}" "${tibia_wid}"
   fi
 }
 
@@ -406,7 +428,7 @@ function login {
 }
 
 function manasit() {
-  local tibia_window=$(get_tibia_window_id)
+  local tibia_wid=$(get_tibia_wid)
   while true; do
     if [[ "${credentials_profile}" ]] && is_logged_out; then
       echo "We were disconnected. We will attempt login after 3-5 minutes."
@@ -428,16 +450,16 @@ function manasit() {
 
     # focus tibia window
     if [[ "${refocus_tibia_to_make_rune}" ]]; then
-      focus_window ${tibia_window}
+      focus_window ${tibia_wid}
     fi
 
     sleep "0.$(random 210 550)s"
 
-    make_rune "${tibia_window}"
-    equip_regen_ring "${tibia_window}"
-    equip_soft_boots "${tibia_window}"
-    drink_mana_potions "${tibia_window}"
-    eat_food "${tibia_window}"
+    make_rune "${tibia_wid}"
+    equip_regen_ring "${tibia_wid}"
+    equip_soft_boots "${tibia_wid}"
+    drink_mana_potions "${tibia_wid}"
+    eat_food "${tibia_wid}"
 
     # return to prev window
     sleep "$(random 1 2).$(random 1 9)$(random 1 9)s"
@@ -453,12 +475,13 @@ function manasit() {
       login
     fi
     # sit until next rune spell with randomization
-    wait_for_mana "${tibia_window}"
+    wait_for_mana "${tibia_wid}"
   done
 }
 
 tibia_pid=
 credentials_profile=
+check_empty_slots=
 mana_per_rune=
 mana_per_sec=5
 half_mana_potions=
@@ -533,6 +556,9 @@ function parse_args() {
     --credentials-profile)
       credentials_profile=$2
       shift
+      ;;
+    --check_empty_slots)
+      check_empty_slots=1
       ;;
     *)
       break

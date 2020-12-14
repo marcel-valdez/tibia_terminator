@@ -8,6 +8,7 @@ import Xlib.display  # python-xlib
 import PIL.Image  # python-imaging
 import PIL.ImageStat  # python-imaging
 import os
+from pprint import pprint
 
 
 def get_debug_level():
@@ -58,21 +59,22 @@ def rgb_color_to_hex_str(rgb_color):
 
 
 def get_pixel_rgb_bytes_imagemagick(wid, x, y):
+    cmd = [
+        "/usr/bin/import",
+        "-window", str(wid),
+        "-crop", "1x1+%s+%s" % (x, y),
+        "-depth", "8",
+        "rgba:-",
+    ]
     pixel_snapshot_proc = subprocess.Popen(
-        [
-            "/usr/bin/import",
-            "-window", str(wid),
-            "-crop", "1x1+%s+%s" % (x, y),
-            "-depth", "8",
-            "rgba:-",
-        ],
+        cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
     pixel_rgb_bytes, stderr = pixel_snapshot_proc.communicate()
     if pixel_snapshot_proc.returncode != 0:
         print(str(stderr) + "\nUnable to fetch window snapshot.")
-        raise
+        raise Exception(str(stderr) + "\nUnable to fetch window snapshot.")
 
     return pixel_rgb_bytes
 
@@ -87,6 +89,13 @@ def get_pixel_color_slow(wid, x, y):
         return rgb_color_to_hex_str(pixel_rgb_color)
     finally:
         pixel_rgb_image.close()
+
+def matches_screen_slow(wid, coords, color_spec):
+    pixels = map(lambda (x, y): get_pixel_color_slow(wid, x, y), coords)
+    match = True
+    for i in range(0, len(pixels)):
+        match &= pixels[i].lower() == color_spec[i].lower()
+    return match
 
 
 def send_key(wid, key):
@@ -153,15 +162,19 @@ def left_click(wid, x, y):
 class ScreenReader():
     """Reads pixels in the screen."""
 
-    def __init__(self):
+    def __init__(self, x_offset=0):
         """TODO."""
         self.screen = None
         self.display = None
+        self.x_offset = x_offset
 
     def open(self):
         """TODO."""
         self.display = Xlib.display.Display()
         self.screen = self.display.screen()
+        # pprint(vars(self.screen))
+        # pprint(vars(self.screen.root))
+        # pprint(dir(self.screen.root))
 
     def close(self):
         """TODO."""
@@ -171,7 +184,7 @@ class ScreenReader():
 
     def get_pixel_rgb_bytes_xlib(self, x, y):
         return self.screen.root.get_image(
-            x, y, 1, 1, Xlib.X.ZPixmap, 0xffffffff)
+            x + self.x_offset, y, 1, 1, Xlib.X.ZPixmap, 0xffffffff)
 
     def get_pixel_color(self, x, y):
         """TODO."""

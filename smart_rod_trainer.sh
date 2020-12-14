@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 # requirements: xdotool
 
+EQUIP_RING_ROH_KEY='n'
+EQUIP_RING_LR_KEY='u'
+EAT_FOOD_KEY='h'
+DRINK_POTION_KEY='m'
+CAST_RUNE_SPELL_KEY='y'
+EQUIP_SOFT_BOOTS_KEY='j'
+USE_EXERCISE_ROD_KEY='k'
+
+
 function debug() {
   [[ "${DEBUG}" ]] && echo "$@" >&2
 }
@@ -97,7 +106,7 @@ function equip_regen_ring() {
     echo '-------------------'
   fi
 
-  send_keystroke "${tibia_window}}" 'u' 1
+  send_keystroke "${tibia_window}}" "${EQUIP_RING_LR_KEY}" 1
   if [[ ${SOUL_POINTS} -gt 10 ]]; then
     echo '-------------------------'
     echo 'Equipping ring of healing'
@@ -105,12 +114,13 @@ function equip_regen_ring() {
     local wait_time="0.$(random 250 390)s"
     sleep "${wait_time}"
     # equip ring of healing
-    send_keystroke "${tibia_window}}" 'n' 1
+    send_keystroke "${tibia_window}}" "${EQUIP_RING_ROH_KEY}" 1
   fi
 }
 
 function is_ring_slot_empty() {
-  ./equipment_reader.py --check_slot_empty 'ring'
+  local tibia_window="$1"
+  ./equipment_reader.py --check_slot_empty 'ring' "${tibia_window}"
 }
 
 function equip_soft_boots() {
@@ -122,7 +132,7 @@ function equip_soft_boots() {
   echo '-------------------'
   echo 'Equipping soft boots'
   echo '-------------------'
-  send_keystroke "${tibia_window}}" 'j' 1
+  send_keystroke "${tibia_window}}" "${EQUIP_SOFT_BOOTS_KEY}" 1
 }
 
 function eat_food() {
@@ -134,13 +144,13 @@ function eat_food() {
   echo '-----------'
   echo 'Eating food'
   echo '-----------'
-  send_keystroke "${tibia_window}" 'h' 1 1
+  send_keystroke "${tibia_window}" "${EAT_FOOD_KEY}" 1 1
   sleep "1s"
-  send_keystroke "${tibia_window}" 'h' 1 1
+  send_keystroke "${tibia_window}" "${EAT_FOOD_KEY}" 1 1
   sleep "1s"
-  send_keystroke "${tibia_window}" 'h' 1 1
+  send_keystroke "${tibia_window}" "${EAT_FOOD_KEY}" 1 1
   sleep "1s"
-  send_keystroke "${tibia_window}" 'h' 1 1
+  send_keystroke "${tibia_window}" "${EAT_FOOD_KEY}" 1 1
 }
 
 function cast_rune_spell() {
@@ -153,7 +163,7 @@ function cast_rune_spell() {
   echo '------------------'
   echo 'Calling rune spell'
   echo '------------------'
-  send_keystroke "${window}" 'y' "${min}" "${max}"
+  send_keystroke "${window}" "${CAST_RUNE_SPELL_KEY}" "${min}" "${max}"
 }
 
 function make_rune() {
@@ -194,7 +204,7 @@ function wait_for_mana() {
     # Warning: If we run out of life rings, the ring slot will be empty
     # every time we're under 10 soul points. So we'd end up using the exercise
     # rod very often and thereby switching windows very often as well.
-    if is_ring_slot_empty; then
+    if is_ring_slot_empty "${tibia_window}"; then
       local secs_since_last_use=$((secs_since_last_rod_use))
       # only equip regen ring if it has been at least 30 seconds since the last
       # time we used the exercise rod.
@@ -284,7 +294,7 @@ function use_exercise_rod() {
     focus_window ${tibia_window}
   fi
 
-  send_keystroke "${tibia_window}" 'k' 1 1
+  send_keystroke "${tibia_window}" "${USE_EXERCISE_ROD_KEY}" 1 1
   click_dummy "${tibia_window}"
   last_rod_usage=$(timestamp_secs)
 
