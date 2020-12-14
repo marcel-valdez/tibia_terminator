@@ -30,7 +30,14 @@ parser.add_argument(
     help='Logs in the first character in the list.',
     action='store_true'
 )
+parser.add_argument(
+  '--debug_level',
+  help='Verbosity level of debug message. (Default: 0)',
+  type=int,
+  default=0
+)
 
+DEBUG_LEVEL=0
 
 SCREEN_SPECS = {
     "logged_out": [
@@ -49,6 +56,11 @@ SCREEN_COORDS = [
 ]
 
 
+def debug(msg, debug_level=0):
+    if DEBUG_LEVEL >= debug_level:
+        print(msg)
+
+
 class IntroScreenReader():
     def is_screen(self, tibia_wid, name):
         pixels = map(
@@ -57,8 +69,8 @@ class IntroScreenReader():
         )
         for i in range(0, 3):
             if pixels[i] != SCREEN_SPECS[name][i]:
-                print('%s (%s) is not equal to %s' %
-                      (pixels[i], i, SCREEN_SPECS[name][i]))
+                debug('%s (%s) is not equal to %s' %
+                      (pixels[i], i, SCREEN_SPECS[name][i]), 1)
                 return False
         return True
 
@@ -152,7 +164,7 @@ def handle_login(tibia_wid, credentials):
 
     try:
         if check_ingame(tibia_wid):
-            print('A character is already in-game.')
+            print('The character is already in-game.')
             exit(0)
 
         max_wait_retry_secs = 60 * 32
@@ -199,4 +211,5 @@ def main(tibia_pid, credentials_profile, only_check=False, login=False):
 
 if __name__ == '__main__':
     args = parser.parse_args()
+    DEBUG_LEVEL=args.debug_level
     main(args.pid, args.credentials_profile, args.check_if_ingame, args.login)
