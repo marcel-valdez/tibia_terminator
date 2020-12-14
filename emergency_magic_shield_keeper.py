@@ -4,13 +4,14 @@ import time
 from equipment_reader import MagicShieldStatus
 
 MAGIC_SHIELD_DURATION_SECS = 180
-MAGIC_SHIELD_CD_SECS = 14
 
 
-class MagicShieldKeeper:
-    def __init__(self, client, total_hp, magic_shield_treshold, time_fn=None):
+class EmergencyMagicShieldKeeper:
+    def __init__(self, client, total_hp, mana_lo, magic_shield_treshold,
+                 time_fn=None):
         self.client = client
         self.total_hp = total_hp
+        self.mana_lo = mana_lo
         self.magic_shield_treshold = magic_shield_treshold
         self.last_cast_timestamp = 0
         self.cast_counter = 0
@@ -35,22 +36,21 @@ class MagicShieldKeeper:
             self.cast_cancel()
 
     def should_cast(self, char_status):
-        # Do not cast magic shield if mana is at less than or equal to 150% HP.
-        # In that case we have better chances casting healing spells.
-        if char_status.mana <= self.total_hp * 1.5:
-            return False
-
-        return (
-            char_status.magic_shield_level <= self.magic_shield_treshold or \
-            self.secs_since_cast() >= MAGIC_SHIELD_DURATION_SECS - 10
-        ) and char_status.mana >= self.total_hp
+        return char_status.hp <= self.total_hp * 0.2
 
     def should_cast_cancel(self, char_status):
-        # cancel magic shield if we have less mana than 125% total HP
-        # and there is more than half the current mana points left in the
-        # shield.
-        return char_status.mana <= self.total_hp * 1.25 and  \
+        is_full_hp = char_status.hp >= self.total_hp
+        is_healthy_mana = char_status.mana > self.mana_lo
+
+        # Cancel magic shield when we're in safety
+        if char_status.magic_shield_level > 1000 and is_full_hp and \
+           is_healthy_mana and self.secs_since_cast() >= 6:
+            return True
+        # Cancel magic shield if we have better chances tanking with HP
+        is_mana_very_low = self.total_hp * 1.25
+        is_magic_shield_too_high = \
             char_status.magic_shield_level > char_status.mana / 2
+        return is_full_hp and is_mana_very_low and is_magic_shield_too_high
 
     def secs_since_cast(self):
         return self.timestamp_secs() - self.last_cast_timestamp

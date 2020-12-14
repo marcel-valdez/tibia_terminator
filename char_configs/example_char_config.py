@@ -49,8 +49,8 @@ DEFAULT = {
     'should_equip_ring': False,
     # it will press the eat food key every 60 seconds
     'should_eat_food': True,
-    # it will make sure to keep magic shield ON, whenever available
-    'should_cast_magic_shield': False,
+    # valid types: None, 'emergency', 'permanent'
+    'magic_shield_type': 'emergency',
     # it will refresh magic shield if it is below 1000 points
     'magic_shield_treshold': 1000
 }

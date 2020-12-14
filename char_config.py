@@ -117,12 +117,15 @@ TEZALOR = {
 
 HOTKEYS_CONFIG = {
     'exura': 'b',
-    # average heal of exura
     'exura_gran': 'g',
-    # average heal of exura sio
     'exura_sio': 't',
     'mana_potion': 'Home',
-    'utani_hur': '4'
+    'utani_hur': '6',
+    'equip_ring': 'F6',
+    'equip_amulet': 'F7',
+    'eat_food': 'F8',
+    'magic_shield': 'F9',
+    'cancel_magic_shield': 'F10'
 }
 
 # Whenever you want to switch characters, you have to specify

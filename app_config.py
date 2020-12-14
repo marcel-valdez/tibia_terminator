@@ -9,7 +9,11 @@ MEM_CONFIG = {
         # The HP memory address can be reliably calculated based on the
         # mana memory address.
         # Not required, since it can be calculated.
-        'hp_memory_address': None  # [I32 I16 ]
+        'hp_memory_address': None,  # [I32 I16 ]
+        # from the addresses that match max to min values of magic shield, the
+        # one that keeps track of current shield points is the one in the middle
+        # that has another address matching +2 positions ahead of it.
+        'magic_shield_memory_address': None  # [I16 ]
     },
     '21921': {
         'mana_memory_address': '44b5670',  # [I32 I16 ]
@@ -18,6 +22,7 @@ MEM_CONFIG = {
         # The HP memory address can be reliably calculated based on the
         # mana memory address.
         # Not required, since it can be calculated.
-        'hp_memory_address': None  # [I32 I16 ]
+        'hp_memory_address': None,  # [I32 I16 ]
+        'magic_shield_memory_address': None
     }
 }

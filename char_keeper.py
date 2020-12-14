@@ -1,10 +1,9 @@
 """Keeps the character healthy in every way."""
 
-from char_status import CharStatus
 from equipment_keeper import EquipmentKeeper
-from equipment_reader import MagicShieldStatus
 from hp_keeper import HpKeeper
 from magic_shield_keeper import MagicShieldKeeper
+from emergency_magic_shield_keeper import EmergencyMagicShieldKeeper
 from mana_keeper import ManaKeeper
 from speed_keeper import SpeedKeeper
 
@@ -62,15 +61,25 @@ class CharKeeper:
         else:
             self.equipment_keeper = equipment_keeper
 
-    def init_magic_shield_keeper(self, client, char_config, magic_shield_keeper=None):
-        if not char_config.get('should_cast_magic_shield', False):
-            self.magic_shield_keeper = NoopKeeper()
-        elif magic_shield_keeper is None:
+    def init_magic_shield_keeper(self, client, char_config,
+                                 magic_shield_keeper=None):
+        magic_shield_type = char_config.get('magic_shield_type', None)
+        if magic_shield_keeper is not None:
+            self.magic_shield_keeper = magic_shield_keeper
+
+        if magic_shield_type == "permanent":
             self.magic_shield_keeper = MagicShieldKeeper(
                 client, char_config['total_hp'],
                 char_config['magic_shield_treshold'])
-        else:
-            self.magic_shield_keeper = magic_shield_keeper
+        elif magic_shield_type == "emergency":
+            self.magic_shield_keeper = EmergencyMagicShieldKeeper(
+                client, char_config['total_hp'], char_config['mana_lo'],
+                char_config['magic_shield_treshold'])
+        elif magic_shield_type is None:
+            self.magic_shield_keeper = NoopKeeper()
+        elif magic_shield_type is not None:
+            raise Exception("Unknown magic shield type " + magic_shield_type)
+
 
     def handle_hp_change(self, char_status):
         is_downtime = self.speed_keeper.is_hasted(char_status.speed) and \
