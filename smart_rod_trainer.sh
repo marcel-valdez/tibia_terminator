@@ -8,6 +8,9 @@ DRINK_POTION_KEY='m'
 CAST_RUNE_SPELL_KEY='y'
 EQUIP_SOFT_BOOTS_KEY='j'
 USE_EXERCISE_ROD_KEY='k'
+EXERCISE_DUMMY_CENTER_X=846
+EXERCISE_DUMMY_CENTER_Y=213
+SCREEN_NO=0
 
 
 function debug() {
@@ -113,7 +116,6 @@ function equip_regen_ring() {
     echo '-------------------------'
     local wait_time="0.$(random 250 390)s"
     sleep "${wait_time}"
-    # equip ring of healing
     send_keystroke "${tibia_window}}" "${EQUIP_RING_ROH_KEY}" 1
   fi
 }
@@ -234,24 +236,21 @@ function wait_for_mana() {
 }
 
 function click_dummy() {
-  local SCREEN=0
   local tibia_window=$1
-  # x:941 y:257
-  # x:846 y:213 (mitigera)
-  local minX=842
-  local maxX=850
-  local minY=209
-  local maxY=217
+  local minX=$((EXERCISE_DUMMY_CENTER_X-4))
+  local maxX=$((EXERCISE_DUMMY_CENTER_X+4))
+  local minY=$((EXERCISE_DUMMY_CENTER_Y-4))
+  local maxY=$((EXERCISE_DUMMY_CENTER_Y+4))
   local X=$(random ${minX} ${maxX})
   local Y=$(random ${minY} ${maxY})
 
   local wait_time="0.$(random 100 250)s"
   echo "Pausing ${wait_time}" &
-  sleep ${wait_time}
+  sleep "${wait_time}"
 
   echo "Clicking dummy (${X},${Y})" &
-  xdotool mousemove --screen 0 ${X} ${Y}
-  xdotool click --window "${tibia_window}" --delay $(random 100 250) 1
+  xdotool mousemove --screen "${SCREEN_NO}" "${X}" "${Y}"
+  xdotool click --window "${tibia_window}" --delay "$(random 100 250)" 1
 }
 
 last_rod_usage=0
@@ -275,10 +274,10 @@ function use_exercise_rod() {
   # get current focused window
   local tibia_window="$1"
   eval "$(xdotool getmouselocation --shell)"
-  local curr_x=${X}
-  local curr_y=${Y}
-  local curr_screen=${SCREEN}
-  local curr_window=${WINDOW}
+  local curr_x="${X}"
+  local curr_y="${Y}"
+  local curr_screen="${SCREEN}"
+  local curr_window="${WINDOW}"
   debug "curr_x,y: ${curr_x}, ${curr_y}"
   debug "curr_screen=${curr_screen}"
   debug "curr_window=${curr_window}"
@@ -291,7 +290,7 @@ function use_exercise_rod() {
   # focus tibia window
   if [[ ${refocus_tibia_to_train} ]]; then
     echo "Focusing Tibia window..."
-    focus_window ${tibia_window}
+    focus_window "${tibia_window}"
   fi
 
   send_keystroke "${tibia_window}" "${USE_EXERCISE_ROD_KEY}" 1 1
@@ -301,9 +300,9 @@ function use_exercise_rod() {
   # return to prev window
   if [[ ${refocus_tibia_to_train} ]]; then
     sleep "0.$(random 100 250)s"
-    xdotool mousemove --screen ${curr_screen} \
-            ${curr_x} ${curr_y}
-    focus_window ${curr_window}
+    xdotool mousemove --screen "${curr_screen}" \
+            "${curr_x}" "${curr_y}"
+    focus_window "${curr_window}"
   fi
 }
 

@@ -1,13 +1,24 @@
 #!/usr/bin/env bash
 # requirements: xdotool
 
-
+# Interface interaction cofiguration values
 EQUIP_RING_ROH_KEY='n'
 EQUIP_RING_LR_KEY='u'
 EAT_FOOD_KEY='h'
 DRINK_POTION_KEY='m'
 CAST_RUNE_SPELL_KEY='y'
 EQUIP_SOFT_BOOTS_KEY='j'
+MANA_POTION_CENTER_X=1707
+MANA_POTION_CENTER_Y=292
+CHAR_CENTER_X=958
+CHAR_CENTER_Y=372
+SCREEN_NO=0
+REGEN_RING_CENTER_X=1772
+REGEN_RING_CENTER_Y=498
+RING_SLOT_CENTER_X=1768
+RING_SLOT_CENTER_Y=336
+
+
 
 function debug() {
   [[ "${DEBUG}" ]] && echo "$@" >&2
@@ -24,13 +35,12 @@ function random() {
 # To get the realtime mouse location use:
 #   watch -t -n 0.0001 xdotool getmouselocation
 function click_mana_potion() {
-  local SCREEN=0
   local tibia_wid=$1
-  local minX=1695
-  local maxX=1719
+  local minX=$((MANA_POTION_CENTER_X-12))
+  local maxX=$((MANA_POTION_CENTER_X+12))
   # with full depot box
-  local minY=280
-  local maxY=305
+  local minY=$((MANA_POTION_CENTER_Y-12))
+  local maxY=$((MANA_POTION_CENTER_Y+12))
   # with 1500 manas
   #local minY=169
   #local maxY=195
@@ -42,20 +52,16 @@ function click_mana_potion() {
   sleep ${wait_time}
 
   echo "Clicking mana potion (${X},${Y})" &
-  xdotool mousemove --screen 0 ${X} ${Y}
+  xdotool mousemove --screen "${SCREEN_NO}" "${X}" "${Y}"
   xdotool click --window ${tibia_wid} --delay $(random 125 250) 1
 }
 
 function click_char() {
   local tibia_wid=$1
-  local X=958
-  local Y=372
-  local SCREEN=0
-
-  local minY=364
-  local maxY=399
-  local minX=939
-  local maxX=980
+  local minY=$((CHAR_CENTER_Y-12))
+  local maxY=$((CHAR_CENTER_Y+12))
+  local minX=$((CHAR_CENTER_X-12))
+  local maxX=$((CHAR_CENTER_X+12))
   local X=$(random ${minX} ${maxX})
   local Y=$(random ${minY} ${maxY})
 
@@ -64,8 +70,8 @@ function click_char() {
   sleep ${wait_time}
 
   echo "Clicking char (${X},${Y})" &
-  xdotool mousemove --screen 0 --window ${tibia_wid} ${X} ${Y}
-  xdotool click --window ${tibia_wid} --delay $(random 125 250) 1
+  xdotool mousemove --screen "${SCREEN_NO}" --window "${tibia_wid}" "${X}" "${Y}"
+  xdotool click --window "${tibia_wid}" --delay "$(random 125 250)" 1
 }
 
 function send_keystroke() {
@@ -250,10 +256,10 @@ function cast_rune_spell() {
 
 function hold_regen_ring() {
   local tibia_wid=$1
-  local minX=1760
-  local maxX=1783
-  local minY=487
-  local maxY=510
+  local minX=$((REGEN_RING_CENTER_X-12))
+  local maxX=$((REGEN_RING_CENTER_X+12))
+  local minY=$((REGEN_RING_CENTER_Y-12))
+  local maxY=$((REGEN_RING_CENTER_Y+12))
 
   local X=$(random ${minX} ${maxX})
   local Y=$(random ${minY} ${maxY})
@@ -269,10 +275,10 @@ function hold_regen_ring() {
 
 function drop_regen_ring() {
   local tibia_wid=$1
-  local minX=1755
-  local maxX=1781
-  local minY=323
-  local maxY=349
+  local minX=$((RING_SLOT_CENTER_X-12))
+  local maxX=$((RING_SLOT_CENTER_X+12))
+  local minY=$((RING_SLOT_CENTER_Y-12))
+  local maxY=$((RING_SLOT_CENTER_Y+12))
 
   local X=$(random ${minX} ${maxX})
   local Y=$(random ${minY} ${maxY})
