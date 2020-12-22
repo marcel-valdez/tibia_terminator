@@ -36,7 +36,7 @@ class EmergencyMagicShieldKeeper:
             self.cast_cancel()
 
     def should_cast(self, char_status):
-        return char_status.hp <= self.total_hp * 0.2
+        return char_status.hp <= self.total_hp * 0.33
 
     def should_cast_cancel(self, char_status):
         is_full_hp = char_status.hp >= self.total_hp
@@ -47,7 +47,7 @@ class EmergencyMagicShieldKeeper:
            is_healthy_mana and self.secs_since_cast() >= 6:
             return True
         # Cancel magic shield if we have better chances tanking with HP
-        is_mana_very_low = self.total_hp * 1.25
+        is_mana_very_low = char_status.mana <= self.total_hp * 1.25
         is_magic_shield_too_high = \
             char_status.magic_shield_level > char_status.mana / 2
         return is_full_hp and is_mana_very_low and is_magic_shield_too_high
