@@ -7,6 +7,46 @@ from multiprocessing import Lock, Pool
 from logger import debug, get_debug_level
 
 
+LOG_ROW = 8
+LOG_BUFFER_COUNTER = 0
+MAX_LOG_BUFFER = 10
+
+class WinLogger():
+    CLEAR =  (' ' * 40 + '\n') * 11
+    def __init__(self, log_row=LOG_ROW):
+        self.log_buffer_counter = 0
+        self.log_row = log_row
+        self.logs = []
+
+    def log(self, cliwin, debug_level, msg):
+        if get_debug_level() >= debug_level:
+            row = self.log_row
+            cliwin.move(row, 0)
+            cliwin.clrtoeol()
+            cliwin.addstr(row, 0, 'Log Entries')
+            if len(self.logs) > MAX_LOG_BUFFER:
+                self.logs.pop(0)
+            self.logs.append(msg)
+            rowi = row
+            for log in self.logs:
+                cliwin.move(rowi + 1, 0)
+                cliwin.clrtoeol()
+                cliwin.insstr(log)
+                rowi += 1
+
+
+
+LOGGER = WinLogger(log_row=LOG_ROW)
+
+def winlog(cliwin, winlog_level, msg):
+    LOGGER.log(cliwin, winlog_level, msg)
+
+class LogEntry:
+    def __init__(self, log_level, msg):
+        self.log_level = log_level
+        self.msg = msg
+
+
 def timestamp_millis():
     return int(round(time.time() * 1000))
 
@@ -40,9 +80,6 @@ def throttle(last_cmd, locks, key, throttle_ms=250):
 
 
 def send_keystroke(tibia_wid, throttle_key, throttle_ms, hotkey):
-    debug(
-        '[send_keystroke] ' + throttle_key + ' (' + str(throttle_ms) + '): ' +
-        hotkey, 0)
     # asynchronously send the keystroke
     if not ponly_monitor:
         subprocess.Popen([
@@ -50,9 +87,11 @@ def send_keystroke(tibia_wid, throttle_key, throttle_ms, hotkey):
             str(tibia_wid),
             str(hotkey)
         ])
+        return LogEntry(0, '[send_keystroke] ' + throttle_key + ' (' + str(throttle_ms) + '): ' +
+                        hotkey)
 
 
-def proc_init(locks, only_monitor, last_cmd):
+def proc_init(locks, only_monitor, last_cmd, logs):
     global ponly_monitor
     ponly_monitor = only_monitor
     global plocks
@@ -62,7 +101,7 @@ def proc_init(locks, only_monitor, last_cmd):
 
 
 class ClientInterface:
-    def __init__(self, tibia_wid, hotkeys_config, only_monitor=False):
+    def __init__(self, tibia_wid, hotkeys_config, cliwin, only_monitor=False):
         self.tibia_wid = tibia_wid
         self.hotkeys_config = hotkeys_config
         self.last_cmd = {}
@@ -73,9 +112,11 @@ class ClientInterface:
             'mana': Lock(),
             'item_usage': Lock()
         }
+        self.cliwin = cliwin
+        self.logs = []
         self.process_pool = Pool(
             processes=6,
-            initargs=[self.locks, self.only_monitor, self.last_cmd],
+            initargs=[self.locks, self.only_monitor, self.last_cmd, self.logs],
             initializer=proc_init)
 
     def send_keystroke_async(self, throttle_key, throttle_ms, hotkey):
@@ -83,55 +124,57 @@ class ClientInterface:
             f = self.process_pool.apply_async(
                 send_keystroke,
                 (self.tibia_wid, throttle_key, throttle_ms, hotkey))
-            if get_debug_level() >= 0:
-                f.get()
+            log_entry = f.get()
+            if log_entry is not None:
+                winlog(self.cliwin, log_entry.log_level, log_entry.msg)
+
 
     def cast_exura(self, throttle_ms):
-        debug('cast_exura' + str(throttle_ms), 2)
+        winlog(2, self.cliwin, 'cast_exura' + str(throttle_ms))
         self.send_keystroke_async('heal', throttle_ms,
                                   self.hotkeys_config['exura'])
 
     def cast_exura_gran(self, throttle_ms):
-        debug('cast_exura_gran' + str(throttle_ms), 2)
+        winlog(2, self.cliwin, 'cast_exura_gran' + str(throttle_ms))
         self.send_keystroke_async('heal', throttle_ms,
                                   self.hotkeys_config['exura_gran'])
 
     def cast_exura_sio(self, throttle_ms):
-        debug('cast_exura_sio' + str(throttle_ms), 2)
+        winlog(2, self.cliwin, 'cast_exura_sio' + str(throttle_ms))
         self.send_keystroke_async('heal', throttle_ms,
                                   self.hotkeys_config['exura_sio'])
 
     def drink_mana(self, throttle_ms):
-        debug('drink_mana' + str(throttle_ms), 2)
+        winlog(2, self.cliwin, 'drink_mana' + str(throttle_ms))
         self.send_keystroke_async('mana', throttle_ms,
                                   self.hotkeys_config['mana_potion'])
 
     def cast_haste(self, throttle_ms):
-        debug('cast_haste' + str(throttle_ms), 2)
+        winlog(2, self.cliwin, 'cast_haste' + str(throttle_ms))
         self.send_keystroke_async('utility_spell', throttle_ms,
                                   self.hotkeys_config['utani_hur'])
 
     def equip_ring(self, throttle_ms=250):
-        debug('equip_ring' + str(throttle_ms), 2)
+        winlog(2, self.cliwin, 'equip_ring' + str(throttle_ms))
         self.send_keystroke_async('item_usage', throttle_ms,
-            self.hotkeys_config['equip_ring'])
+                                  self.hotkeys_config['equip_ring'])
 
     def equip_amulet(self, throttle_ms=250):
-        debug('equip_amulet' + str(throttle_ms), 2)
+        winlog(2, self.cliwin, 'equip_amulet' + str(throttle_ms))
         self.send_keystroke_async('item_usage', throttle_ms,
-            self.hotkeys_config['equip_amulet'])
+                                  self.hotkeys_config['equip_amulet'])
 
     def eat_food(self, throttle_ms=250):
-        debug('eat_food' + str(throttle_ms), 2)
+        winlog(2, self.cliwin, 'eat_food' + str(throttle_ms))
         self.send_keystroke_async('item_usage', throttle_ms,
-            self.hotkeys_config['eat_food'])
+                                  self.hotkeys_config['eat_food'])
 
     def cast_magic_shield(self, throttle_ms=250):
-        debug('cast_magic_shield' + str(throttle_ms), 2)
+        winlog(2, self.cliwin, 'cast_magic_shield' + str(throttle_ms))
         self.send_keystroke_async('utility_spell', throttle_ms,
-            self.hotkeys_config['magic_shield'])
+                                  self.hotkeys_config['magic_shield'])
 
     def cancel_magic_shield(self, throttle_ms=250):
-        debug('cancel_magic_shield' + str(throttle_ms), 2)
+        winlog(2, self.cliwin, 'cancel_magic_shield' + str(throttle_ms))
         self.send_keystroke_async('utility_spell', throttle_ms,
-            self.hotkeys_config['cancel_magic_shield'])
+                                  self.hotkeys_config['cancel_magic_shield'])

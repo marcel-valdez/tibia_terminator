@@ -2,6 +2,8 @@
 
 import argparse
 import time
+import curses
+import sys
 
 from multiprocessing import Pool
 
@@ -41,6 +43,15 @@ parser.add_argument('--debug_level',
                     default=-1)
 
 PPOOL = None
+SPACE_KEYCODE = 263
+ENTER_KEYCODE = 330
+ESCAPE_KEY = 27
+TITLE_ROW = 0
+MANA_ROW = 1
+HP_ROW = 2
+SPEED_ROW = 3
+MAGIC_SHIELD_ROW = 4
+PAUSE_STATUS_ROW = 5
 
 
 class TibiaTerminator:
@@ -50,6 +61,7 @@ class TibiaTerminator:
                  char_reader,
                  equipment_reader,
                  mem_config,
+                 cliwin,
                  enable_mana=True,
                  enable_hp=True,
                  enable_magic_shield=True,
@@ -59,6 +71,7 @@ class TibiaTerminator:
         self.char_keeper = char_keeper
         self.char_reader = char_reader
         self.mem_config = mem_config
+        self.cliwin = cliwin
         self.equipment_reader = equipment_reader
         self.enable_speed = enable_speed
         self.enable_mana = enable_mana
@@ -106,8 +119,18 @@ class TibiaTerminator:
 
         prev_stats = {'mana': -1, 'hp': -1, 'speed': -1, 'magic_shield': -1}
         self.equipment_reader.open()
+        self.cliwin.nodelay(True)
+        self.cliwin.idlok(True)
+        self.cliwin.leaveok(True)
+        self.cliwin.refresh()
+        self.winprint("Tibia Terminator", TITLE_ROW)
+        self.winprint("Press [Space] to pause tibia terminator or [Esc] to exit.", PAUSE_STATUS_ROW)
+
         try:
             while True:
+                keycode = self.cliwin.getch()
+                self.handle_exit(keycode)
+                self.handle_pause(keycode)
                 stats = self.char_reader.get_stats()
                 # 20-30 ms
                 is_amulet_slot_empty = self.equipment_reader.is_amulet_empty()
@@ -125,6 +148,27 @@ class TibiaTerminator:
                 time.sleep(0.06)
         finally:
             self.equipment_reader.close()
+
+    def handle_exit(self, keycode):
+        """Exits the program based on user input."""
+        if keycode == ESCAPE_KEY:
+            sys.exit(0)
+
+    def handle_pause(self, current_keycode):
+        """Pauses or resumes the program based on user input."""
+        paused = current_keycode == SPACE_KEYCODE
+        if paused:
+            self.winprint("Tibia Terminator paused. Press [Space] to continue or [Esc] to exit.", PAUSE_STATUS_ROW)
+            self.cliwin.nodelay(False)
+            keycode = -1
+            while paused:
+                self.handle_exit(keycode)
+                keycode = self.cliwin.getch()
+                paused = current_keycode != SPACE_KEYCODE
+            self.winprint("Press [Space] to pause tibia terminator or [Esc] to exit.", PAUSE_STATUS_ROW)
+            self.cliwin.nodelay(True)
+
+
 
     def handle_stats(self, stats, prev_stats,
                      is_amulet_slot_empty,
@@ -147,7 +191,7 @@ class TibiaTerminator:
         prev_mana = prev_stats['mana']
         if mana != prev_mana:
             prev_stats['mana'] = mana
-            print_async("Mana: {}".format(str(mana)))
+            self.winprint("Mana: {}".format(str(mana)), MANA_ROW)
 
         if self.enable_hp:
             self.char_keeper.handle_hp_change(char_status)
@@ -155,7 +199,7 @@ class TibiaTerminator:
         prev_hp = prev_stats['hp']
         if hp != prev_hp:
             prev_stats['hp'] = hp
-            print_async("HP: {}".format(str(hp)))
+            self.winprint("HP: {}".format(str(hp)), HP_ROW)
 
         if self.enable_speed:
             self.char_keeper.handle_speed_change(char_status)
@@ -163,14 +207,16 @@ class TibiaTerminator:
         prev_speed = prev_stats['speed']
         if speed != prev_speed:
             prev_stats['speed'] = speed
-            print_async("Speed: {}".format(str(speed)))
+            self.winprint("Speed: {}".format(str(speed)), SPEED_ROW)
 
         prev_magic_shield_level = prev_stats['magic_shield']
         if magic_shield_level != prev_magic_shield_level:
             prev_stats['magic_shield'] = magic_shield_level
-            print_async("Magic Shield: {}".format(str(magic_shield_level)))
-
+            self.winprint("Magic Shield: {}".format(str(magic_shield_level)), MAGIC_SHIELD_ROW)
         self.char_keeper.handle_equipment(char_status)
+
+    def winprint(self, msg, row=0, col=0):
+        self.cliwin.addstr(row, col, msg + '\n')
 
 
 def fprint(fargs):
@@ -187,7 +233,7 @@ def print_async(*pargs):
         PPOOL.apply_async(fprint, tuple(pargs))
 
 
-def main(pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
+def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
          only_monitor):
     if pid is None or pid == "":
         raise Exception("PID is required, you may use psgrep -a -l bin/Tibia "
@@ -196,6 +242,7 @@ def main(pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
     tibia_wid = get_tibia_wid(pid)
     client = ClientInterface(tibia_wid,
                              HOTKEYS_CONFIG,
+                             cliwin,
                              only_monitor=only_monitor)
     char_keeper = CharKeeper(client, CHAR_CONFIG)
     char_reader = CharReader(MemoryReader(pid, print_async))
@@ -209,17 +256,19 @@ def main(pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
                                        enable_hp=enable_hp,
                                        enable_magic_shield=enable_magic_shield,
                                        enable_speed=enable_speed,
-                                       only_monitor=only_monitor)
+                                       only_monitor=only_monitor,
+                                       cliwin=cliwin)
     tibia_terminator.monitor_char()
 
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    PPOOL = Pool(processes=3)
+#    PPOOL = Pool(processes=3)
     set_debug_level(args.debug_level)
-    main(args.pid,
-         enable_mana=not args.no_mana,
-         enable_hp=not args.no_hp,
-         enable_magic_shield=not args.no_magic_shield,
-         enable_speed=not args.no_speed,
-         only_monitor=args.only_monitor)
+    curses.wrapper(main,
+                   args.pid,
+                   enable_mana=not args.no_mana,
+                   enable_hp=not args.no_hp,
+                   enable_magic_shield=not args.no_magic_shield,
+                   enable_speed=not args.no_speed,
+                   only_monitor=args.only_monitor)
