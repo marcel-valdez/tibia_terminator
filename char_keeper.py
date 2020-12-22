@@ -9,16 +9,28 @@ from speed_keeper import SpeedKeeper
 
 
 class CharKeeper:
-    def __init__(self, client, char_config, mana_keeper=None, hp_keeper=None,
+    def __init__(self, client, char_configs, mana_keeper=None, hp_keeper=None,
                  speed_keeper=None, equipment_keeper=None,
                  magic_shield_keeper=None):
         self.client = client
-        self.char_config = char_config
+        self.char_configs = char_configs
+        # load the first one by default
+        char_config = char_configs[0]["config"]
         self.init_mana_keeper(client, char_config, mana_keeper)
         self.init_hp_keeper(client, char_config, hp_keeper)
         self.init_speed_keeper(client, char_config, speed_keeper)
         self.init_equipment_keeper(client, char_config, equipment_keeper)
         self.init_magic_shield_keeper(client, char_config, magic_shield_keeper)
+
+    def change_char_config(self, index):
+        self.load_char_config(self.char_configs[index]["config"])
+
+    def load_char_config(self, char_config):
+        self.init_mana_keeper(self.client, char_config)
+        self.init_hp_keeper(self.client, char_config)
+        self.init_speed_keeper(self.client, char_config)
+        self.init_equipment_keeper(self.client, char_config)
+        self.init_magic_shield_keeper(self.client, char_config)
 
     def init_mana_keeper(self, client, char_config, mana_keeper=None):
         if mana_keeper is None:

@@ -14,7 +14,7 @@ from char_keeper import CharKeeper
 from char_reader import CharReader
 from char_status import CharStatus
 from equipment_reader import EquipmentReader
-from char_config import CHAR_CONFIG, HOTKEYS_CONFIG
+from char_config import CHAR_CONFIGS, HOTKEYS_CONFIG
 from app_config import MEM_CONFIG
 from logger import set_debug_level
 
@@ -44,14 +44,32 @@ parser.add_argument('--debug_level',
 
 PPOOL = None
 SPACE_KEYCODE = 263
-ENTER_KEYCODE = 330
+ENTER_KEYCODE = 10
 ESCAPE_KEY = 27
+
 TITLE_ROW = 0
-MANA_ROW = 1
-HP_ROW = 2
-SPEED_ROW = 3
-MAGIC_SHIELD_ROW = 4
-PAUSE_STATUS_ROW = 5
+MAIN_OPTIONS_ROW = TITLE_ROW + 1
+ERRORS_ROW = MAIN_OPTIONS_ROW + 1
+
+MANA_ROW = ERRORS_ROW + 1
+HP_ROW = MANA_ROW + 1
+SPEED_ROW = HP_ROW + 1
+MAGIC_SHIELD_ROW = SPEED_ROW + 1
+
+CONFIG_SELECTION_ROW = ERRORS_ROW + 2
+CONFIG_SELECTION_TITLE = "Type the number of the char config to load: "
+
+class AppStates:
+    PAUSED = "__PAUSED__"
+    RUNNING = "__RUNNING__"
+    CONFIG_SELECTION = "__CONFIG_SELECTION__"
+    EXIT = "__EXIT__"
+
+PAUSE_KEYCODE = SPACE_KEYCODE
+RESUME_KEYCODE = SPACE_KEYCODE
+CONFIG_SELECTION_KEYCODE = ENTER_KEYCODE
+EXIT_KEYCODE = ESCAPE_KEY
+
 
 
 class TibiaTerminator:
@@ -61,6 +79,7 @@ class TibiaTerminator:
                  char_reader,
                  equipment_reader,
                  mem_config,
+                 char_configs,
                  cliwin,
                  enable_mana=True,
                  enable_hp=True,
@@ -71,6 +90,7 @@ class TibiaTerminator:
         self.char_keeper = char_keeper
         self.char_reader = char_reader
         self.mem_config = mem_config
+        self.char_configs = char_configs
         self.cliwin = cliwin
         self.equipment_reader = equipment_reader
         self.enable_speed = enable_speed
@@ -78,6 +98,9 @@ class TibiaTerminator:
         self.enable_hp = enable_hp
         self.enable_magic_shield = enable_magic_shield
         self.only_monitor = only_monitor
+        self.initial_pause = True
+        self.app_state = None
+        self.selected_configuration = char_configs[0]["name"]
 
     def monitor_char(self):
         # TODO: Rather than hardcoding these values, implement the init_*
@@ -117,57 +140,175 @@ class TibiaTerminator:
         if self.enable_magic_shield:
             self.char_reader.init_magic_shield_address(magic_shield_address)
 
-        prev_stats = {'mana': -1, 'hp': -1, 'speed': -1, 'magic_shield': -1}
+        self.prev_stats = {'mana': -1, 'hp': -1, 'speed': -1, 'magic_shield': -1}
         self.equipment_reader.open()
         self.cliwin.nodelay(True)
         self.cliwin.idlok(True)
         self.cliwin.leaveok(True)
         self.cliwin.refresh()
-        self.winprint("Tibia Terminator", TITLE_ROW)
-        self.winprint("Press [Space] to pause tibia terminator or [Esc] to exit.", PAUSE_STATUS_ROW)
+
+        self.app_state = AppStates.PAUSED
+        self.winprint("[Space]: Pause, [Esc]: Exit, [Enter]: Config selection.", MAIN_OPTIONS_ROW)
 
         try:
             while True:
+                self.winprint("Tibia Terminator. Active config: " + self.selected_configuration, TITLE_ROW)
+                start = time.time() * 1000
                 keycode = self.cliwin.getch()
-                self.handle_exit(keycode)
-                self.handle_pause(keycode)
-                stats = self.char_reader.get_stats()
-                # 20-30 ms
-                is_amulet_slot_empty = self.equipment_reader.is_amulet_empty()
-                # 20-30 ms
-                is_ring_slot_empty = self.equipment_reader.is_ring_empty()
-                magic_shield_status = \
-                    self.equipment_reader.get_magic_shield_status()
-                self.handle_stats(
-                    stats,
-                    prev_stats,
-                    is_amulet_slot_empty,
-                    is_ring_slot_empty,
-                    magic_shield_status)
-                # Sleep 60 ms
-                time.sleep(0.06)
+                self.enter_next_app_state(keycode)
+                if self.app_state == AppStates.EXIT:
+                    self.handle_exit_state()
+                elif self.app_state == AppStates.PAUSED:
+                    self.handle_paused_state()
+                elif self.app_state == AppStates.RUNNING:
+                    self.handle_running_state()
+                elif self.app_state == AppStates.CONFIG_SELECTION:
+                    self.handle_config_selection_state()
+
+                end = time.time() * 1000
+                elapsed = end - start
+                # Loop every 100 ms
+                if elapsed < 100:
+                    time.sleep((100 - elapsed) / 1000)
         finally:
             self.equipment_reader.close()
 
-    def handle_exit(self, keycode):
+    def handle_exit_state(self):
         """Exits the program based on user input."""
-        if keycode == ESCAPE_KEY:
-            sys.exit(0)
+        sys.exit(0)
 
-    def handle_pause(self, current_keycode):
-        """Pauses or resumes the program based on user input."""
-        paused = current_keycode == SPACE_KEYCODE
-        if paused:
-            self.winprint("Tibia Terminator paused. Press [Space] to continue or [Esc] to exit.", PAUSE_STATUS_ROW)
-            self.cliwin.nodelay(False)
-            keycode = -1
-            while paused:
-                self.handle_exit(keycode)
-                keycode = self.cliwin.getch()
-                paused = current_keycode != SPACE_KEYCODE
-            self.winprint("Press [Space] to pause tibia terminator or [Esc] to exit.", PAUSE_STATUS_ROW)
-            self.cliwin.nodelay(True)
 
+    def enter_next_app_state(self, keycode):
+        next_state = self.app_state
+        if keycode == EXIT_KEYCODE:
+            next_state = AppStates.EXIT
+
+        if self.app_state == AppStates.RUNNING:
+            if keycode == PAUSE_KEYCODE:
+                next_state = AppStates.PAUSED
+
+        if self.app_state == AppStates.PAUSED:
+            if keycode == RESUME_KEYCODE:
+                next_state = AppStates.RUNNING
+
+        if self.app_state == AppStates.CONFIG_SELECTION:
+            if keycode == CONFIG_SELECTION_KEYCODE:
+                next_state = AppStates.PAUSED
+        elif keycode == CONFIG_SELECTION_KEYCODE:
+            next_state = AppStates.CONFIG_SELECTION
+
+        if self.app_state != next_state:
+            if self.app_state == AppStates.RUNNING:
+                self.exit_running_state()
+            if self.app_state == AppStates.PAUSED:
+                self.exit_paused_state()
+            if self.app_state == AppStates.CONFIG_SELECTION:
+                self.exit_config_selection_state()
+
+            if next_state == AppStates.RUNNING:
+                self.enter_running_state()
+            if next_state == AppStates.PAUSED:
+                self.enter_paused_state()
+            if next_state == AppStates.CONFIG_SELECTION:
+                self.enter_config_selection_state()
+
+        self.app_state = next_state
+
+    def enter_running_state(self):
+        self.winprint("[Space]: Pause, [Esc]: Exit, [Enter]: Config selection.", MAIN_OPTIONS_ROW)
+
+    def handle_running_state(self):
+        stats = self.char_reader.get_stats()
+        # 20-30 ms
+        is_amulet_slot_empty = self.equipment_reader.is_amulet_empty()
+        # 20-30 ms
+        is_ring_slot_empty = self.equipment_reader.is_ring_empty()
+        magic_shield_status = \
+            self.equipment_reader.get_magic_shield_status()
+        self.handle_stats(
+            stats,
+            self.prev_stats,
+            is_amulet_slot_empty,
+            is_ring_slot_empty,
+            magic_shield_status)
+
+    def exit_running_state(self):
+        pass
+
+    def enter_paused_state(self):
+        self.winprint("[Space]: Resume, [Esc]: Exit, [Enter]: Config selection.", MAIN_OPTIONS_ROW)
+
+    def exit_paused_state(self):
+        pass
+
+    def handle_paused_state(self):
+        pass
+
+    def enter_config_selection_state(self):
+        self.winprint("[Esc]: Exit, [Enter]: Back to paused state.", MAIN_OPTIONS_ROW)
+        self.winprint(CONFIG_SELECTION_TITLE, CONFIG_SELECTION_ROW)
+        self.cliwin.clrtobot()
+        self.cliwin.nodelay(False)
+
+    def exit_config_selection_state(self):
+        self.cliwin.clear()
+        self.cliwin.refresh()
+        self.cliwin.nodelay(True)
+
+    def handle_config_selection_state(self):
+        i = 0
+        total_char_configs = len(self.char_configs)
+        for char_config in self.char_configs:
+            row = CONFIG_SELECTION_ROW + i + 1
+            self.cliwin.move(row, 0)
+            self.cliwin.clrtoeol()
+            self.cliwin.insstr(str(i) + ': ' + char_config["name"])
+            i += 1
+
+        number_str = ''
+        getting_number = True
+        input_col = len(CONFIG_SELECTION_TITLE)
+        col = input_col
+        while getting_number:
+            keycode = self.cliwin.getch(CONFIG_SELECTION_ROW, col)
+            if keycode >= 48 and keycode <= 57:
+                number_str += str(keycode - 48)
+                self.cliwin.insstr(str(keycode - 48))
+                col += 1
+            elif keycode == ENTER_KEYCODE:
+                if number_str == '':
+                    self.exit_config_selection_state()
+                    self.enter_paused_state()
+                    self.app_state = AppStates.PAUSED
+                    break
+                elif not number_str.isdigit():
+                    self.winprint("Only numbers allowed.", ERRORS_ROW)
+                    col = input_col
+                    self.cliwin.move(CONFIG_SELECTION_ROW, col)
+                    self.cliwin.clrtoeol()
+                    number_str = ''
+                else:
+                    selection = int(number_str)
+                    if selection >= total_char_configs:
+                        self.winprint("Selection index {} is invalid.".format(number_str), ERRORS_ROW)
+                        col = input_col
+                        self.cliwin.move(CONFIG_SELECTION_ROW, input_col)
+                        self.cliwin.clrtoeol()
+                        number_str = ''
+                    else:
+                        self.selected_configuration = self.char_configs[selection]["name"]
+                        self.char_keeper.change_char_config(selection)
+                        self.exit_config_selection_state()
+                        self.enter_paused_state()
+                        self.app_state = AppStates.PAUSED
+                        break
+            elif keycode == EXIT_KEYCODE:
+                self.handle_exit_state()
+            elif keycode == curses.KEY_BACKSPACE:
+                if len(number_str) > 0:
+                    self.cliwin.delch(CONFIG_SELECTION_ROW, col - 1)
+                    number_str = number_str[:len(number_str) - 1]
+                    col -= 1
 
 
     def handle_stats(self, stats, prev_stats,
@@ -215,8 +356,8 @@ class TibiaTerminator:
             self.winprint("Magic Shield: {}".format(str(magic_shield_level)), MAGIC_SHIELD_ROW)
         self.char_keeper.handle_equipment(char_status)
 
-    def winprint(self, msg, row=0, col=0):
-        self.cliwin.addstr(row, col, msg + '\n')
+    def winprint(self, msg, row=0, col=0, end='\n'):
+        self.cliwin.addstr(row, col, msg + end)
 
 
 def fprint(fargs):
@@ -244,7 +385,7 @@ def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
                              HOTKEYS_CONFIG,
                              cliwin,
                              only_monitor=only_monitor)
-    char_keeper = CharKeeper(client, CHAR_CONFIG)
+    char_keeper = CharKeeper(client, CHAR_CONFIGS)
     char_reader = CharReader(MemoryReader(pid, print_async))
     eq_reader = EquipmentReader()
     tibia_terminator = TibiaTerminator(tibia_wid,
@@ -252,12 +393,13 @@ def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
                                        char_reader,
                                        eq_reader,
                                        mem_config,
+                                       CHAR_CONFIGS,
+                                       cliwin,
                                        enable_mana=enable_mana,
                                        enable_hp=enable_hp,
                                        enable_magic_shield=enable_magic_shield,
                                        enable_speed=enable_speed,
-                                       only_monitor=only_monitor,
-                                       cliwin=cliwin)
+                                       only_monitor=only_monitor)
     tibia_terminator.monitor_char()
 
 

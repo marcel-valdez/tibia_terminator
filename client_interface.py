@@ -22,7 +22,7 @@ class WinLogger():
         if get_debug_level() >= debug_level:
             row = self.log_row
             cliwin.move(row, 0)
-            cliwin.clrtoeol()
+            cliwin.clrtobot()
             cliwin.addstr(row, 0, 'Log Entries')
             if len(self.logs) > MAX_LOG_BUFFER:
                 self.logs.pop(0)
@@ -30,7 +30,6 @@ class WinLogger():
             rowi = row
             for log in self.logs:
                 cliwin.move(rowi + 1, 0)
-                cliwin.clrtoeol()
                 cliwin.insstr(log)
                 rowi += 1
 
