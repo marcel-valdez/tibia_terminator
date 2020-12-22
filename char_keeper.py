@@ -86,7 +86,8 @@ class CharKeeper:
         elif magic_shield_type == "emergency":
             self.magic_shield_keeper = EmergencyMagicShieldKeeper(
                 client, char_config['total_hp'], char_config['mana_lo'],
-                char_config['magic_shield_treshold'])
+                char_config['magic_shield_treshold'],
+                char_config['emergency_shield_hp_treshold'])
         elif magic_shield_type is None:
             self.magic_shield_keeper = NoopKeeper()
         elif magic_shield_type is not None:

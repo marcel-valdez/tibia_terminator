@@ -8,11 +8,13 @@ MAGIC_SHIELD_DURATION_SECS = 180
 
 class EmergencyMagicShieldKeeper:
     def __init__(self, client, total_hp, mana_lo, magic_shield_treshold,
+                 emergency_shield_hp_treshold=None,
                  time_fn=None):
         self.client = client
         self.total_hp = total_hp
         self.mana_lo = mana_lo
         self.magic_shield_treshold = magic_shield_treshold
+        self.emergency_shield_hp_treshold = emergency_shield_hp_treshold or total_hp * 0.33
         self.last_cast_timestamp = 0
         self.cast_counter = 0
         self.prev_magic_shield_status = MagicShieldStatus.ON_COOLDOWN
@@ -36,7 +38,7 @@ class EmergencyMagicShieldKeeper:
             self.cast_cancel()
 
     def should_cast(self, char_status):
-        return char_status.hp <= self.total_hp * 0.33
+        return char_status.hp <= self.emergency_shield_hp_treshold
 
     def should_cast_cancel(self, char_status):
         is_full_hp = char_status.hp >= self.total_hp
