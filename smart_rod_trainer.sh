@@ -134,7 +134,7 @@ function equip_soft_boots() {
   echo '-------------------'
   echo 'Equipping soft boots'
   echo '-------------------'
-  send_keystroke "${tibia_window}}" "${EQUIP_SOFT_BOOTS_KEY}" 1
+  send_keystroke "${tibia_window}}" "${EQUIP_SOFT_BOOTS_KEY}" 2
 }
 
 function eat_food() {
@@ -206,12 +206,14 @@ function wait_for_mana() {
     # Warning: If we run out of life rings, the ring slot will be empty
     # every time we're under 10 soul points. So we'd end up using the exercise
     # rod very often and thereby switching windows very often as well.
-    if is_ring_slot_empty "${tibia_window}"; then
+    if ! is_out_of_souls_or_max_mana && is_ring_slot_empty "${tibia_window}"; then
       local secs_since_last_use=$((secs_since_last_rod_use))
       # only equip regen ring if it has been at least 30 seconds since the last
       # time we used the exercise rod.
       if secs_since_last_rod_use -gt 30; then
         equip_regen_ring "${tibia_window}"
+        equip_soft_boots "${tibia_window}"
+        eat_food "${tibia_window}"
         # We have to re-use the rod, since equipping the ring will stops the
         # rod training.
         use_exercise_rod "${tibia_window}"
