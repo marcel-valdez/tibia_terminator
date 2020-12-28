@@ -148,7 +148,7 @@ class TibiaTerminator:
         self.cliwin.refresh()
 
         self.app_state = AppStates.PAUSED
-        self.winprint("[Space]: Pause, [Esc]: Exit, [Enter]: Config selection.", MAIN_OPTIONS_ROW)
+        self.winprint("[Space]: Resume, [Esc]: Exit, [Enter]: Config selection.", MAIN_OPTIONS_ROW)
 
         try:
             while True:
