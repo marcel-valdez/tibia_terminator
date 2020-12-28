@@ -2,10 +2,13 @@
 
 import time
 
+DEFAULT_EQUIP_FREQ = 0.5
+
 
 class EquipmentKeeper:
     def __init__(self, client, should_equip_amulet, should_equip_ring,
-                 should_eat_food, equip_amulet_secs = 1, equip_ring_secs = 1):
+                 should_eat_food, equip_amulet_secs=DEFAULT_EQUIP_FREQ,
+                 equip_ring_secs=DEFAULT_EQUIP_FREQ):
         self.client = client
         self.should_equip_amulet = should_equip_amulet
         self.should_equip_ring = should_equip_ring
