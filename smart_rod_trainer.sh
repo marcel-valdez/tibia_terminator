@@ -11,6 +11,7 @@ USE_EXERCISE_ROD_KEY='k'
 EXERCISE_DUMMY_CENTER_X=846
 EXERCISE_DUMMY_CENTER_Y=213
 SCREEN_NO=0
+MIN_SOUL_POINTS=6
 
 
 function debug() {
@@ -65,7 +66,8 @@ function is_out_of_souls_or_max_mana() {
   else
     eval "$(sudo ./char_reader.py)"
   fi
-  [[ ${MANA} -gt ${max_mana_threshold} ]] || [[ ${SOUL_POINTS} -lt 6 ]]
+  [[ ${MANA} -gt ${max_mana_threshold} ]] || \
+    [[ ${SOUL_POINTS} -lt ${MIN_SOUL_POINTS} ]]
 }
 
 function send_keystroke() {
@@ -103,14 +105,14 @@ function equip_regen_ring() {
   else
     eval "$(sudo ./char_reader.py)"
   fi
-  if [[ ${SOUL_POINTS} -le 10 ]]; then
+  if [[ ${SOUL_POINTS} -lt 6 ]]; then
     echo '-------------------'
     echo 'Equipping life ring'
     echo '-------------------'
   fi
 
   send_keystroke "${tibia_window}}" "${EQUIP_RING_LR_KEY}" 1
-  if [[ ${SOUL_POINTS} -gt 10 ]]; then
+  if [[ ${SOUL_POINTS} -ge 6 ]]; then
     echo '-------------------------'
     echo 'Equipping ring of healing'
     echo '-------------------------'
@@ -185,7 +187,8 @@ function consume_mana_for_runes() {
   local mana=$(get_mana)
   sleep "1s"
   local soul_pts=$(get_soul_pts)
-  while [[ ${mana} -ge ${mana_per_rune} ]] && [[ ${soul_pts} -ge 6 ]]; do
+  while [[ ${mana} -ge ${mana_per_rune} ]] && \
+        [[ ${soul_pts} -ge ${MIN_SOUL_POINTS} ]]; do
     make_rune "${tibia_window}"
     mana=$(get_mana)
     sleep "1s"
