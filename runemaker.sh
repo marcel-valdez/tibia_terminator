@@ -435,6 +435,7 @@ function login {
 
 function manasit() {
   local tibia_wid=$(get_tibia_wid)
+  local start_timestamp_ms=0
   while true; do
     if [[ "${credentials_profile}" ]] && is_logged_out; then
       echo "We were disconnected. We will attempt login after 3-5 minutes."
@@ -443,6 +444,9 @@ function manasit() {
       # in the Tibia client.
       sleep "$(random 180 300)s"
       login
+      if [[ ${refill_char} ]]; then
+        open_depot "${tibia_wid}"
+      fi
     fi
     # get current focused window
     eval "$(xdotool getmouselocation --shell)"
@@ -458,8 +462,20 @@ function manasit() {
     if [[ "${refocus_tibia_to_make_rune}" ]]; then
       focus_window ${tibia_wid}
     fi
-
     sleep "0.$(random 210 550)s"
+
+    local current_timestamp_ms=$(timestamp_ms)
+    local elapsed_ms=$((current_timestamp_ms - start_timestamp_ms))
+    if [[ ${elapsed_ms} -gt 3600000 ]] && [[ ${refill_char} ]]; then
+      start_timestamp_ms=${current_timestamp_ms}
+      focus_window ${tibia_wid}
+      stow_bp "${tibia_wid}"
+      fetch_from_locker "${tibia_wid}" "blank rune" 250
+      fetch_from_locker "${tibia_wid}" "brown mushroom" 100
+      # make runes so we have space left for them
+      wait_for_mana "${tibia_wid}"
+      fetch_from_locker "${tibia_wid}" "ring of healing" "page"
+    fi
 
     make_rune "${tibia_wid}"
     equip_regen_ring "${tibia_wid}"
@@ -479,6 +495,9 @@ function manasit() {
       echo "We were disconnected. We will attempt login after 3-5 minutes."
       sleep "$(random 180 300)s"
       login
+      if [[ ${refill_char} ]]; then
+        open_depot "${tibia_wid}"
+      fi
     fi
     # sit until next rune spell with randomization
     wait_for_mana "${tibia_wid}"
@@ -502,6 +521,7 @@ use_mouse_for_mana_potion=
 use_char_reader=0
 max_char_mana=99999
 max_mana_threshold=99999
+refill_char=
 function parse_args() {
   while [[ $# -gt 0 ]]; do
     arg=$1
@@ -565,6 +585,9 @@ function parse_args() {
       ;;
     --check_empty_slots)
       check_empty_slots=1
+      ;;
+    --refill-char)
+      refill_char=1
       ;;
     *)
       break
@@ -654,8 +677,10 @@ function main() {
   parse_args "$@"
   if [[ "${credentials_profile}" ]] && is_logged_out; then
     login
+    open_depot "$(get_tibia_wid)"
   fi
   manasit
 }
 
+source "./refiller_fns.sh"
 main "$@"
