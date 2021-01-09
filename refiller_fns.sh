@@ -1,4 +1,23 @@
 
+CLOSE_X=1909
+CLOSE_Y=503
+function close_menu {
+  local tibia_wid="$1"
+  xdotool windowfocus "${tibia_wid}" \
+          sleep 0.3 mousemove --window "${tibia_wid}" --sync "${CLOSE_X}" "${CLOSE_Y}" \
+          sleep 0.3 click 1
+}
+
+function is_depot_box_open {
+  local tibia_wid=$1
+  ./menu_reader.py "${tibia_wid}" --check_menu "depot_box_open"
+}
+
+function is_other_menu_open {
+  local tibia_wid=$1
+  ! ./menu_reader.py "${tibia_wid}" --check_menu "empty"
+}
+
 BP_X=1840
 BP_Y=268
 STOW_X=1725
