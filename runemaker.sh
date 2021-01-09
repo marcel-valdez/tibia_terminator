@@ -379,7 +379,7 @@ function make_rune() {
   local tibia_wid="$1"
   local min_wait="$2"
   local max_wait="$3"
-  if [[ ${use_char_reader} -eq 1 ]]; then
+  if [[ ${use_char_reader} ]]; then
     if [[ "${tibia_pid}" ]]; then
       eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
     else
@@ -445,7 +445,7 @@ function manasit() {
       sleep "$(random 180 300)s"
       login
       if [[ ${refill_char} ]]; then
-        open_depot "${tibia_wid}"
+        reopen_depot "${tibia_wid}"
       fi
     fi
     # get current focused window
@@ -468,12 +468,18 @@ function manasit() {
     local elapsed_ms=$((current_timestamp_ms - start_timestamp_ms))
     if [[ ${elapsed_ms} -gt 3600000 ]] && [[ ${refill_char} ]]; then
       start_timestamp_ms=${current_timestamp_ms}
-      focus_window ${tibia_wid}
+      focus_window "${tibia_wid}"
+      if ! is_depot_box_open "${tibia_wid}"; then
+        reopen_depot "${tibia_wid}"
+      fi
       stow_bp "${tibia_wid}"
-      fetch_from_locker "${tibia_wid}" "blank rune" 250
-      fetch_from_locker "${tibia_wid}" "brown mushroom" 100
+      fetch_from_locker "${tibia_wid}" "blank rune" 150
+      fetch_from_locker "${tibia_wid}" "brown mushroom" 50
       # make runes so we have space left for them
+
       wait_for_mana "${tibia_wid}"
+      # make sure to cast the rune spell once before filling al slots with rings
+      cast_rune_spell "${tibia_wid}" 2 2
       fetch_from_locker "${tibia_wid}" "ring of healing" "page"
     fi
 
@@ -496,7 +502,7 @@ function manasit() {
       sleep "$(random 180 300)s"
       login
       if [[ ${refill_char} ]]; then
-        open_depot "${tibia_wid}"
+        reopen_depot "${tibia_wid}"
       fi
     fi
     # sit until next rune spell with randomization
@@ -673,11 +679,41 @@ max-wait-per turn ${max_wait_per_turn}" >&2
 
 }
 
+function close_other_menus {
+  local tibia_wid="$1"
+  local counter=0
+  while is_other_menu_open "${tibia_wid}"; do
+    close_menu "${tibia_wid}"
+    counter+=$((counter+1))
+    if [[ ${counter} -ge 10 ]]; then
+      return 1
+    fi
+  done
+
+  return 0
+}
+
+function reopen_depot {
+  local tibia_wid="$1"
+  focus_window "${tibia_wid}"
+  if ! close_other_menus "${tibia_wid}"; then
+    echo "Unable to close other menus, cannot proceed refilling char." >&2
+    exit 1
+  fi
+
+  if ! is_depot_box_open "${tibia_wid}"; then
+    open_depot "${tibia_wid}"
+  fi
+}
+
 function main() {
   parse_args "$@"
   if [[ "${credentials_profile}" ]] && is_logged_out; then
     login
-    open_depot "$(get_tibia_wid)"
+  fi
+
+  if [[ "${refill_char}" ]]; then
+    reopen_depot "$(get_tibia_wid)"
   fi
   manasit
 }
