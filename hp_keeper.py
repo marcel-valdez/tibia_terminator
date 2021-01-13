@@ -11,6 +11,7 @@ class HpKeeper:
         self.downtime_heal_at_missing = downtime_heal_at_missing
 
     def handle_status_change(self, char_status, is_downtime):
+        self.update_max(char_status)
         missing_hp = self.get_missing_hp(char_status.hp)
         if missing_hp >= self.heal_at_missing:
             if missing_hp <= self.exura_heal:
@@ -22,6 +23,10 @@ class HpKeeper:
         elif is_downtime and missing_hp >= self.downtime_heal_at_missing:
             # during downtime heal every 2.5 seconds when we're missing HP
             self.client.cast_exura(throttle_ms=2500)
+
+    def update_max(self, char_status):
+        if char_status.hp > self.total_hp:
+            self.total_hp = char_status.hp
 
     def get_missing_hp(self, hp):
         return self.total_hp - hp

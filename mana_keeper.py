@@ -17,6 +17,7 @@ class ManaKeeper():
         self.should_drink_critical_mana = False
 
     def handle_status_change(self, char_status, is_downtime):
+        self.update_max(char_status)
         should_drink_mana_critical = self.should_drink_mana_critical(
             char_status.mana)
         should_drink_mana_hi_pri = self.should_drink_mana_high_priority(
@@ -30,6 +31,10 @@ class ManaKeeper():
             self.client.drink_mana(1000)
         elif should_drink_mana_low_pri:
             self.client.drink_mana(2500)
+
+    def update_max(self, char_status):
+        if char_status.mana > self.total_mana:
+            self.total_mana = char_status.mana
 
     def get_missing_mana(self, mana):
         return self.total_mana - mana
