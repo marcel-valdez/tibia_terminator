@@ -1,4 +1,35 @@
 
+
+function is_interaction_owner {
+  local owner_pid=$(cat /tmp/tibia_refill)
+  [[ ${owner_pid} -eq $$ ]]
+}
+
+function free_interaction {
+  if [[ -e /tmp/tibia_refill ]]; then
+    local owner_pid=$(cat /tmp/tibia_refill)
+    if [[ ${owner_pid} -eq $$ ]]; then
+      rm /tmp/tibia_refill
+    fi
+  fi
+}
+
+function lock_interaction {
+  if [[ -e /tmp/tibia_refill ]]; then
+    local owner_pid=$(cat /tmp/tibia_refill)
+    if [[ ${owner_pid} -ne $$ ]]; then
+      echo "Another process is interacting with a Tibia Window" >&2
+      return 1
+    else
+      return 0
+    fi
+  else
+    echo $$ > /tmp/tibia_refill
+    return 0
+  fi
+}
+
+
 CLOSE_X=1909
 CLOSE_Y=503
 function close_menu {

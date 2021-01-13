@@ -467,20 +467,27 @@ function manasit() {
     local current_timestamp_ms=$(timestamp_ms)
     local elapsed_ms=$((current_timestamp_ms - start_timestamp_ms))
     if [[ ${elapsed_ms} -gt 3600000 ]] && [[ ${refill_char} ]]; then
-      start_timestamp_ms=${current_timestamp_ms}
-      focus_window "${tibia_wid}"
-      if ! is_depot_box_open "${tibia_wid}"; then
-        reopen_depot "${tibia_wid}"
-      fi
-      stow_bp "${tibia_wid}"
-      fetch_from_locker "${tibia_wid}" "blank rune" 150
-      fetch_from_locker "${tibia_wid}" "brown mushroom" 50
-      # make runes so we have space left for them
+      if lock_interaction; then
+        if is_interaction_owner; then
+          trap free_interaction SIGINT SIGTERM ERR EXIT
+          start_timestamp_ms=${current_timestamp_ms}
+          focus_window "${tibia_wid}"
+          if ! is_depot_box_open "${tibia_wid}"; then
+            reopen_depot "${tibia_wid}"
+          fi
+          stow_bp "${tibia_wid}"
+          fetch_from_locker "${tibia_wid}" "blank rune" 150
+          fetch_from_locker "${tibia_wid}" "brown mushroom" 50
+          # make runes so we have space left for them
 
-      wait_for_mana "${tibia_wid}"
-      # make sure to cast the rune spell once before filling al slots with rings
-      cast_rune_spell "${tibia_wid}" 2 2
-      fetch_from_locker "${tibia_wid}" "ring of healing" "page"
+          wait_for_mana "${tibia_wid}"
+          # make sure to cast the rune spell once before filling al slots with rings
+          cast_rune_spell "${tibia_wid}" 2 2
+          fetch_from_locker "${tibia_wid}" "ring of healing" "page"
+          free_interaction
+          trap - SIGINT SIGTERM ERR EXIT
+        fi
+      fi
     fi
 
     make_rune "${tibia_wid}"
@@ -688,6 +695,7 @@ function close_other_menus {
     if [[ ${counter} -ge 10 ]]; then
       return 1
     fi
+    sleep "0.3"
   done
 
   return 0
