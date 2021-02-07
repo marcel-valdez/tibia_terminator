@@ -36,25 +36,30 @@ LOOT_SQMS = [
 
 
 class Looter():
-    def __init__(self, tibia_wid, hotkeys={}):
+    def __init__(self, hotkeys={}):
         self.loot_hotkey = hotkeys.get('loot')
         self.hotkey_hook = None
 
     def loot(self):
         pyautogui.keyDown('shiftleft')
         for (sqm_x, sqm_y) in LOOT_SQMS:
-            mouse.move(sqm_x, sqm_y)
             pyautogui.click(sqm_x, sqm_y, button='right', interval=0)
         pyautogui.keyUp('shiftleft') # try shiftleft and shiftright
 
     def hook_hotkey(self, hotkey=None):
-        hotkey = hotkey or self.hotkey_hook
+        if hotkey is None:
+            if self.loot_hotkey is None:
+              raise Exception("Please configure the loot hotkey.")
+            else:
+              hotkey = self.loot_hotkey
+
         self.unhook_hotkey()
         self.hotkey_hook = keyboard.add_hotkey(hotkey, self.loot)
 
     def unhook_hotkey(self):
         if self.hotkey_hook is not None:
             keyboard.remove_hotkey(self.hotkey_hook)
+            self.hotkey_hook = None
 
 
 
