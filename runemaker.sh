@@ -161,18 +161,19 @@ function wait_timer() {
 
 }
 
-function is_out_of_souls_or_mana() {
-    if [[ ${use_char_reader} -eq 1 ]]; then
-      if [[ "${tibia_pid}" ]]; then
-        eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
-      else
-        eval "$(sudo ./char_reader.py)"
-      fi
-      echo "mana: ${MANA}, soul points: ${SOUL_POINTS}"
+function fetch_char_stats() {
+if [[ ${use_char_reader} -eq 1 ]]; then
+    if [[ "${tibia_pid}" ]]; then
+      eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
     else
-      MANA=0
-      SOUL_POINTS=200
+      eval "$(sudo ./char_reader38.py)"
     fi
+    echo "mana: ${MANA}, soul points: ${SOUL_POINTS}"
+  else
+    MANA=0
+    SOUL_POINTS=200
+  fi
+}
 
     # do not drink mana if we're at /maximum char mana
     # do not drink mana if we're running out of soul points.
@@ -306,9 +307,9 @@ function smart_equip_regen_ring() {
   echo '-------------------'
   send_keystroke "${tibia_wid}}" "${EQUIP_RING_LR_KEY}" 1
   if [[ "${tibia_pid}" ]]; then
-    eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
+    eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
   else
-    eval "$(sudo ./char_reader.py)"
+    eval "$(sudo ./char_reader38.py)"
   fi
   if [[ ${SOUL_POINTS} -gt 10 ]]; then
     echo '-------------------------'
@@ -381,9 +382,9 @@ function make_rune() {
   local max_wait="$3"
   if [[ ${use_char_reader} ]]; then
     if [[ "${tibia_pid}" ]]; then
-      eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
+      eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
     else
-      eval "$(sudo ./char_reader.py)"
+      eval "$(sudo ./char_reader38.py)"
     fi
     if [[ ${MANA} -gt ${mana_per_rune} ]]; then
       cast_rune_spell "${tibia_wid}" "${min_wait}" "${max_wait}"

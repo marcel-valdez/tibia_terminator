@@ -44,27 +44,27 @@ function focus_window() {
 
 function get_mana() {
   if [[ "${tibia_pid}" ]]; then
-    eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
+    eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
   else
-    eval "$(sudo ./char_reader.py)"
+    eval "$(sudo ./char_reader38.py)"
   fi
   echo "${MANA}"
 }
 
 function get_soul_pts() {
   if [[ "${tibia_pid}" ]]; then
-    eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
+    eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
   else
-    eval "$(sudo ./char_reader.py)"
+    eval "$(sudo ./char_reader38.py)"
   fi
   echo "${SOUL_POINTS}"
 }
 
 function is_out_of_souls_or_max_mana() {
   if [[ "${tibia_pid}" ]]; then
-    eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
+    eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
   else
-    eval "$(sudo ./char_reader.py)"
+    eval "$(sudo ./char_reader38.py)"
   fi
   [[ ${MANA} -gt ${max_mana_threshold} ]] || \
     [[ ${SOUL_POINTS} -lt ${MIN_SOUL_POINTS} ]]
@@ -101,9 +101,9 @@ function equip_regen_ring() {
   fi
 
   if [[ "${tibia_pid}" ]]; then
-    eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
+    eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
   else
-    eval "$(sudo ./char_reader.py)"
+    eval "$(sudo ./char_reader38.py)"
   fi
   if [[ ${SOUL_POINTS} -lt 6 ]]; then
     echo '-------------------'
