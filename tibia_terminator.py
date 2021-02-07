@@ -95,6 +95,7 @@ class TibiaTerminator:
         self.char_configs = char_configs
         self.cliwin = cliwin
         self.equipment_reader = equipment_reader
+        self.looter = looter
         self.enable_speed = enable_speed
         self.enable_mana = enable_mana
         self.enable_hp = enable_hp
@@ -154,7 +155,6 @@ class TibiaTerminator:
         self.winprint("[Space]: Resume, [Esc]: Exit, [Enter]: Config selection.", MAIN_OPTIONS_ROW)
 
         try:
-            self.looter.hook_hotkey()
             while True:
                 title = "Tibia Terminator. WID: " + str(self.tibia_wid) + " Active config: " + self.selected_config_name
                 self.winprint(title, TITLE_ROW)
@@ -221,6 +221,7 @@ class TibiaTerminator:
         self.app_state = next_state
 
     def enter_running_state(self):
+        self.looter.hook_hotkey()
         self.winprint("[Space]: Pause, [Esc]: Exit, [Enter]: Config selection.", MAIN_OPTIONS_ROW)
 
     def handle_running_state(self):
@@ -242,6 +243,7 @@ class TibiaTerminator:
         pass
 
     def enter_paused_state(self):
+        self.looter.unhook_hotkey()
         self.winprint("[Space]: Resume, [Esc]: Exit, [Enter]: Config selection.", MAIN_OPTIONS_ROW)
 
     def exit_paused_state(self):
