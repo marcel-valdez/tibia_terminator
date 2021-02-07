@@ -147,6 +147,9 @@ def check_specs():
         for (x, y) in RING_COORDS:
             print(eq_reader.get_pixel_color(x, y))
 
+        print("Magic shield spec")
+        print(eq_reader.get_pixel_color(*MAGIC_SHIELD_COORDS[0]))
+
         for name in AMULET_SPEC:
             start_ms = time.time() * 1000
             is_amulet_ = eq_reader.is_amulet(name)

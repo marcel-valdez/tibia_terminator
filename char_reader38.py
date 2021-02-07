@@ -2,7 +2,7 @@
 
 import argparse
 from logger import debug
-from memory_reader38 import MemoryReader38
+from memory_reader38 import MemoryReader38 as MemoryReader
 from app_config import MEM_CONFIG
 
 PREV_MANA_MEMORY_ADDRESS = "41e18e0"  # [I32 I16 ]
@@ -162,7 +162,7 @@ def main(pid,
          speed_address=None,
          soul_points_address=None,
          verbose=False):
-    memory_reader = MemoryReader38(pid)
+    memory_reader = MemoryReader(pid)
     reader = CharReader38(memory_reader, verbose=verbose)
     if mana_address is not None:
         reader.init_mana_address(int(mana_address, 16))

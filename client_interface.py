@@ -129,51 +129,51 @@ class ClientInterface:
 
 
     def cast_exura(self, throttle_ms):
-        winlog(2, self.cliwin, 'cast_exura' + str(throttle_ms))
+        winlog(self.cliwin, 2, 'cast_exura' + str(throttle_ms))
         self.send_keystroke_async('heal', throttle_ms,
                                   self.hotkeys_config['exura'])
 
     def cast_exura_gran(self, throttle_ms):
-        winlog(2, self.cliwin, 'cast_exura_gran' + str(throttle_ms))
+        winlog(self.cliwin, 2, 'cast_exura_gran' + str(throttle_ms))
         self.send_keystroke_async('heal', throttle_ms,
                                   self.hotkeys_config['exura_gran'])
 
     def cast_exura_sio(self, throttle_ms):
-        winlog(2, self.cliwin, 'cast_exura_sio' + str(throttle_ms))
+        winlog(self.cliwin, 2, 'cast_exura_sio' + str(throttle_ms))
         self.send_keystroke_async('heal', throttle_ms,
                                   self.hotkeys_config['exura_sio'])
 
     def drink_mana(self, throttle_ms):
-        winlog(2, self.cliwin, 'drink_mana' + str(throttle_ms))
+        winlog(self.cliwin, 2, 'drink_mana' + str(throttle_ms))
         self.send_keystroke_async('mana', throttle_ms,
                                   self.hotkeys_config['mana_potion'])
 
     def cast_haste(self, throttle_ms):
-        winlog(2, self.cliwin, 'cast_haste' + str(throttle_ms))
+        winlog(self.cliwin, 2, 'cast_haste' + str(throttle_ms))
         self.send_keystroke_async('utility_spell', throttle_ms,
                                   self.hotkeys_config['utani_hur'])
 
     def equip_ring(self, throttle_ms=250):
-        winlog(2, self.cliwin, 'equip_ring' + str(throttle_ms))
+        winlog(self.cliwin, 2, 'equip_ring' + str(throttle_ms))
         self.send_keystroke_async('item_usage', throttle_ms,
                                   self.hotkeys_config['equip_ring'])
 
     def equip_amulet(self, throttle_ms=250):
-        winlog(2, self.cliwin, 'equip_amulet' + str(throttle_ms))
+        winlog(self.cliwin, 2, 'equip_amulet' + str(throttle_ms))
         self.send_keystroke_async('item_usage', throttle_ms,
                                   self.hotkeys_config['equip_amulet'])
 
     def eat_food(self, throttle_ms=250):
-        winlog(2, self.cliwin, 'eat_food' + str(throttle_ms))
+        winlog(self.cliwin, 2, 'eat_food' + str(throttle_ms))
         self.send_keystroke_async('item_usage', throttle_ms,
                                   self.hotkeys_config['eat_food'])
 
     def cast_magic_shield(self, throttle_ms=250):
-        winlog(2, self.cliwin, 'cast_magic_shield' + str(throttle_ms))
+        winlog(self.cliwin, 2, 'cast_magic_shield' + str(throttle_ms))
         self.send_keystroke_async('utility_spell', throttle_ms,
                                   self.hotkeys_config['magic_shield'])
 
     def cancel_magic_shield(self, throttle_ms=250):
-        winlog(2, self.cliwin, 'cancel_magic_shield' + str(throttle_ms))
+        winlog(self.cliwin, 2, 'cancel_magic_shield' + str(throttle_ms))
         self.send_keystroke_async('utility_spell', throttle_ms,
                                   self.hotkeys_config['cancel_magic_shield'])

@@ -40,7 +40,7 @@ def get_tibia_wid(pid):
         ["/usr/bin/xdotool", "search", "--pid", str(pid)],
         stderr=subprocess.STDOUT)
     debug(wid)
-    return wid.strip()
+    return wid.decode('utf-8').strip()
 
 
 def focus_tibia(wid):
@@ -91,7 +91,8 @@ def get_pixel_color_slow(wid, x, y):
         pixel_rgb_image.close()
 
 def matches_screen_slow(wid, coords, color_spec):
-    pixels = map(lambda (x, y): get_pixel_color_slow(wid, x, y), coords)
+    get_pixel_fn = lambda coords: get_pixel_color_slow(wid, *coords)
+    pixels = map(get_pixel_color_lmb, coords)
     match = True
     for i in range(0, len(pixels)):
         match &= pixels[i].lower() == color_spec[i].lower()
@@ -198,7 +199,8 @@ class ScreenReader():
         return get_pixel_color_slow(wid, x, y)
 
     def matches_screen(self, coords, color_spec):
-        pixels = map(lambda (x, y): self.get_pixel_color(x, y), coords)
+        get_pixel_fn = lambda coord: self.get_pixel_color(*coord)
+        pixels = list(map(get_pixel_fn, coords))
         match = True
         for i in range(0, len(pixels)):
             match &= pixels[i].lower() == color_spec[i].lower()

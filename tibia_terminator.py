@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3.8
 
 import argparse
 import time
@@ -9,9 +9,9 @@ from multiprocessing import Pool
 
 from window_utils import get_tibia_wid
 from client_interface import ClientInterface
-from memory_reader import MemoryReader
+from memory_reader38 import MemoryReader38 as MemoryReader
 from char_keeper import CharKeeper
-from char_reader import CharReader
+from char_reader38 import CharReader38 as CharReader
 from char_status import CharStatus
 from equipment_reader import EquipmentReader
 from char_config import CHAR_CONFIGS, HOTKEYS_CONFIG
@@ -152,7 +152,8 @@ class TibiaTerminator:
 
         try:
             while True:
-                self.winprint("Tibia Terminator. Active config: " + self.selected_configuration, TITLE_ROW)
+                title = "Tibia Terminator. WID: " + str(self.tibia_wid) + " Active config: " + self.selected_configuration
+                self.winprint(title, TITLE_ROW)
                 start = time.time() * 1000
                 keycode = self.cliwin.getch()
                 self.enter_next_app_state(keycode)
