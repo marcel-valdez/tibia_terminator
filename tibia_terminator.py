@@ -17,6 +17,7 @@ from equipment_reader import EquipmentReader
 from char_config import CHAR_CONFIGS, HOTKEYS_CONFIG
 from app_config import MEM_CONFIG
 from logger import set_debug_level
+from looter import Looter
 
 parser = argparse.ArgumentParser(
     description='Tibia terminator CLI parameters.')
@@ -81,6 +82,7 @@ class TibiaTerminator:
                  mem_config,
                  char_configs,
                  cliwin,
+                 looter,
                  enable_mana=True,
                  enable_hp=True,
                  enable_magic_shield=True,
@@ -119,7 +121,6 @@ class TibiaTerminator:
         else:
             hp_address = None
 
-
         if self.enable_speed:
             speed_address = int(self.mem_config['speed_memory_address'], 16)
         else:
@@ -153,6 +154,7 @@ class TibiaTerminator:
         self.winprint("[Space]: Resume, [Esc]: Exit, [Enter]: Config selection.", MAIN_OPTIONS_ROW)
 
         try:
+            self.looter.hook_hotkey()
             while True:
                 title = "Tibia Terminator. WID: " + str(self.tibia_wid) + " Active config: " + self.selected_config_name
                 self.winprint(title, TITLE_ROW)
@@ -174,6 +176,7 @@ class TibiaTerminator:
                 if elapsed < 100:
                     time.sleep((100 - elapsed) / 1000)
         finally:
+            self.looter.unhook_hotkey()
             self.equipment_reader.close()
 
     def handle_exit_state(self):
@@ -391,6 +394,7 @@ def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
     char_keeper = CharKeeper(client, CHAR_CONFIGS)
     char_reader = CharReader(MemoryReader(pid, print_async))
     eq_reader = EquipmentReader()
+    looter = Looter(HOTKEYS_CONFIG)
     tibia_terminator = TibiaTerminator(tibia_wid,
                                        char_keeper,
                                        char_reader,
@@ -398,6 +402,7 @@ def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
                                        mem_config,
                                        CHAR_CONFIGS,
                                        cliwin,
+                                       looter,
                                        enable_mana=enable_mana,
                                        enable_hp=enable_hp,
                                        enable_magic_shield=enable_magic_shield,
