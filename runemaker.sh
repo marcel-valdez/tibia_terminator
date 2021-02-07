@@ -3,6 +3,7 @@
 
 # Interface interaction cofiguration values
 EQUIP_RING_ROH_KEY='n'
+UNEQUIP_RING_ROH_KEY='l'
 EQUIP_RING_LR_KEY='u'
 EAT_FOOD_KEY='h'
 DRINK_POTION_KEY='m'
@@ -175,9 +176,12 @@ if [[ ${use_char_reader} -eq 1 ]]; then
   fi
 }
 
-    # do not drink mana if we're at /maximum char mana
-    # do not drink mana if we're running out of soul points.
-    [[ ${MANA} -gt ${max_mana_threshold} ]] || [[ ${SOUL_POINTS} -lt 6 ]]
+function is_out_of_souls_or_mana() {
+  local _mana="$1"
+  local _soul_pts="$2"
+  # do not drink mana if we're at /maximum char mana
+  # do not drink mana if we're running out of soul points.
+  [[ ${_mana} -gt ${max_mana_threshold} ]] || [[ ${_soul_pts} -lt 6 ]]
 }
 
 function is_ring_slot_empty() {
@@ -201,8 +205,12 @@ function get_potion_count() {
 
 function drink_mana_potion() {
   local tibia_wid=$1
-  if is_out_of_souls_or_mana; then
-    return 1
+  if [[ ${use_char_reader} ]]; then
+    fetch_char_stats
+    if is_out_of_souls_or_mana ${MANA} ${SOUL_POINTS} || \
+       [[ ${MANA} -ge ${max_char_mana} ]]; then
+      return 1
+    fi
   fi
 
   if [[ ${use_mouse_for_mana_potion} ]]; then
@@ -215,8 +223,12 @@ function drink_mana_potion() {
 
 function drink_mana_potions() {
   local tibia_wid=$1
-  if is_out_of_souls_or_mana; then
-    return 1
+  if [[ ${use_char_reader} ]]; then
+    fetch_char_stats
+    if is_out_of_souls_or_mana ${MANA} ${SOUL_POINTS} || \
+       [[ ${MANA} -ge ${max_char_mana} ]]; then
+      return 1
+    fi
   fi
 
   local potion_count=$(get_potion_count)
@@ -298,10 +310,11 @@ function drop_regen_ring() {
 
 function smart_equip_regen_ring() {
   local tibia_wid="$1"
-  if is_out_of_souls_or_mana; then
+  fetch_char_stats
+  if is_out_of_souls_or_mana ${MANA} ${SOUL_POINTS} || \
+      [[ ${MANA} -ge ${max_char_mana} ]]; then
     return 1
   fi
-
   echo '-------------------'
   echo 'Equipping life ring'
   echo '-------------------'
@@ -317,8 +330,15 @@ function smart_equip_regen_ring() {
     echo '-------------------------'
     wait_time="0.$(random 250 390)s"
     sleep "${wait_time}"
-    # equip ring of healing
     send_keystroke "${tibia_wid}}" "${EQUIP_RING_ROH_KEY}" 1
+  elif [[ "${SOUL_POINTS}" -eq 0 ]] && \
+       [[ "${check_empty_slots}" ]] && \
+       ! is_ring_slot_empty "${tibia_wid}"; then
+    echo '-------------------------'
+    echo 'Unequipping ring of healing'
+    echo '-------------------------'
+    sleep "0.$(random 250 390)s"
+    send_keystroke "${tibia_wid}" "${UNEQUIP_RING_ROH_KEY}" 1
   fi
 }
 
@@ -353,9 +373,14 @@ function equip_regen_ring() {
 
 function equip_soft_boots() {
   local tibia_wid="$1"
-  if is_out_of_souls_or_mana; then
-    return 1
+  if [[ ${use_char_reader} ]]; then
+    fetch_char_stats
+    if is_out_of_souls_or_mana ${MANA} ${SOUL_POINTS} || \
+       [[ ${MANA} -ge ${max_char_mana} ]]; then
+      return 1
+    fi
   fi
+
   # equip soft boots
   echo '-------------------'
   echo 'Equipping soft boots'
@@ -365,9 +390,14 @@ function equip_soft_boots() {
 
 function eat_food() {
   local tibia_wid="$1"
-  if is_out_of_souls_or_mana; then
-    return 1
+  if [[ ${use_char_reader} ]]; then
+    fetch_char_stats
+    if is_out_of_souls_or_mana ${MANA} ${SOUL_POINTS} || \
+       [[ ${MANA} -ge ${max_char_mana} ]]; then
+      return 1
+    fi
   fi
+
   # call the eat command a random number between 0 and 3
   # we don't want to always issue the eat command
   echo '-----------'
@@ -498,7 +528,7 @@ function manasit() {
     eat_food "${tibia_wid}"
 
     # return to prev window
-    sleep "$(random 1 2).$(random 1 9)$(random 1 9)s"
+    sleep "$(random 1 2).$(random 11 99)s"
     if [[ "${refocus_tibia_to_make_rune}" ]]; then
       xdotool mousemove --screen ${curr_screen} \
         ${curr_x} ${curr_y}
