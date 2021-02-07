@@ -189,9 +189,17 @@ class ScreenReader():
 
     def get_pixel_color(self, x, y):
         """TODO."""
-        pixel_rgb_bytes = self.get_pixel_rgb_bytes_xlib(x, y)
+        pixel_rgb_res = self.get_pixel_rgb_bytes_xlib(x, y)
+
+        # for some reason sometimes the byte data comes back as a string
+        # but the data backing that string are the actual bytes
+        if isinstance(pixel_rgb_res.data, str):
+          pixel_rgb_bytes = bytes(pixel_rgb_res.data, 'utf-8')
+        else:
+          pixel_rgb_bytes = pixel_rgb_res.data
+
         pixel_rgb_image = PIL.Image.frombytes(
-            "RGB", (1, 1), pixel_rgb_bytes.data, "raw", "BGRX")
+            "RGB", (1, 1), pixel_rgb_bytes, "raw", "BGRX")
         pixel_rgb_color = PIL.ImageStat.Stat(pixel_rgb_image).mean
         return rgb_color_to_hex_str(pixel_rgb_color)
 
