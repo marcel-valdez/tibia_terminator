@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3.8
 
 import char_configs.demnok_char_config as demnok
 import char_configs.ultimate_char_config as ultimate
