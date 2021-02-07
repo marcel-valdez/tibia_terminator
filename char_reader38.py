@@ -42,6 +42,14 @@ parser.add_argument('--magic_shield_address',
                     help='Memory address for magic shield level value.',
                     type=str,
                     default=None)
+parser.add_argument('--max_hp_address',
+                    help='Memory address for magic shield level value.',
+                    type=str,
+                    default=None)
+parser.add_argument('--max_mana_address',
+                    help='Memory address for magic shield level value.',
+                    type=str,
+                    default=None)
 parser.add_argument('--pid', help='The PID of Tibia', type=int, default=None)
 parser.add_argument('--verbose', help='Show verbose output.',
                     action='store_true', default=False)
@@ -55,6 +63,8 @@ class CharReader38():
         self.speed_address = None
         self.magic_shield_address = None
         self.soul_points_address = None
+        self.max_hp_address = None
+        self.max_mana_address = None
         self.verbose = verbose
 
     def get_stats(self):
@@ -81,6 +91,24 @@ class CharReader38():
             self.memory_reader.close()
         return stats
 
+    def get_max_hp(self):
+        if self.max_hp_address is None:
+            return 99999
+        self.memory_reader.open()
+        try:
+            return self.memory_reader.read_address(self.max_hp_address, 4)
+        finally:
+            self.memory_reader.close()
+
+    def get_max_mana(self):
+        if self.max_mana_address is None:
+            return 99999
+        self.memory_reader.open()
+        try:
+            return self.memory_reader.read_address(self.max_mana_address, 4)
+        finally:
+            self.memory_reader.close()
+
     def init_mana_address(self, override_value=None):
         if override_value is not None:
             self.mana_address = override_value
@@ -101,6 +129,22 @@ class CharReader38():
             print("Mana memory address is - {} ({})".format(
                   str(self.mana_address), hex(self.mana_address)))
 
+    def init_max_mana_address(self, override_value=None):
+        if override_value is not None:
+            self.max_mana_address = override_value
+        elif self.max_mana_address is None:
+            if self.mana_address is not None:
+                self.max_mana_address = self.mana_address + 4
+            else:
+                # TODO: Implement automated mechanism
+                raise Exception("Could not find the max mana memory address. "
+                                "The hardcoded offset is stale.")
+
+        if self.verbose:
+            print("Max mana address is - {} ({})".format(
+                  str(self.max_mana_address),
+                  hex(self.max_mana_address)))
+
     def init_hp_address(self, override_value=None):
         if override_value is not None:
             self.hp_address = override_value
@@ -112,6 +156,22 @@ class CharReader38():
         if self.verbose:
             print("HP memory address is - {} ({})".format(
                   str(self.hp_address), hex(self.hp_address)))
+
+    def init_max_hp_address(self, override_value=None):
+        if override_value is not None:
+            self.max_hp_address = override_value
+        elif self.max_hp_address is None:
+            if self.mana_address is not None:
+                self.max_hp_address = self.mana_address - 4
+            else:
+                # TODO: Implement automated mechanism
+                raise Exception("Could not find the max HP memory address. "
+                                "The hardcoded offset is stale.")
+
+        if self.verbose:
+            print("Max HP address is - {} ({})".format(
+                  str(self.max_hp_address),
+                  hex(self.max_hp_address)))
 
     def init_speed_address(self, override_value=None):
         if override_value is not None:
@@ -125,12 +185,11 @@ class CharReader38():
             print("Speed memory address is - {} ({})".format(
                   str(self.speed_address), hex(self.speed_address)))
 
-
     def init_magic_shield_address(self, override_value=None):
         if override_value is not None:
             self.magic_shield_address = override_value
         elif self.magic_shield_address is None and \
-             self.speed_address is not None:
+            self.speed_address is not None:
             self.magic_shield_address = self.speed_address + 196
         else:
             # TODO: Implement automated mechanism
@@ -155,18 +214,23 @@ class CharReader38():
                   hex(self.soul_points_address)))
 
 
+
 def main(pid,
          mana_address=None,
          hp_address=None,
          magic_shield_address=None,
          speed_address=None,
          soul_points_address=None,
+         max_hp_address=None,
+         max_mana_address=None,
          verbose=False):
     memory_reader = MemoryReader(pid)
     reader = CharReader38(memory_reader, verbose=verbose)
     if mana_address is not None:
         reader.init_mana_address(int(mana_address, 16))
+        reader.init_max_mana_address()
         reader.init_hp_address()
+        reader.init_max_hp_address()
     if hp_address is not None:
         reader.init_hp_address(int(hp_address, 16))
     if speed_address is not None:
@@ -176,11 +240,16 @@ def main(pid,
         reader.init_soul_points_address(int(soul_points_address, 16))
     if magic_shield_address is not None:
         reader.init_magic_shield_address(int(magic_shield_address, 16))
+    if max_hp_address is not None:
+        reader.init_max_hp_address(int(max_hp_address, 16))
+    if max_mana_address is not None:
+        reader.init_max_mana_address(int(max_mana_address, 16))
 
     stats = reader.get_stats()
-    print('HP={};MANA={};SPEED={};SOUL_POINTS={};MAGIC_SHIELD={}'.format(
-        stats['hp'], stats['mana'], stats['speed'], stats['soul_points'],
-        stats['magic_shield']))
+    print(f"HP={stats['hp']};MANA={stats['mana']};SPEED={stats['speed']};"
+          f"SOUL_POINTS={stats['soul_points']};"
+          f"MAGIC_SHIELD={stats['magic_shield']};"
+          f"MAX_MANA={reader.get_max_mana()};MAX_HP={reader.get_max_hp()}")
 
 
 if __name__ == "__main__":
@@ -193,4 +262,6 @@ if __name__ == "__main__":
          args.magic_shield_address or config['magic_shield_memory_address'],
          args.speed_address or config['speed_memory_address'],
          args.soul_points_address or config['soul_points_memory_address'],
+         args.max_hp_address or config['max_hp_address'],
+         args.max_mana_address or config['max_mana_address'],
          args.verbose)

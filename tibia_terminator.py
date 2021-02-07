@@ -100,7 +100,7 @@ class TibiaTerminator:
         self.only_monitor = only_monitor
         self.initial_pause = True
         self.app_state = None
-        self.selected_configuration = char_configs[0]["name"]
+        self.selected_config_name = char_configs[0]["name"]
 
     def monitor_char(self):
         # TODO: Rather than hardcoding these values, implement the init_*
@@ -133,8 +133,10 @@ class TibiaTerminator:
 
         if self.enable_mana:
             self.char_reader.init_mana_address(mana_address)
+            self.char_reader.init_max_mana_address()
         if self.enable_hp:
             self.char_reader.init_hp_address(hp_address)
+            self.char_reader.init_max_hp_address()
         if self.enable_speed:
             self.char_reader.init_speed_address(speed_address)
         if self.enable_magic_shield:
@@ -152,7 +154,7 @@ class TibiaTerminator:
 
         try:
             while True:
-                title = "Tibia Terminator. WID: " + str(self.tibia_wid) + " Active config: " + self.selected_configuration
+                title = "Tibia Terminator. WID: " + str(self.tibia_wid) + " Active config: " + self.selected_config_name
                 self.winprint(title, TITLE_ROW)
                 start = time.time() * 1000
                 keycode = self.cliwin.getch()
@@ -297,7 +299,7 @@ class TibiaTerminator:
                         self.cliwin.clrtoeol()
                         number_str = ''
                     else:
-                        self.selected_configuration = self.char_configs[selection]["name"]
+                        self.selected_config_name = self.char_configs[selection]["name"]
                         self.char_keeper.change_char_config(selection)
                         self.exit_config_selection_state()
                         self.enter_paused_state()

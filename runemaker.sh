@@ -32,6 +32,12 @@ function random() {
   echo $((min + (RANDOM % (delta + 1))))
 }
 
+function update_max_mana() {
+    max_char_mana=$1
+    max_mana_threshold=$((max_char_mana - 200))
+    mana_per_rune=${max_mana_threshold}
+}
+
 # Playable area set at Y: 696 with 2 cols on left and 2 cols on right
 # To get the realtime mouse location use:
 #   watch -t -n 0.0001 xdotool getmouselocation
@@ -163,13 +169,19 @@ function wait_timer() {
 }
 
 function fetch_char_stats() {
-if [[ ${use_char_reader} -eq 1 ]]; then
+  local silent=$1
+  if [[ ${use_char_reader} -eq 1 ]]; then
     if [[ "${tibia_pid}" ]]; then
       eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
     else
       eval "$(sudo ./char_reader38.py)"
     fi
-    echo "mana: ${MANA}, soul points: ${SOUL_POINTS}"
+
+    [[ -z ${silent} ]] && echo "mana: ${MANA}, soul points: ${SOUL_POINTS}, max mana: ${MAX_MANA}"
+    if [[ "${MAX_MANA}" -ne "${max_char_mana}" ]]; then
+      echo "Updating MAX mana to ${MAX_MANA}"
+      update_max_mana "${MAX_MANA}"
+    fi
   else
     MANA=0
     SOUL_POINTS=200
@@ -206,7 +218,7 @@ function get_potion_count() {
 function drink_mana_potion() {
   local tibia_wid=$1
   if [[ ${use_char_reader} ]]; then
-    fetch_char_stats
+    fetch_char_stats 1
     if is_out_of_souls_or_mana ${MANA} ${SOUL_POINTS} || \
        [[ ${MANA} -ge ${max_char_mana} ]]; then
       return 1
@@ -224,7 +236,7 @@ function drink_mana_potion() {
 function drink_mana_potions() {
   local tibia_wid=$1
   if [[ ${use_char_reader} ]]; then
-    fetch_char_stats
+    fetch_char_stats 1
     if is_out_of_souls_or_mana ${MANA} ${SOUL_POINTS} || \
        [[ ${MANA} -ge ${max_char_mana} ]]; then
       return 1
@@ -310,7 +322,7 @@ function drop_regen_ring() {
 
 function smart_equip_regen_ring() {
   local tibia_wid="$1"
-  fetch_char_stats
+  fetch_char_stats 1
   if is_out_of_souls_or_mana ${MANA} ${SOUL_POINTS} || \
       [[ ${MANA} -ge ${max_char_mana} ]]; then
     return 1
@@ -319,11 +331,8 @@ function smart_equip_regen_ring() {
   echo 'Equipping life ring'
   echo '-------------------'
   send_keystroke "${tibia_wid}}" "${EQUIP_RING_LR_KEY}" 1
-  if [[ "${tibia_pid}" ]]; then
-    eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
-  else
-    eval "$(sudo ./char_reader38.py)"
-  fi
+  fetch_char_stats 1
+
   if [[ ${SOUL_POINTS} -gt 10 ]]; then
     echo '-------------------------'
     echo 'Equipping ring of healing'
@@ -374,7 +383,7 @@ function equip_regen_ring() {
 function equip_soft_boots() {
   local tibia_wid="$1"
   if [[ ${use_char_reader} ]]; then
-    fetch_char_stats
+    fetch_char_stats 1
     if is_out_of_souls_or_mana ${MANA} ${SOUL_POINTS} || \
        [[ ${MANA} -ge ${max_char_mana} ]]; then
       return 1
@@ -391,7 +400,7 @@ function equip_soft_boots() {
 function eat_food() {
   local tibia_wid="$1"
   if [[ ${use_char_reader} ]]; then
-    fetch_char_stats
+    fetch_char_stats 1
     if is_out_of_souls_or_mana ${MANA} ${SOUL_POINTS} || \
        [[ ${MANA} -ge ${max_char_mana} ]]; then
       return 1
@@ -411,11 +420,7 @@ function make_rune() {
   local min_wait="$2"
   local max_wait="$3"
   if [[ ${use_char_reader} ]]; then
-    if [[ "${tibia_pid}" ]]; then
-      eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
-    else
-      eval "$(sudo ./char_reader38.py)"
-    fi
+    fetch_char_stats 1
     if [[ ${MANA} -gt ${mana_per_rune} ]]; then
       cast_rune_spell "${tibia_wid}" "${min_wait}" "${max_wait}"
     fi
@@ -544,6 +549,7 @@ function manasit() {
       fi
     fi
     # sit until next rune spell with randomization
+    fetch_char_stats
     wait_for_mana "${tibia_wid}"
   done
 }
@@ -665,11 +671,6 @@ max-wait-per turn ${max_wait_per_turn}" >&2
     echo "Using half the mana potions"
   fi
 
-  if [[ -z "${mana_per_rune}" ]]; then
-    echo "You need to provide the mana cost per rune. (--mana-per-rune <amount>)" >&2
-    exit 1
-  fi
-
   local mana_potions_seq_len=${#mana_potions_seq[@]}
   if [[ ${mana_potions_seq_len} -gt 0 ]]; then
     debug "Mana potion sequence length: ${mana_potions_seq_len}"
@@ -710,8 +711,21 @@ max-wait-per turn ${max_wait_per_turn}" >&2
 
   if [[ ${use_char_reader} -eq 1 ]]; then
     echo "Using char_reader.py to determine whether to equip life ring or ring of healing."
-    if [[ ${max_char_mana} -lt 99999 ]]; then
+    if [[ ${max_char_mana} -eq 99999 ]]; then
+      fetch_char_stats
+    fi
+  fi
+
+  if [[ ${max_char_mana} -ne 99999 ]]; then
       echo "Using a maximum character mana pool of ${max_char_mana}."
+  fi
+
+  if [[ -z "${mana_per_rune}" ]]; then
+    if [[ ${use_char_reader} -eq 1 ]] && [[ ${max_char_mana} -ne 99999 ]]; then
+      mana_per_rune=$((max_char_mana - 200))
+    else
+      echo "You need to provide the mana cost per rune. (--mana-per-rune <amount>)" >&2
+      exit 1
     fi
   fi
 
