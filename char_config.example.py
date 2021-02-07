@@ -21,4 +21,9 @@ HOTKEYS_CONFIG = {
 # a different value in this file.
 # TODO: Read the char's name and use that to load the correct
 # character configuration.
-CHAR_CONFIG = example.DEFAULT
+CHAR_CONFIGS = [
+    {
+        "name": "example.DEFAULT",
+        "config": example.DEFAULT
+    }
+]

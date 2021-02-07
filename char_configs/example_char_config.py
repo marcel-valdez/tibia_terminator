@@ -52,5 +52,6 @@ DEFAULT = {
     # valid types: None, 'emergency', 'permanent'
     'magic_shield_type': 'emergency',
     # it will refresh magic shield if it is below 1000 points
-    'magic_shield_treshold': 1000
+    'magic_shield_treshold': 1000,
+    'emergency_shield_hp_treshold': TOTAL_HP * 0.33
 }
