@@ -4,3 +4,5 @@
 credentials.py
 .tibia_reconnector.lock
 char_configs
+char_config.py
+app_config.py
