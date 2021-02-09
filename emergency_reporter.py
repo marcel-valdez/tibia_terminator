@@ -25,7 +25,7 @@ class EmergencyReporter():
         # Stop when we're in safety
         return is_full_hp and is_healthy_mana and self.secs_since_start() >= 6
 
-    def stop_emergency(self, char_status):
+    def stop_emergency(self):
         self.in_emergency = False
         self.emergency_start_timestamp_sec = None
 

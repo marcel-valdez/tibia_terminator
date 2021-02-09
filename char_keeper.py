@@ -77,8 +77,6 @@ class CharKeeper:
             self.equipment_keeper = EquipmentKeeper(
                 client,
                 self.emergency_reporter,
-                char_config['total_hp'],
-                char_config['mana_lo'],
                 char_config['should_equip_amulet'],
                 char_config['should_equip_ring'],
                 char_config['should_eat_food'],
@@ -162,7 +160,7 @@ class CharKeeper:
 
         if self.emergency_reporter.in_emergency and \
            self.emergency_reporter.should_stop_emergency(char_status):
-            self.emergency_reporter.stop_emergency(char_status)
+            self.emergency_reporter.stop_emergency()
 
         self.magic_shield_keeper.handle_status_change(char_status)
         self.equipment_keeper.handle_status_change(char_status)

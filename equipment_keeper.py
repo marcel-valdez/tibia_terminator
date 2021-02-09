@@ -13,7 +13,7 @@ class EquipmentMode:
 
 
 class EquipmentKeeper:
-    def __init__(self, client, emergency_reporter, total_hp, mana_lo,
+    def __init__(self, client, emergency_reporter,
                  should_equip_amulet, should_equip_ring, should_eat_food,
                  equip_amulet_secs=DEFAULT_EQUIP_FREQ,
                  equip_ring_secs=DEFAULT_EQUIP_FREQ):
@@ -80,6 +80,7 @@ class EquipmentKeeper:
     def handle_normal_status_change(self, char_status):
         self.handle_equip_amulet_normal(char_status)
         self.handle_equip_ring_normal(char_status)
+        self.handle_eat_food(char_status)
 
     def handle_equip_amulet_normal(self, char_status):
         if self.should_equip_amulet and \
