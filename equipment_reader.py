@@ -65,29 +65,71 @@ class RingName:
     # might ring
     MIGHT = 'might'
 
-# Playable area set at Y: 696 with 2 cols on left and 2 cols on right
 
+# Playable area set at Y: 696 with 2 cols on left and 2 cols on right
+ACTION_BAR_SQUARE_LEN = 36
+# 10th action bar item right to left, 2 columns on the left, 2 columns on the right
+ACTION_BAR_AMULET_CENTER_X = 1178
+ACTION_BAR_CENTER_Y = 719
 ACTION_BAR_AMULET_COORDS = [
     # upper pixel
-    (2, 1),
+    (ACTION_BAR_AMULET_CENTER_X, ACTION_BAR_CENTER_Y - 10),
     # lower pixel
-    (2, 3),
+    (ACTION_BAR_AMULET_CENTER_X, ACTION_BAR_CENTER_Y + 10),
     # left pixel
-    (1, 2),
+    (ACTION_BAR_AMULET_CENTER_X - 10, ACTION_BAR_CENTER_Y),
     # right pixel
-    (3, 2)
+    (ACTION_BAR_AMULET_CENTER_X + 10, ACTION_BAR_CENTER_Y)
 ]
 
 ACTION_BAR_AMULET_SPEC = {
     AmuletName.SSA: [
         # upper pixel
-        "111111",
+        "b9935f",
         # lower pixel
-        "111111",
+        "3c3c3c",
         # left pixel
-        "111111",
+        "444444",
         # right pixel
-        "111111"
+        "454545"
+    ],
+    AmuletName.STA: [
+        "4d170",
+        "1ad552",
+        "d421d",
+        "93215"
+    ],
+    AmuletName.LEVIATHAN: [
+        "b4e2f0",
+        "032c1",
+        "444444",
+        "454545"
+    ],
+    AmuletName.SHOCK: [
+        [
+            "61719",
+            "404040",
+            "89d27",
+            "54312"
+        ],
+        [
+            "59515",
+            "404040",
+            "6f519",
+            "5d616"
+        ],
+        [
+            "68a1f",
+            "404040",
+            "7da24",
+            "5e719"
+        ],
+        [
+            "57311",
+            "404040",
+            "7b81c",
+            "5c514"
+        ]
     ]
 }
 
@@ -100,13 +142,51 @@ AMULET_SPEC = {
     ],
     AmuletName.SSA: [
         # upper pixel
-        "000000",
+        "252626",
         # lower pixel
-        "000000",
+        "b8b8b8",
         # left pixel
-        "000000",
+        "252626",
         # right pixel
-        "000000"
+        "232424"
+    ],
+    AmuletName.STA: [
+        "252626",
+        "1b42c",
+        "252626",
+        "a3f19"
+    ],
+    AmuletName.LEVIATHAN: [
+        "252626",
+        "262627",
+        "252626",
+        "232424"
+    ],
+    AmuletName.SHOCK: [
+        [
+            "252626",
+            "60719",
+            "91d28",
+            "232424"
+        ],
+        [
+            "252626",
+            "6891a",
+            "7e61b",
+            "232424"
+        ],
+        [
+            "252626",
+            "5a517",
+            "87b26",
+            "232424"
+        ],
+        [
+            "252626",
+            "60719",
+            "91d28",
+            "232424"
+        ]
     ]
 }
 
@@ -121,27 +201,29 @@ AMULET_COORDS = [
     (1779, 261)
 ]
 
+ACTION_BAR_RING_CENTER_X = 1215
+ACTION_BAR_RING_CENTER_Y = 722
 ACTION_BAR_RING_COORDS = [
     # upper pixel
-    (2, 1),
+    (ACTION_BAR_RING_CENTER_X, ACTION_BAR_RING_CENTER_Y - 3),
     # lower pixel
-    (2, 3),
+    (ACTION_BAR_RING_CENTER_X, ACTION_BAR_RING_CENTER_Y + 3),
     # left pixel
-    (1, 2),
+    (ACTION_BAR_RING_CENTER_X - 3, ACTION_BAR_RING_CENTER_Y),
     # right pixel
-    (3, 2)
+    (ACTION_BAR_RING_CENTER_X + 3, ACTION_BAR_RING_CENTER_Y),
 ]
 
 ACTION_BAR_RING_SPEC = {
     "might": [
         # upper pixel
-        "111111",
+        "9b8132",
         # lower pixel
-        "111111",
+        "d1af44",
         # left pixel
-        "111111",
+        "faed75",
         # right pixel
-        "111111"
+        "d5b246"
     ]
 }
 
@@ -153,10 +235,10 @@ RING_SPEC = {
         "3d4042",
     ],
     RingName.MIGHT: [
-        "000000",
-        "000000",
-        "000000",
-        "000000",
+        "252625",
+        "272728",
+        "d1ae43",
+        "927b34",
     ]
 }
 
@@ -188,12 +270,29 @@ MAGIC_SHIELD_COORDS = [
 
 class EquipmentReader(ScreenReader):
 
+    def matches_screen(self, coords, specs):
+        if type(specs[0]) == list:
+            for animation_spec in specs:
+                if ScreenReader.matches_screen(self, coords, animation_spec):
+                    return True
+            return False
+        else:
+            return ScreenReader.matches_screen(self, coords, specs)
+
+    def pixels_match(self, specs, pixels):
+        if type(specs[0]) == list:
+            for animation_spec in specs:
+                if ScreenReader.pixels_match(self, animation_spec, pixels):
+                    return True
+            return False
+        else:
+            return ScreenReader.pixels_match(self, specs, pixels)
+
     def get_matching_name(self, coords, specs, default_value):
         pixels = self.get_pixels(coords)
         for name in specs:
             if self.pixels_match(specs[name], pixels):
                 return name
-
         return default_value
 
     def get_action_bar_amulet_name(self):
