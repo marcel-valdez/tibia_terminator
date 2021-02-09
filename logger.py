@@ -63,7 +63,18 @@ class LogEntry():
         self.col = col
         self.end = end
 
-
+# TODO:
+#  1. Make this logger a generic logger (CursesLogger) that receives msg, row
+#     and col.
+#  2. Create layout classes that know where each type of message should be
+#     located in the layout (e.g. exec_layout.print_stats(stats, prev_stats,
+#     eq_stats, prev_eq_stats), exec_layout.print_title(),
+#     exec_layout_.print_debug(...), etc)
+#     - The layout classes use this logger to actually print to curses
+#  3. Use layout classes depending on the state of the App
+#     1. Execution layout
+#     2. Choose config layout
+#     3. Paused layout? (You get the point)
 class StatsLogger(threading.Thread):
     def __init__(self, cliwin):
         super().__init__(daemon=True)
