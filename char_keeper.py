@@ -6,16 +6,19 @@ from magic_shield_keeper import MagicShieldKeeper
 from emergency_magic_shield_keeper import EmergencyMagicShieldKeeper
 from mana_keeper import ManaKeeper
 from speed_keeper import SpeedKeeper
+from emergency_reporter import EmergencyReporter
 
 
 class CharKeeper:
-    def __init__(self, client, char_configs, mana_keeper=None, hp_keeper=None,
+    def __init__(self, client, char_configs, emergency_reporter=None,
+                 mana_keeper=None, hp_keeper=None,
                  speed_keeper=None, equipment_keeper=None,
                  magic_shield_keeper=None):
         self.client = client
         self.char_configs = char_configs
         # load the first one by default
         char_config = char_configs[0]["config"]
+        self.init_emergency_reporter(char_config, emergency_reporter)
         self.init_mana_keeper(client, char_config, mana_keeper)
         self.init_hp_keeper(client, char_config, hp_keeper)
         self.init_speed_keeper(client, char_config, speed_keeper)
@@ -31,6 +34,14 @@ class CharKeeper:
         self.init_speed_keeper(self.client, char_config)
         self.init_equipment_keeper(self.client, char_config)
         self.init_magic_shield_keeper(self.client, char_config)
+
+    def init_emergency_reporter(self, char_config, emergency_reporter=None):
+        if emergency_reporter is None:
+            self.emergency_reporter = EmergencyReporter(
+                char_config['total_hp'], char_config['mana_lo'],
+                char_config['emergency_shield_hp_treshold'])
+        else:
+            self.emergency_reporter = emergency_reporter
 
     def init_mana_keeper(self, client, char_config, mana_keeper=None):
         if mana_keeper is None:
@@ -65,6 +76,9 @@ class CharKeeper:
         if equipment_keeper is None:
             self.equipment_keeper = EquipmentKeeper(
                 client,
+                self.emergency_reporter,
+                char_config['total_hp'],
+                char_config['mana_lo'],
                 char_config['should_equip_amulet'],
                 char_config['should_equip_ring'],
                 char_config['should_eat_food'],
@@ -85,14 +99,13 @@ class CharKeeper:
                 char_config['magic_shield_treshold'])
         elif magic_shield_type == "emergency":
             self.magic_shield_keeper = EmergencyMagicShieldKeeper(
-                client, char_config['total_hp'], char_config['mana_lo'],
-                char_config['magic_shield_treshold'],
-                char_config['emergency_shield_hp_treshold'])
+                client, self.emergency_reporter,
+                char_config['total_hp'], char_config['mana_lo'],
+                char_config['magic_shield_treshold'])
         elif magic_shield_type is None:
             self.magic_shield_keeper = NoopKeeper()
         elif magic_shield_type is not None:
             raise Exception("Unknown magic shield type " + magic_shield_type)
-
 
     def handle_hp_change(self, char_status):
         is_downtime = self.speed_keeper.is_hasted(char_status.speed) and \
@@ -143,8 +156,17 @@ class CharKeeper:
             return False
 
     def handle_equipment(self, char_status):
+        if not self.emergency_reporter.in_emergency and \
+           self.emergency_reporter.is_emergency(char_status):
+            self.emergency_reporter.start_emergency()
+
+        if self.emergency_reporter.in_emergency and \
+           self.emergency_reporter.should_stop_emergency(char_status):
+            self.emergency_reporter.stop_emergency(char_status)
+
         self.magic_shield_keeper.handle_status_change(char_status)
         self.equipment_keeper.handle_status_change(char_status)
+
 
 class NoopKeeper:
     def handle_status_change(self, char_status):

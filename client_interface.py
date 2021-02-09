@@ -7,7 +7,7 @@ from multiprocessing import Lock, Pool
 from logger import debug, get_debug_level
 
 
-LOG_ROW = 8
+LOG_ROW = 13
 LOG_BUFFER_COUNTER = 0
 MAX_LOG_BUFFER = 10
 
@@ -158,10 +158,21 @@ class ClientInterface:
         self.send_keystroke_async('item_usage', throttle_ms,
                                   self.hotkeys_config['equip_ring'])
 
+    def toggle_emergency_ring(self, throttle_ms=250):
+        winlog(self.cliwin, 2, 'toggle_emergency_ring' + str(throttle_ms))
+        self.send_keystroke_async('item_usage', throttle_ms,
+                                  self.hotkeys_config['toggle_emergency_ring'])
+
     def equip_amulet(self, throttle_ms=250):
         winlog(self.cliwin, 2, 'equip_amulet' + str(throttle_ms))
         self.send_keystroke_async('item_usage', throttle_ms,
                                   self.hotkeys_config['equip_amulet'])
+
+    def toggle_emergency_amulet(self, throttle_ms=250):
+        winlog(self.cliwin, 2, 'toggle_emergency_amulet' + str(throttle_ms))
+        self.send_keystroke_async('item_usage', throttle_ms,
+                                  self.hotkeys_config[
+                                      'toggle_emergency_amulet'])
 
     def eat_food(self, throttle_ms=250):
         winlog(self.cliwin, 2, 'eat_food' + str(throttle_ms))

@@ -7,14 +7,14 @@ MAGIC_SHIELD_DURATION_SECS = 180
 
 
 class EmergencyMagicShieldKeeper:
-    def __init__(self, client, total_hp, mana_lo, magic_shield_treshold,
-                 emergency_shield_hp_treshold=None,
+    def __init__(self, client, emergency_reporter, total_hp, mana_lo,
+                 magic_shield_treshold,
                  time_fn=None):
         self.client = client
+        self.emergency_reporter = emergency_reporter
         self.total_hp = total_hp
         self.mana_lo = mana_lo
         self.magic_shield_treshold = magic_shield_treshold
-        self.emergency_shield_hp_treshold = emergency_shield_hp_treshold or total_hp * 0.33
         self.last_cast_timestamp = 0
         self.cast_counter = 0
         self.prev_magic_shield_status = MagicShieldStatus.ON_COOLDOWN
@@ -38,15 +38,17 @@ class EmergencyMagicShieldKeeper:
             self.cast_cancel()
 
     def should_cast(self, char_status):
-        return char_status.hp <= self.emergency_shield_hp_treshold
+        return (self.emergency_reporter.in_emergency and
+                (char_status.magic_shield_level <= self.magic_shield_treshold or
+                 self.secs_since_cast() >= MAGIC_SHIELD_DURATION_SECS - 10))
 
     def should_cast_cancel(self, char_status):
         is_full_hp = char_status.hp >= self.total_hp
-        is_healthy_mana = char_status.mana > self.mana_lo
 
         # Cancel magic shield when we're in safety
-        if char_status.magic_shield_level > 1000 and is_full_hp and \
-           is_healthy_mana and self.secs_since_cast() >= 6:
+        if not self.emergency_reporter.in_emergency and \
+           char_status.magic_shield_level > 1000 and \
+           self.secs_since_cast() >= 6:
             return True
         # Cancel magic shield if we have better chances tanking with HP
         is_mana_very_low = char_status.mana <= self.total_hp * 1.25
@@ -58,6 +60,7 @@ class EmergencyMagicShieldKeeper:
         return self.timestamp_secs() - self.last_cast_timestamp
 
     def cast(self):
+        self.last_cast_timestamp = self.timestamp_secs()
         self.client.cast_magic_shield()
 
     def cast_cancel(self):

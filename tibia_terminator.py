@@ -13,7 +13,8 @@ from memory_reader38 import MemoryReader38 as MemoryReader
 from char_keeper import CharKeeper
 from char_reader38 import CharReader38 as CharReader
 from char_status import CharStatus
-from equipment_reader import EquipmentReader
+from equipment_reader import (EquipmentReader, AmuletName, RingName,
+    MagicShieldStatus)
 from char_config import CHAR_CONFIGS, HOTKEYS_CONFIG
 from app_config import MEM_CONFIG
 from logger import set_debug_level
@@ -56,6 +57,11 @@ MANA_ROW = ERRORS_ROW + 1
 HP_ROW = MANA_ROW + 1
 SPEED_ROW = HP_ROW + 1
 MAGIC_SHIELD_ROW = SPEED_ROW + 1
+EMERGENCY_ACTION_AMULET_ROW = MAGIC_SHIELD_ROW + 1
+EMERGENCY_ACTION_RING_ROW = EMERGENCY_ACTION_AMULET_ROW + 1
+EQUIPPED_AMULET_ROW = EMERGENCY_ACTION_RING_ROW + 1
+EQUIPPED_RING_ROW = EQUIPPED_AMULET_ROW + 1
+DEBUG_ROW = EQUIPPED_RING_ROW + 1
 
 CONFIG_SELECTION_ROW = ERRORS_ROW + 2
 CONFIG_SELECTION_TITLE = "Type the number of the char config to load: "
@@ -145,6 +151,14 @@ class TibiaTerminator:
             self.char_reader.init_magic_shield_address(magic_shield_address)
 
         self.prev_stats = {'mana': -1, 'hp': -1, 'speed': -1, 'magic_shield': -1}
+        self.prev_equipment_status = {
+            'emergency_action_amulet': '',
+            'equipped_amulet': '',
+            'emergency_action_ring': '',
+            'equipped_ring': '',
+            'magic_shield_status': ''
+        }
+
         self.equipment_reader.open()
         self.cliwin.nodelay(True)
         self.cliwin.idlok(True)
@@ -227,24 +241,37 @@ class TibiaTerminator:
     def handle_running_state(self):
         stats = self.char_reader.get_stats()
         # 20-30 ms
-        is_amulet_slot_empty = self.equipment_reader.is_amulet_empty()
+        emergency_amulet_action_bar_name = \
+            self.equipment_reader.get_emergency_action_bar_amulet_name()
         # 20-30 ms
-        is_ring_slot_empty = self.equipment_reader.is_ring_empty()
+        emergency_ring_action_bar_name = \
+            self.equipment_reader.get_emergency_action_bar_ring_name()
+        # 20-30 ms
+        equipped_amulet_name = self.equipment_reader.get_equipped_amulet_name()
+        # 20-30 ms
+        equipped_ring_name = self.equipment_reader.get_equipped_ring_name()
+        # 20-30 ms
         magic_shield_status = \
             self.equipment_reader.get_magic_shield_status()
-        self.handle_stats(
-            stats,
-            self.prev_stats,
-            is_amulet_slot_empty,
-            is_ring_slot_empty,
-            magic_shield_status)
+        equipment_status = {
+            'emergency_action_amulet': emergency_amulet_action_bar_name,
+            'equipped_amulet': equipped_amulet_name,
+            'emergency_action_ring': emergency_ring_action_bar_name,
+            'equipped_ring': equipped_ring_name,
+            'magic_shield_status': magic_shield_status
+        }
+
+        self.handle_stats(stats, self.prev_stats, equipment_status,
+            self.prev_equipment_status)
 
     def exit_running_state(self):
         pass
 
     def enter_paused_state(self):
         self.looter.unhook_hotkey()
-        self.winprint("[Space]: Resume, [Esc]: Exit, [Enter]: Config selection.", MAIN_OPTIONS_ROW)
+        self.winprint(
+            "[Space]: Resume, [Esc]: Exit, [Enter]: Config selection.",
+            MAIN_OPTIONS_ROW)
 
     def exit_paused_state(self):
         pass
@@ -253,7 +280,8 @@ class TibiaTerminator:
         pass
 
     def enter_config_selection_state(self):
-        self.winprint("[Esc]: Exit, [Enter]: Back to paused state.", MAIN_OPTIONS_ROW)
+        self.winprint("[Esc]: Exit, [Enter]: Back to paused state.",
+                      MAIN_OPTIONS_ROW)
         self.winprint(CONFIG_SELECTION_TITLE, CONFIG_SELECTION_ROW)
         self.cliwin.clrtobot()
         self.cliwin.nodelay(False)
@@ -318,18 +346,17 @@ class TibiaTerminator:
                     number_str = number_str[:len(number_str) - 1]
                     col -= 1
 
-
-    def handle_stats(self, stats, prev_stats,
-                     is_amulet_slot_empty,
-                     is_ring_slot_empty,
-                     magic_shield_status):
+    def handle_stats(self, stats, prev_stats, equipment_status, prev_equipment_status):
         mana = stats['mana']
         hp = stats['hp']
         speed = stats['speed']
         magic_shield_level = stats['magic_shield']
+        emergency_action_amulet = equipment_status['emergency_action_amulet']
+        emergency_action_ring = equipment_status['emergency_action_ring']
+        equipped_ring = equipment_status['equipped_ring']
+        equipped_amulet = equipment_status['equipped_amulet']
         char_status = CharStatus(
-            hp, speed, mana, magic_shield_level, is_amulet_slot_empty,
-            is_ring_slot_empty, magic_shield_status)
+            hp, speed, mana, magic_shield_level, equipment_status)
         # Note that we have to handle the mana change always, even if
         # it hasn't actually changed, because a command to heal or drink mana
         # or haste could be ignored if the character is exhausted, therefore
@@ -340,7 +367,7 @@ class TibiaTerminator:
         prev_mana = prev_stats['mana']
         if mana != prev_mana:
             prev_stats['mana'] = mana
-            self.winprint("Mana: {}".format(str(mana)), MANA_ROW)
+            self.winprint(f"Mana: {str(mana)}", MANA_ROW)
 
         if self.enable_hp:
             self.char_keeper.handle_hp_change(char_status)
@@ -348,7 +375,7 @@ class TibiaTerminator:
         prev_hp = prev_stats['hp']
         if hp != prev_hp:
             prev_stats['hp'] = hp
-            self.winprint("HP: {}".format(str(hp)), HP_ROW)
+            self.winprint(f"HP: {str(hp)}", HP_ROW)
 
         if self.enable_speed:
             self.char_keeper.handle_speed_change(char_status)
@@ -356,12 +383,41 @@ class TibiaTerminator:
         prev_speed = prev_stats['speed']
         if speed != prev_speed:
             prev_stats['speed'] = speed
-            self.winprint("Speed: {}".format(str(speed)), SPEED_ROW)
+            self.winprint(f"Speed: {str(speed)}", SPEED_ROW)
 
         prev_magic_shield_level = prev_stats['magic_shield']
         if magic_shield_level != prev_magic_shield_level:
             prev_stats['magic_shield'] = magic_shield_level
-            self.winprint("Magic Shield: {}".format(str(magic_shield_level)), MAGIC_SHIELD_ROW)
+            self.winprint(f"Magic Shield: {str(magic_shield_level)}",
+                MAGIC_SHIELD_ROW)
+
+        prev_emergency_action_amulet = prev_equipment_status['emergency_action_amulet']
+        if emergency_action_amulet != prev_emergency_action_amulet:
+            prev_equipment_status['emergency_action_amulet'] = emergency_action_amulet
+            self.winprint(f"Emergency Action Amulet: {emergency_action_amulet}", EMERGENCY_ACTION_AMULET_ROW)
+
+        prev_emergency_action_ring = prev_equipment_status['emergency_action_ring']
+        if emergency_action_ring != prev_emergency_action_ring:
+            prev_equipment_status['emergency_action_ring'] = emergency_action_ring
+            self.winprint(f"Emergency Action Ring: {emergency_action_ring}",
+                EMERGENCY_ACTION_RING_ROW)
+
+        prev_equipped_ring = prev_equipment_status['equipped_ring']
+        if equipped_ring != prev_equipped_ring:
+            prev_equipment_status['equipped_ring'] = equipped_ring
+            self.winprint(f"Equipped Ring: {equipped_ring}",
+                EQUIPPED_RING_ROW)
+
+        prev_equipped_amulet = prev_equipment_status['equipped_amulet']
+        if equipped_amulet != prev_equipped_amulet:
+            prev_equipment_status['equipped_amulet'] = equipped_amulet
+            self.winprint(f"Equipped Amulet: {equipped_amulet}",
+                EQUIPPED_AMULET_ROW)
+
+
+        # self.winprint(f"Debug self.char_keeper.equipment_keeper.prev_mode: {self.char_keeper.equipment_keeper.prev_mode}",
+        #         DEBUG_ROW)
+
         self.char_keeper.handle_equipment(char_status)
 
     def winprint(self, msg, row=0, col=0, end='\n'):

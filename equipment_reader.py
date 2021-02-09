@@ -69,20 +69,20 @@ class RingName:
 # Playable area set at Y: 696 with 2 cols on left and 2 cols on right
 ACTION_BAR_SQUARE_LEN = 36
 # 10th action bar item right to left, 2 columns on the left, 2 columns on the right
-ACTION_BAR_AMULET_CENTER_X = 1178
-ACTION_BAR_CENTER_Y = 719
-ACTION_BAR_AMULET_COORDS = [
+EMERGENCY_ACTION_BAR_AMULET_CENTER_X = 1178
+EMERGENCY_ACTION_BAR_CENTER_Y = 719
+EMERGENCY_ACTION_BAR_AMULET_COORDS = [
     # upper pixel
-    (ACTION_BAR_AMULET_CENTER_X, ACTION_BAR_CENTER_Y - 10),
+    (EMERGENCY_ACTION_BAR_AMULET_CENTER_X, EMERGENCY_ACTION_BAR_CENTER_Y - 10),
     # lower pixel
-    (ACTION_BAR_AMULET_CENTER_X, ACTION_BAR_CENTER_Y + 10),
+    (EMERGENCY_ACTION_BAR_AMULET_CENTER_X, EMERGENCY_ACTION_BAR_CENTER_Y + 10),
     # left pixel
-    (ACTION_BAR_AMULET_CENTER_X - 10, ACTION_BAR_CENTER_Y),
+    (EMERGENCY_ACTION_BAR_AMULET_CENTER_X - 10, EMERGENCY_ACTION_BAR_CENTER_Y),
     # right pixel
-    (ACTION_BAR_AMULET_CENTER_X + 10, ACTION_BAR_CENTER_Y)
+    (EMERGENCY_ACTION_BAR_AMULET_CENTER_X + 10, EMERGENCY_ACTION_BAR_CENTER_Y)
 ]
 
-ACTION_BAR_AMULET_SPEC = {
+EMERGENCY_ACTION_BAR_AMULET_SPEC = {
     AmuletName.SSA: [
         # upper pixel
         "b9935f",
@@ -201,20 +201,24 @@ AMULET_COORDS = [
     (1779, 261)
 ]
 
-ACTION_BAR_RING_CENTER_X = 1215
-ACTION_BAR_RING_CENTER_Y = 722
-ACTION_BAR_RING_COORDS = [
+EMERGENCY_ACTION_BAR_RING_CENTER_X = 1215
+EMERGENCY_ACTION_BAR_RING_CENTER_Y = 722
+EMERGENCY_ACTION_BAR_RING_COORDS = [
     # upper pixel
-    (ACTION_BAR_RING_CENTER_X, ACTION_BAR_RING_CENTER_Y - 3),
+    (EMERGENCY_ACTION_BAR_RING_CENTER_X,
+     EMERGENCY_ACTION_BAR_RING_CENTER_Y - 3),
     # lower pixel
-    (ACTION_BAR_RING_CENTER_X, ACTION_BAR_RING_CENTER_Y + 3),
+    (EMERGENCY_ACTION_BAR_RING_CENTER_X,
+     EMERGENCY_ACTION_BAR_RING_CENTER_Y + 3),
     # left pixel
-    (ACTION_BAR_RING_CENTER_X - 3, ACTION_BAR_RING_CENTER_Y),
+    (EMERGENCY_ACTION_BAR_RING_CENTER_X - 3,
+     EMERGENCY_ACTION_BAR_RING_CENTER_Y),
     # right pixel
-    (ACTION_BAR_RING_CENTER_X + 3, ACTION_BAR_RING_CENTER_Y),
+    (EMERGENCY_ACTION_BAR_RING_CENTER_X + 3,
+     EMERGENCY_ACTION_BAR_RING_CENTER_Y),
 ]
 
-ACTION_BAR_RING_SPEC = {
+EMERGENCY_ACTION_BAR_RING_SPEC = {
     "might": [
         # upper pixel
         "9b8132",
@@ -295,9 +299,9 @@ class EquipmentReader(ScreenReader):
                 return name
         return default_value
 
-    def get_action_bar_amulet_name(self):
-        return self.get_matching_name(ACTION_BAR_AMULET_COORDS,
-                                      ACTION_BAR_AMULET_SPEC,
+    def get_emergency_action_bar_amulet_name(self):
+        return self.get_matching_name(EMERGENCY_ACTION_BAR_AMULET_COORDS,
+                                      EMERGENCY_ACTION_BAR_AMULET_SPEC,
                                       AmuletName.UNKNOWN)
 
     def get_equipped_amulet_name(self):
@@ -305,9 +309,9 @@ class EquipmentReader(ScreenReader):
                                       AMULET_SPEC,
                                       AmuletName.UNKNOWN)
 
-    def get_action_bar_ring_name(self):
-        return self.get_matching_name(ACTION_BAR_RING_COORDS,
-                                      ACTION_BAR_RING_SPEC,
+    def get_emergency_action_bar_ring_name(self):
+        return self.get_matching_name(EMERGENCY_ACTION_BAR_RING_COORDS,
+                                      EMERGENCY_ACTION_BAR_RING_SPEC,
                                       RingName.UNKNOWN)
 
     def get_equipped_ring_name(self):
@@ -315,13 +319,13 @@ class EquipmentReader(ScreenReader):
                                       RING_SPEC,
                                       RingName.UNKNOWN)
 
-    def is_action_bar_amulet(self, name):
-        return self.matches_screen(ACTION_BAR_AMULET_COORDS,
-                                   ACTION_BAR_AMULET_SPEC[name])
+    def is_emergency_action_bar_amulet(self, name):
+        return self.matches_screen(EMERGENCY_ACTION_BAR_AMULET_COORDS,
+                                   EMERGENCY_ACTION_BAR_AMULET_SPEC[name])
 
-    def is_action_bar_ring(self, name):
-        return self.matches_screen(ACTION_BAR_RING_COORDS,
-                                   ACTION_BAR_RING_SPEC[name])
+    def is_emergency_action_bar_ring(self, name):
+        return self.matches_screen(EMERGENCY_ACTION_BAR_RING_COORDS,
+                                   EMERGENCY_ACTION_BAR_RING_SPEC[name])
 
     def is_amulet(self, name):
         return self.matches_screen(AMULET_COORDS, AMULET_SPEC[name])
@@ -389,34 +393,36 @@ def check_specs():
         print("###############\n"
               "Amulet action bar color spec\n"
               "###############\n")
-        for (x, y) in ACTION_BAR_AMULET_COORDS:
+        for (x, y) in EMERGENCY_ACTION_BAR_AMULET_COORDS:
             print(eq_reader.get_pixel_color(x, y))
 
-        for name in ACTION_BAR_AMULET_SPEC:
+        for name in EMERGENCY_ACTION_BAR_AMULET_SPEC:
             def fn():
-                return eq_reader.is_action_bar_amulet(name)
-            time_perf(f"\nis_action_bar_amulet({name})", fn)
+                return eq_reader.is_emergency_action_bar_amulet(name)
+            time_perf(f"\nis_emergency_action_bar_amulet({name})", fn)
 
-        def action_bar_amulet_name_fn():
-            return eq_reader.get_action_bar_amulet_name()
+        def emergency_action_bar_amulet_name_fn():
+            return eq_reader.get_emergency_action_bar_amulet_name()
 
-        time_perf("\nget_action_bar_amulet_name", action_bar_amulet_name_fn)
+        time_perf("\nget_emergency_action_bar_amulet_name",
+                  emergency_action_bar_amulet_name_fn)
 
         print("\n###############\n"
               "Action bar ring color spec\n"
               "###############\n")
-        for (x, y) in ACTION_BAR_RING_COORDS:
+        for (x, y) in EMERGENCY_ACTION_BAR_RING_COORDS:
             print(eq_reader.get_pixel_color(x, y))
 
-        for name in ACTION_BAR_RING_SPEC:
+        for name in EMERGENCY_ACTION_BAR_RING_SPEC:
             def fn():
-                return eq_reader.is_action_bar_ring(name)
-            time_perf(f"\nis_action_bar_ring({name})", fn)
+                return eq_reader.is_emergency_action_bar_ring(name)
+            time_perf(f"\nis_emergency_action_bar_ring({name})", fn)
 
-        def action_bar_ring_name_fn():
-            return eq_reader.get_action_bar_ring_name()
+        def emergency_action_bar_ring_name_fn():
+            return eq_reader.get_emergency_action_bar_ring_name()
 
-        time_perf("\nget_action_bar_ring_name", action_bar_ring_name_fn)
+        time_perf("\nget_emergency_action_bar_ring_name",
+                  emergency_action_bar_ring_name_fn)
 
         print("\n###############\n"
               "Amulet color spec\n"
