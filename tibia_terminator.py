@@ -48,6 +48,7 @@ PPOOL = None
 SPACE_KEYCODE = 263
 ENTER_KEYCODE = 10
 ESCAPE_KEY = 27
+LOOP_FREQ_MS = 100
 
 TITLE_ROW = 0
 MAIN_OPTIONS_ROW = TITLE_ROW + 1
@@ -163,9 +164,9 @@ class TibiaTerminator:
         self.stats_logger.start()
         try:
             while True:
+                start = time.time() * 1000
                 title = "Tibia Terminator. WID: " + str(self.tibia_wid) + " Active config: " + self.selected_config_name
                 self.winprint(title, TITLE_ROW)
-                start = time.time() * 1000
                 keycode = self.cliwin.getch()
                 self.enter_next_app_state(keycode)
                 if self.app_state == AppStates.EXIT:
@@ -178,10 +179,10 @@ class TibiaTerminator:
                     self.handle_config_selection_state()
 
                 end = time.time() * 1000
-                elapsed = end - start
-                # Loop every 100 ms
-                if elapsed < 100:
-                    time.sleep((100 - elapsed) / 1000)
+                # Throttle loop frequency
+                loop_wait_ms = LOOP_FREQ_MS - (end - start)
+                if loop_wait_ms > 0:
+                    time.sleep(loop_wait_ms / 1000)
         finally:
             self.looter.unhook_hotkey()
             self.equipment_reader.close()
