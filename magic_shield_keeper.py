@@ -22,6 +22,9 @@ class MagicShieldKeeper:
 
     def handle_status_change(self, char_status):
         # WARNING: NOT THREAD SAFE
+        if char_status.hp > self.total_hp:
+          self.total_hp = char_status.hp
+
         magic_shield_status = char_status.magic_shield_status
         if self.prev_magic_shield_status is MagicShieldStatus.OFF_COOLDOWN and\
            magic_shield_status is MagicShieldStatus.RECENTLY_CAST:

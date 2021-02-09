@@ -10,6 +10,8 @@ class EmergencyReporter():
         self.in_emergency = False
 
     def is_emergency(self, char_status):
+        if char_status.hp > self.total_hp:
+            self.total_hp = char_status.hp
         return char_status.hp <= self.emergency_shield_hp_treshold
 
     def start_emergency(self):
