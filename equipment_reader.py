@@ -29,14 +29,84 @@ class MagicShieldStatus:
     OFF_COOLDOWN = 'off_cooldown'
     ON_COOLDOWN = 'on_cooldown'
 
+
+class AmuletName:
+    UNKNOWN = 'unknown'
+    EMPTY = 'empty'
+    # stone skin amuelt
+    SSA = 'ssa'
+    # sacred tree amulet
+    STA = 'sta'
+    # bonfire amulet
+    BONFIRE = 'bonfire'
+    # leviathan's amulet
+    LEVIATHAN = 'leviathan'
+    # shockwave amulet
+    SHOCK = 'shockwave'
+    # gill necklace
+    GILL = 'gill'
+    # glacier amulet
+    GLACIER = 'glacier'
+    # terra amulet
+    TERRA = 'terra'
+    # magma amulet
+    MAGMA = 'magma'
+    # lightning pendant
+    LIGHTNING = 'lightning'
+    # necklace of the deep
+    DEEP = 'deep'
+    # prismatic necklace
+    PRISM = 'prism'
+
+
+class RingName:
+    UNKNOWN = 'unknown'
+    EMPTY = 'empty'
+    # might ring
+    MIGHT = 'might'
+
 # Playable area set at Y: 696 with 2 cols on left and 2 cols on right
 
+ACTION_BAR_AMULET_COORDS = [
+    # upper pixel
+    (2, 1),
+    # lower pixel
+    (2, 3),
+    # left pixel
+    (1, 2),
+    # right pixel
+    (3, 2)
+]
+
+ACTION_BAR_AMULET_SPEC = {
+    AmuletName.SSA: [
+        # upper pixel
+        "111111",
+        # lower pixel
+        "111111",
+        # left pixel
+        "111111",
+        # right pixel
+        "111111"
+    ]
+}
+
 AMULET_SPEC = {
-    "empty": [
+    AmuletName.EMPTY: [
         "3d3f42",
         "434648",
         "252626",
         "232424",
+    ],
+    AmuletName.SSA: [
+        # upper pixel
+        "000000",
+        # lower pixel
+        "000000",
+        # left pixel
+        "000000",
+        # right pixel
+        "000000"
     ]
 }
 
@@ -51,12 +121,42 @@ AMULET_COORDS = [
     (1779, 261)
 ]
 
+ACTION_BAR_RING_COORDS = [
+    # upper pixel
+    (2, 1),
+    # lower pixel
+    (2, 3),
+    # left pixel
+    (1, 2),
+    # right pixel
+    (3, 2)
+]
+
+ACTION_BAR_RING_SPEC = {
+    "might": [
+        # upper pixel
+        "111111",
+        # lower pixel
+        "111111",
+        # left pixel
+        "111111",
+        # right pixel
+        "111111"
+    ]
+}
+
 RING_SPEC = {
-    "empty": [
+    RingName.EMPTY: [
         "252625",
         "36393c",
         "2e2e2f",
         "3d4042",
+    ],
+    RingName.MIGHT: [
+        "000000",
+        "000000",
+        "000000",
+        "000000",
     ]
 }
 
@@ -87,6 +187,43 @@ MAGIC_SHIELD_COORDS = [
 
 
 class EquipmentReader(ScreenReader):
+
+    def get_matching_name(self, coords, specs, default_value):
+        pixels = self.get_pixels(coords)
+        for name in specs:
+            if self.pixels_match(specs[name], pixels):
+                return name
+
+        return default_value
+
+    def get_action_bar_amulet_name(self):
+        return self.get_matching_name(ACTION_BAR_AMULET_COORDS,
+                                      ACTION_BAR_AMULET_SPEC,
+                                      AmuletName.UNKNOWN)
+
+    def get_equipped_amulet_name(self):
+        return self.get_matching_name(AMULET_COORDS,
+                                      AMULET_SPEC,
+                                      AmuletName.UNKNOWN)
+
+    def get_action_bar_ring_name(self):
+        return self.get_matching_name(ACTION_BAR_RING_COORDS,
+                                      ACTION_BAR_RING_SPEC,
+                                      RingName.UNKNOWN)
+
+    def get_equipped_ring_name(self):
+        return self.get_matching_name(RING_COORDS,
+                                      RING_SPEC,
+                                      RingName.UNKNOWN)
+
+    def is_action_bar_amulet(self, name):
+        return self.matches_screen(ACTION_BAR_AMULET_COORDS,
+                                   ACTION_BAR_AMULET_SPEC[name])
+
+    def is_action_bar_ring(self, name):
+        return self.matches_screen(ACTION_BAR_RING_COORDS,
+                                   ACTION_BAR_RING_SPEC[name])
+
     def is_amulet(self, name):
         return self.matches_screen(AMULET_COORDS, AMULET_SPEC[name])
 
@@ -101,7 +238,8 @@ class EquipmentReader(ScreenReader):
 
     def get_magic_shield_status(self):
         for name in MAGIC_SHIELD_SPEC:
-            if self.matches_screen(MAGIC_SHIELD_COORDS, MAGIC_SHIELD_SPEC[name]):
+            if self.matches_screen(MAGIC_SHIELD_COORDS,
+                                   MAGIC_SHIELD_SPEC[name]):
                 return name
         # There are only 3 possible states: recently cast, off cooldown and
         # on cooldown.
@@ -135,40 +273,91 @@ class EquipmentReaderSlow():
         return MagicShieldStatus.ON_COOLDOWN
 
 
+def time_perf(title, fn):
+    start = time.time() * 1000
+    value = fn()
+    end = time.time() * 1000
+    elapsed = end - start
+    print(title)
+    print(f"  Result: {value}")
+    print(f"  Elapsed time: {elapsed} ms")
+
+
 def check_specs():
     eq_reader = EquipmentReader()
     eq_reader.open()
     try:
-        print("Amulet color spec")
+        print("###############\n"
+              "Amulet action bar color spec\n"
+              "###############\n")
+        for (x, y) in ACTION_BAR_AMULET_COORDS:
+            print(eq_reader.get_pixel_color(x, y))
+
+        for name in ACTION_BAR_AMULET_SPEC:
+            def fn():
+                return eq_reader.is_action_bar_amulet(name)
+            time_perf(f"\nis_action_bar_amulet({name})", fn)
+
+        def action_bar_amulet_name_fn():
+            return eq_reader.get_action_bar_amulet_name()
+
+        time_perf("\nget_action_bar_amulet_name", action_bar_amulet_name_fn)
+
+        print("\n###############\n"
+              "Action bar ring color spec\n"
+              "###############\n")
+        for (x, y) in ACTION_BAR_RING_COORDS:
+            print(eq_reader.get_pixel_color(x, y))
+
+        for name in ACTION_BAR_RING_SPEC:
+            def fn():
+                return eq_reader.is_action_bar_ring(name)
+            time_perf(f"\nis_action_bar_ring({name})", fn)
+
+        def action_bar_ring_name_fn():
+            return eq_reader.get_action_bar_ring_name()
+
+        time_perf("\nget_action_bar_ring_name", action_bar_ring_name_fn)
+
+        print("\n###############\n"
+              "Amulet color spec\n"
+              "###############\n")
         for (x, y) in AMULET_COORDS:
             print(eq_reader.get_pixel_color(x, y))
 
-        print("Ring color spec")
+        for name in AMULET_SPEC:
+            def fn():
+                return eq_reader.is_amulet(name)
+            time_perf(f"\nis_amulet('{name}')", fn)
+
+        def equipped_amulet_name_fn():
+            return eq_reader.get_equipped_amulet_name()
+        time_perf("\nget_equipped_amulet_name()", equipped_amulet_name_fn)
+
+        print("\n###############\n"
+              "Ring color spec\n"
+              "###############\n")
         for (x, y) in RING_COORDS:
             print(eq_reader.get_pixel_color(x, y))
 
-        print("Magic shield spec")
+        for name in RING_SPEC:
+            def fn():
+                return eq_reader.is_ring(name)
+            time_perf(f"\nis_ring('{name}')", fn)
+
+        def equipped_ring_name_fn():
+            return eq_reader.get_equipped_ring_name()
+        time_perf("\nget_equipped_ring_name()", equipped_ring_name_fn)
+
+        print("\n###############\n"
+              "Magic shield spec\n"
+              "###############\n")
         print(eq_reader.get_pixel_color(*MAGIC_SHIELD_COORDS[0]))
 
-        for name in AMULET_SPEC:
-            start_ms = time.time() * 1000
-            is_amulet_ = eq_reader.is_amulet(name)
-            end_ms = time.time() * 1000
-            print("is_amulet('" + name + "'): " + str(is_amulet_))
-            print("Elapsed time: " + str(end_ms - start_ms) + " ms")
+        def magic_shield_fn():
+            return eq_reader.get_magic_shield_status()
 
-        for name in RING_SPEC:
-            start_ms = time.time() * 1000
-            is_ring_ = eq_reader.is_ring(name)
-            end_ms = time.time() * 1000
-            print("is_ring('" + name + "'): " + str(is_ring_))
-            print("Elapsed time: " + str(end_ms - start_ms) + " ms")
-
-        start_ms = time.time() * 1000
-        magic_shield_status = eq_reader.get_magic_shield_status()
-        end_ms = time.time() * 1000
-        print("get_magic_shield_status(): " + str(magic_shield_status))
-        print("Elapsed time: " + str(end_ms - start_ms) + " ms")
+        time_perf('\nget_magic_shield_status()', magic_shield_fn)
     finally:
         eq_reader.close()
 

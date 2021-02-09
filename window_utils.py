@@ -194,9 +194,9 @@ class ScreenReader():
         # for some reason sometimes the byte data comes back as a string
         # but the data backing that string are the actual bytes
         if isinstance(pixel_rgb_res.data, str):
-          pixel_rgb_bytes = bytes(pixel_rgb_res.data, 'utf-8')
+            pixel_rgb_bytes = bytes(pixel_rgb_res.data, 'utf-8')
         else:
-          pixel_rgb_bytes = pixel_rgb_res.data
+            pixel_rgb_bytes = pixel_rgb_res.data
 
         pixel_rgb_image = PIL.Image.frombytes(
             "RGB", (1, 1), pixel_rgb_bytes, "raw", "BGRX")
@@ -206,10 +206,17 @@ class ScreenReader():
     def get_pixel_color_slow(self, wid, x, y):
         return get_pixel_color_slow(wid, x, y)
 
-    def matches_screen(self, coords, color_spec):
-        get_pixel_fn = lambda coord: self.get_pixel_color(*coord)
-        pixels = list(map(get_pixel_fn, coords))
+    def get_pixels(self, coords):
+        def get_pixel(coord):
+            return self.get_pixel_color(*coord)
+
+        return list(map(get_pixel, coords))
+
+    def pixels_match(self, pixels_a, pixels_b):
         match = True
-        for i in range(0, len(pixels)):
-            match &= pixels[i].lower() == color_spec[i].lower()
+        for i in range(0, len(pixels_a)):
+            match &= pixels_a[i].lower() == pixels_b[i].lower()
         return match
+
+    def matches_screen(self, coords, color_spec):
+        return self.pixels_match(self.get_pixels(coords), color_spec)
