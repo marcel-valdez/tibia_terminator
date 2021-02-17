@@ -308,7 +308,9 @@ class TibiaTerminator:
             keycode = self.cliwin.getch(CONFIG_SELECTION_ROW, col)
             if keycode >= 48 and keycode <= 57:
                 number_str += str(keycode - 48)
-                self.cliwin.insstr(str(keycode - 48))
+                self.cliwin.insstr(CONFIG_SELECTION_ROW,
+                                   col,
+                                   str(keycode - 48))
                 col += 1
             elif keycode == ENTER_KEYCODE:
                 if number_str == '':
@@ -325,7 +327,7 @@ class TibiaTerminator:
                 else:
                     selection = int(number_str)
                     if selection >= total_char_configs:
-                        self.winprint("Selection index {} is invalid.".format(number_str), ERRORS_ROW)
+                        self.winprint(f"Selection index {number_str} is invalid.", ERRORS_ROW)
                         col = input_col
                         self.cliwin.move(CONFIG_SELECTION_ROW, input_col)
                         self.cliwin.clrtoeol()
