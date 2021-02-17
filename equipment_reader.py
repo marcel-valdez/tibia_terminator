@@ -32,7 +32,7 @@ class MagicShieldStatus:
 
 class AmuletName:
     UNKNOWN = 'unknown'
-    EMPTY = 'empty'
+    EMPTY = 'empty.amulet'
     # stone skin amuelt
     SSA = 'ssa'
     # sacred tree amulet
@@ -61,7 +61,7 @@ class AmuletName:
 
 class RingName:
     UNKNOWN = 'unknown'
-    EMPTY = 'empty'
+    EMPTY = 'empty.ring'
     # might ring
     MIGHT = 'might'
 
