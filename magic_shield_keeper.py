@@ -23,16 +23,18 @@ class MagicShieldKeeper:
     def handle_status_change(self, char_status):
         # WARNING: NOT THREAD SAFE
         if char_status.hp > self.total_hp:
-          self.total_hp = char_status.hp
+            self.total_hp = char_status.hp
 
         magic_shield_status = char_status.magic_shield_status
-        if self.prev_magic_shield_status is MagicShieldStatus.OFF_COOLDOWN and\
-           magic_shield_status is MagicShieldStatus.RECENTLY_CAST:
+        if (self.prev_magic_shield_status is MagicShieldStatus.OFF_COOLDOWN and
+            (magic_shield_status is MagicShieldStatus.RECENTLY_CAST or
+             magic_shield_status is MagicShieldStatus.ON_COOLDOWN)):
             self.last_cast_timestamp = self.timestamp_secs() - 0.5
+
         self.prev_magic_shield_status = magic_shield_status
 
-        if char_status.magic_shield_status is MagicShieldStatus.OFF_COOLDOWN \
-           and self.should_cast(char_status):
+        if (char_status.magic_shield_status is MagicShieldStatus.OFF_COOLDOWN
+                and self.should_cast(char_status)):
             self.cast()
         elif self.should_cast_cancel(char_status):
             self.cast_cancel()
@@ -44,7 +46,7 @@ class MagicShieldKeeper:
             return False
 
         return (
-            char_status.magic_shield_level <= self.magic_shield_treshold or \
+            char_status.magic_shield_level <= self.magic_shield_treshold or
             self.secs_since_cast() >= MAGIC_SHIELD_DURATION_SECS - 10
         ) and char_status.mana >= self.total_hp
 

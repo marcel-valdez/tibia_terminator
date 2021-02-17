@@ -29,13 +29,15 @@ class EmergencyMagicShieldKeeper:
             self.total_hp = char_status.hp
 
         magic_shield_status = char_status.magic_shield_status
-        if self.prev_magic_shield_status is MagicShieldStatus.OFF_COOLDOWN and\
-           magic_shield_status is MagicShieldStatus.RECENTLY_CAST:
+        if (self.prev_magic_shield_status is MagicShieldStatus.OFF_COOLDOWN and
+            (magic_shield_status is MagicShieldStatus.RECENTLY_CAST or
+             magic_shield_status is MagicShieldStatus.ON_COOLDOWN)):
             self.last_cast_timestamp = self.timestamp_secs() - 0.5
+
         self.prev_magic_shield_status = magic_shield_status
 
-        if char_status.magic_shield_status is MagicShieldStatus.OFF_COOLDOWN \
-           and self.should_cast(char_status):
+        if (char_status.magic_shield_status is MagicShieldStatus.OFF_COOLDOWN
+             and self.should_cast(char_status)):
             self.cast()
         elif self.should_cast_cancel(char_status):
             self.cast_cancel()
@@ -47,11 +49,10 @@ class EmergencyMagicShieldKeeper:
 
     def should_cast_cancel(self, char_status):
         is_full_hp = char_status.hp >= self.total_hp
-
         # Cancel magic shield when we're in safety
-        if not self.emergency_reporter.in_emergency and \
-           char_status.magic_shield_level > 1000 and \
-           self.secs_since_cast() >= 6:
+        if (not self.emergency_reporter.in_emergency and
+           char_status.magic_shield_level > 1000 and
+           self.secs_since_cast() >= 6):
             return True
         # Cancel magic shield if we have better chances tanking with HP
         is_mana_very_low = char_status.mana <= self.total_hp * 1.25
@@ -63,7 +64,6 @@ class EmergencyMagicShieldKeeper:
         return self.timestamp_secs() - self.last_cast_timestamp
 
     def cast(self):
-        self.last_cast_timestamp = self.timestamp_secs()
         self.client.cast_magic_shield()
 
     def cast_cancel(self):

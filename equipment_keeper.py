@@ -64,17 +64,17 @@ class EquipmentKeeper:
         if char_status.emergency_action_amulet == AmuletName.UNKNOWN:
             # Use normal amulets when we don't have emergency amulets
             self.handle_equip_amulet_normal(char_status)
-        elif not self.is_emergency_amulet_on(char_status) and \
-            self.secs_since_toggle_emergency_amulet() >= \
-                DEFAULT_EQUIP_EMERGENCY_FREQ:
+        elif (not self.is_emergency_amulet_on(char_status) and
+            self.secs_since_toggle_emergency_amulet() >=
+                DEFAULT_EQUIP_EMERGENCY_FREQ):
             self.toggle_emergency_amulet()
 
         if char_status.emergency_action_ring == RingName.UNKNOWN:
             # Use normal rings when we don't have emergency rings
             self.handle_equip_ring_normal(char_status)
-        elif not self.is_emergency_ring_on(char_status) and \
-            self.secs_since_toggle_emergency_ring() >= \
-                DEFAULT_EQUIP_EMERGENCY_FREQ:
+        elif (not self.is_emergency_ring_on(char_status) and
+            self.secs_since_toggle_emergency_ring() >=
+                DEFAULT_EQUIP_EMERGENCY_FREQ):
             self.toggle_emergency_ring()
 
     def handle_normal_status_change(self, char_status):
@@ -83,22 +83,17 @@ class EquipmentKeeper:
         self.handle_eat_food(char_status)
 
     def handle_equip_amulet_normal(self, char_status):
-        if self.should_equip_amulet and \
-           char_status.is_amulet_slot_empty and \
-           self.secs_since_equip_amulet() >= \
-           self.equip_amulet_secs:
+        if (self.should_equip_amulet and char_status.is_amulet_slot_empty and
+           self.secs_since_equip_amulet() >= self.equip_amulet_secs):
             self.equip_amulet()
 
     def handle_equip_ring_normal(self, char_status):
-        if self.should_equip_ring and \
-           char_status.is_ring_slot_empty and \
-           self.secs_since_equip_ring() >= \
-           self.equip_ring_secs:
+        if (self.should_equip_ring and char_status.is_ring_slot_empty and
+           self.secs_since_equip_ring() >= self.equip_ring_secs):
             self.equip_ring()
 
     def handle_eat_food(self, char_status):
-        if self.should_eat_food and \
-           self.secs_since_eat_food() >= 60:
+        if self.should_eat_food and self.secs_since_eat_food() >= 60:
             self.eat_food()
 
     def secs_since_equip_ring(self):
@@ -152,11 +147,11 @@ class EquipmentKeeper:
             return EquipmentMode.NORMAL
 
     def is_emergency_ring_on(self, char_status):
-        return char_status.equipped_ring == \
-            char_status.emergency_action_ring and \
-            char_status.emergency_action_ring != RingName.UNKNOWN
+        return (char_status.equipped_ring ==
+            char_status.emergency_action_ring and
+            char_status.emergency_action_ring != RingName.UNKNOWN)
 
     def is_emergency_amulet_on(self, char_status):
-        return char_status.equipped_amulet == \
-            char_status.emergency_action_amulet and \
-            char_status.emergency_action_amulet != AmuletName.UNKNOWN
+        return (char_status.equipped_amulet ==
+            char_status.emergency_action_amulet and
+            char_status.emergency_action_amulet != AmuletName.UNKNOWN)

@@ -29,6 +29,7 @@ class CharKeeper:
         self.load_char_config(self.char_configs[index]["config"])
 
     def load_char_config(self, char_config):
+        self.init_emergency_reporter(char_config)
         self.init_mana_keeper(self.client, char_config)
         self.init_hp_keeper(self.client, char_config)
         self.init_speed_keeper(self.client, char_config)
