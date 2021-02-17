@@ -5,6 +5,8 @@ import argparse
 import sys
 import time
 from window_utils import (ScreenReader, matches_screen_slow)
+from color_spec import (spec, AMULET_REPOSITORY,
+                        RING_REPOSITORY, ItemName, AmuletName, RingName)
 
 
 parser = argparse.ArgumentParser(
@@ -30,42 +32,6 @@ class MagicShieldStatus:
     ON_COOLDOWN = 'on_cooldown'
 
 
-class AmuletName:
-    UNKNOWN = 'unknown'
-    EMPTY = 'empty.amulet'
-    # stone skin amuelt
-    SSA = 'ssa'
-    # sacred tree amulet
-    STA = 'sta'
-    # bonfire amulet
-    BONFIRE = 'bonfire'
-    # leviathan's amulet
-    LEVIATHAN = 'leviathan'
-    # shockwave amulet
-    SHOCK = 'shockwave'
-    # gill necklace
-    GILL = 'gill'
-    # glacier amulet
-    GLACIER = 'glacier'
-    # terra amulet
-    TERRA = 'terra'
-    # magma amulet
-    MAGMA = 'magma'
-    # lightning pendant
-    LIGHTNING = 'lightning'
-    # necklace of the deep
-    DEEP = 'deep'
-    # prismatic necklace
-    PRISM = 'prism'
-
-
-class RingName:
-    UNKNOWN = 'unknown'
-    EMPTY = 'empty.ring'
-    # might ring
-    MIGHT = 'might'
-
-
 # Playable area set at Y: 696 with 2 cols on left and 2 cols on right
 ACTION_BAR_SQUARE_LEN = 36
 # 10th action bar item right to left, 2 columns on the left, 2 columns on the right
@@ -82,115 +48,7 @@ EMERGENCY_ACTION_BAR_AMULET_COORDS = [
     (EMERGENCY_ACTION_BAR_AMULET_CENTER_X + 10, EMERGENCY_ACTION_BAR_CENTER_Y)
 ]
 
-EMERGENCY_ACTION_BAR_AMULET_SPEC = {
-    AmuletName.SSA: [
-        # upper pixel
-        "b9935f",
-        # lower pixel
-        "3c3c3c",
-        # left pixel
-        "444444",
-        # right pixel
-        "454545"
-    ],
-    AmuletName.STA: [
-        "4d170",
-        "1ad552",
-        "d421d",
-        "93215"
-    ],
-    AmuletName.LEVIATHAN: [
-        "b4e2f0",
-        "032c1",
-        "444444",
-        "454545"
-    ],
-    AmuletName.SHOCK: [
-        [
-            "61719",
-            "404040",
-            "89d27",
-            "54312"
-        ],
-        [
-            "59515",
-            "404040",
-            "6f519",
-            "5d616"
-        ],
-        [
-            "68a1f",
-            "404040",
-            "7da24",
-            "5e719"
-        ],
-        [
-            "57311",
-            "404040",
-            "7b81c",
-            "5c514"
-        ]
-    ]
-}
-
-AMULET_SPEC = {
-    AmuletName.EMPTY: [
-        "3d3f42",
-        "434648",
-        "252626",
-        "232424",
-    ],
-    AmuletName.SSA: [
-        # upper pixel
-        "252626",
-        # lower pixel
-        "b8b8b8",
-        # left pixel
-        "252626",
-        # right pixel
-        "232424"
-    ],
-    AmuletName.STA: [
-        "252626",
-        "1b42c",
-        "252626",
-        "a3f19"
-    ],
-    AmuletName.LEVIATHAN: [
-        "252626",
-        "262627",
-        "252626",
-        "232424"
-    ],
-    AmuletName.SHOCK: [
-        [
-            "252626",
-            "60719",
-            "91d28",
-            "232424"
-        ],
-        [
-            "252626",
-            "6891a",
-            "7e61b",
-            "232424"
-        ],
-        [
-            "252626",
-            "5a517",
-            "87b26",
-            "232424"
-        ],
-        [
-            "252626",
-            "60719",
-            "91d28",
-            "232424"
-        ]
-    ]
-}
-
-AMULET_COORDS = [
+EQUIPPED_AMULET_COORDS = [
     # upper pixel
     (1768, 259),
     # lower pixel
@@ -218,35 +76,7 @@ EMERGENCY_ACTION_BAR_RING_COORDS = [
      EMERGENCY_ACTION_BAR_RING_CENTER_Y),
 ]
 
-EMERGENCY_ACTION_BAR_RING_SPEC = {
-    "might": [
-        # upper pixel
-        "9b8132",
-        # lower pixel
-        "d1af44",
-        # left pixel
-        "faed75",
-        # right pixel
-        "d5b246"
-    ]
-}
-
-RING_SPEC = {
-    RingName.EMPTY: [
-        "252625",
-        "36393c",
-        "2e2e2f",
-        "3d4042",
-    ],
-    RingName.MIGHT: [
-        "252625",
-        "272728",
-        "d1ae43",
-        "927b34",
-    ]
-}
-
-RING_COORDS = [
+EQUIPPED_RING_COORDS = [
     # upper pixel
     (1768, 333),
     # lower pixel
@@ -283,61 +113,45 @@ class EquipmentReader(ScreenReader):
         else:
             return ScreenReader.matches_screen(self, coords, specs)
 
-    def pixels_match(self, specs, pixels):
-        if type(specs[0]) == list:
-            for animation_spec in specs:
-                if ScreenReader.pixels_match(self, animation_spec, pixels):
-                    return True
-            return False
-        else:
-            return ScreenReader.pixels_match(self, specs, pixels)
-
-    def get_matching_name(self, coords, specs, default_value):
-        pixels = self.get_pixels(coords)
-        for name in specs:
-            if self.pixels_match(specs[name], pixels):
-                return name
-        return default_value
-
     def get_emergency_action_bar_amulet_name(self):
-        return self.get_matching_name(EMERGENCY_ACTION_BAR_AMULET_COORDS,
-                                      EMERGENCY_ACTION_BAR_AMULET_SPEC,
-                                      AmuletName.UNKNOWN)
+        color_spec = spec(self.get_pixels(EMERGENCY_ACTION_BAR_AMULET_COORDS))
+        return AMULET_REPOSITORY.get_action_name(color_spec)
 
     def get_equipped_amulet_name(self):
-        return self.get_matching_name(AMULET_COORDS,
-                                      AMULET_SPEC,
-                                      AmuletName.UNKNOWN)
+        color_spec = spec(self.get_pixels(EQUIPPED_AMULET_COORDS))
+        return AMULET_REPOSITORY.get_equipment_name(color_spec)
 
     def get_emergency_action_bar_ring_name(self):
-        return self.get_matching_name(EMERGENCY_ACTION_BAR_RING_COORDS,
-                                      EMERGENCY_ACTION_BAR_RING_SPEC,
-                                      RingName.UNKNOWN)
+        color_spec = spec(self.get_pixels(EMERGENCY_ACTION_BAR_RING_COORDS))
+        return RING_REPOSITORY.get_action_name(color_spec)
 
     def get_equipped_ring_name(self):
-        return self.get_matching_name(RING_COORDS,
-                                      RING_SPEC,
-                                      RingName.UNKNOWN)
+        color_spec = spec(self.get_pixels(EQUIPPED_RING_COORDS))
+        return RING_REPOSITORY.get_equipment_name(color_spec)
 
-    def is_emergency_action_bar_amulet(self, name):
+    def is_emergency_action_bar_amulet(self, name: ItemName):
+        spec = AMULET_REPOSITORY.get(name)
         return self.matches_screen(EMERGENCY_ACTION_BAR_AMULET_COORDS,
-                                   EMERGENCY_ACTION_BAR_AMULET_SPEC[name])
+                                   spec)
 
-    def is_emergency_action_bar_ring(self, name):
+    def is_emergency_action_bar_ring(self, name: ItemName):
+        spec = RING_REPOSITORY.get(name)
         return self.matches_screen(EMERGENCY_ACTION_BAR_RING_COORDS,
-                                   EMERGENCY_ACTION_BAR_RING_SPEC[name])
+                                   spec)
 
-    def is_amulet(self, name):
-        return self.matches_screen(AMULET_COORDS, AMULET_SPEC[name])
+    def is_amulet(self, name: ItemName):
+        spec = AMULET_REPOSITORY.get(name).eq_color_specs
+        return self.matches_screen(EQUIPPED_AMULET_COORDS, spec)
 
     def is_amulet_empty(self):
-        return self.is_amulet('empty')
+        return self.is_amulet(AmuletName.EMPTY)
 
-    def is_ring(self, name):
-        return self.matches_screen(RING_COORDS, RING_SPEC[name])
+    def is_ring(self, name: ItemName):
+        spec = RING_REPOSITORY.get(name).eq_color_specs
+        return self.matches_screen(EQUIPPED_RING_COORDS, spec)
 
     def is_ring_empty(self):
-        return self.is_ring('empty')
+        return self.is_ring(RingName.EMPTY)
 
     def get_magic_shield_status(self):
         for name in MAGIC_SHIELD_SPEC:
@@ -353,17 +167,19 @@ class EquipmentReaderSlow():
     def __init__(self, wid):
         self.wid = wid
 
-    def is_amulet(self, name):
-        return matches_screen_slow(self.wid, AMULET_COORDS, AMULET_SPEC[name])
+    def is_amulet(self, name: ItemName):
+        spec = AMULET_REPOSITORY.get(name).eq_color_specs
+        return matches_screen_slow(self.wid, EQUIPPED_AMULET_COORDS, spec)
 
     def is_amulet_empty(self):
-        return self.is_amulet('empty')
+        return self.is_amulet(AmuletName.EMPTY)
 
-    def is_ring(self, name):
-        return matches_screen_slow(self.wid, RING_COORDS, RING_SPEC[name])
+    def is_ring(self, name: ItemName):
+        spec = RING_REPOSITORY.get(name).eq_color_specs
+        return matches_screen_slow(self.wid, EQUIPPED_RING_COORDS, spec)
 
     def is_ring_empty(self):
-        return self.is_ring('empty')
+        return self.is_ring(RingName.EMPTY)
 
     def get_magic_shield_status(self):
         for name in MAGIC_SHIELD_SPEC:
@@ -396,7 +212,7 @@ def check_specs():
         for (x, y) in EMERGENCY_ACTION_BAR_AMULET_COORDS:
             print(eq_reader.get_pixel_color(x, y))
 
-        for name in EMERGENCY_ACTION_BAR_AMULET_SPEC:
+        for name in RING_REPOSITORY.name_to_item.keys():
             def fn():
                 return eq_reader.is_emergency_action_bar_amulet(name)
             time_perf(f"\nis_emergency_action_bar_amulet({name})", fn)
@@ -413,7 +229,7 @@ def check_specs():
         for (x, y) in EMERGENCY_ACTION_BAR_RING_COORDS:
             print(eq_reader.get_pixel_color(x, y))
 
-        for name in EMERGENCY_ACTION_BAR_RING_SPEC:
+        for name in RING_REPOSITORY.name_to_item.keys():
             def fn():
                 return eq_reader.is_emergency_action_bar_ring(name)
             time_perf(f"\nis_emergency_action_bar_ring({name})", fn)
@@ -427,10 +243,10 @@ def check_specs():
         print("\n###############\n"
               "Amulet color spec\n"
               "###############\n")
-        for (x, y) in AMULET_COORDS:
+        for (x, y) in EQUIPPED_AMULET_COORDS:
             print(eq_reader.get_pixel_color(x, y))
 
-        for name in AMULET_SPEC:
+        for name in AMULET_REPOSITORY.name_to_item.keys():
             def fn():
                 return eq_reader.is_amulet(name)
             time_perf(f"\nis_amulet('{name}')", fn)
@@ -442,10 +258,10 @@ def check_specs():
         print("\n###############\n"
               "Ring color spec\n"
               "###############\n")
-        for (x, y) in RING_COORDS:
+        for (x, y) in EQUIPPED_RING_COORDS:
             print(eq_reader.get_pixel_color(x, y))
 
-        for name in RING_SPEC:
+        for name in RING_REPOSITORY.name_to_item.keys():
             def fn():
                 return eq_reader.is_ring(name)
             time_perf(f"\nis_ring('{name}')", fn)
@@ -494,6 +310,7 @@ def main(args):
 
     if args.magic_shield_status:
         check_magic_shield_status(args.tibia_wid)
+
 
 if __name__ == '__main__':
     main(parser.parse_args())

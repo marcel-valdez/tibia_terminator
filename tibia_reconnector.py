@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3.8
 """Reconnects to the first character of the tibia client."""
 
 import os
@@ -63,10 +63,10 @@ def debug(msg, debug_level=0):
 
 class IntroScreenReader():
     def is_screen(self, tibia_wid, name):
-        pixels = map(
-            lambda (x, y): get_pixel_color_slow(tibia_wid, x, y),
-            SCREEN_COORDS
-        )
+        def fn(x, y):
+            get_pixel_color_slow(tibia_wid, x, y)
+
+        pixels = list(map(fn, SCREEN_COORDS))
         for i in range(0, 3):
             if pixels[i] != SCREEN_SPECS[name][i]:
                 debug('%s (%s) is not equal to %s' %

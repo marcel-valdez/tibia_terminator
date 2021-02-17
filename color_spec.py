@@ -112,15 +112,17 @@ class RingSpec(ItemSpec):
 
 class ItemRepository():
     def __init__(self, items: List[ItemSpec] = []):
-        self.items = items
+        self.name_to_item = {}
         self.action_spec_to_name = {}
         self.equip_spec_to_name = {}
-        for item in self.items:
+        for item in items:
             self.__register(item)
 
     def add(self, item: ItemSpec):
-        self.items.append(item)
         self.__register(item)
+
+    def get(self, name: ItemName) -> ItemSpec:
+        return self.name_to_item.get(name, None)
 
     def get_action_name(self, color_spec: ColorSpec) -> ItemName:
         """Get the name of the action bar item, given a ColorSpec."""
@@ -131,6 +133,7 @@ class ItemRepository():
         return self.equip_spec_to_name.get(color_spec, ItemName('unknown'))
 
     def __register(self, item: ItemSpec):
+        self.name_to_item[item.name] = item
         for action_color_spec in item.action_color_specs:
             self.action_spec_to_name[action_color_spec] = item.name
 

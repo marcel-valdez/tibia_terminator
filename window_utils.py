@@ -92,7 +92,7 @@ def get_pixel_color_slow(wid, x, y):
 
 def matches_screen_slow(wid, coords, color_spec):
     get_pixel_fn = lambda coords: get_pixel_color_slow(wid, *coords)
-    pixels = map(get_pixel_color_lmb, coords)
+    pixels = list(map(get_pixel_fn, coords))
     match = True
     for i in range(0, len(pixels)):
         match &= pixels[i].lower() == color_spec[i].lower()
@@ -201,7 +201,7 @@ class ScreenReader():
         pixel_rgb_image = PIL.Image.frombytes(
             "RGB", (1, 1), pixel_rgb_bytes, "raw", "BGRX")
         pixel_rgb_color = PIL.ImageStat.Stat(pixel_rgb_image).mean
-        return rgb_color_to_hex_str(pixel_rgb_color)
+        return rgb_color_to_hex_str(pixel_rgb_color).lower()
 
     def get_pixel_color_slow(self, wid, x, y):
         return get_pixel_color_slow(wid, x, y)
