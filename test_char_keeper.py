@@ -334,17 +334,17 @@ class TestCharKeeper(TestCase):
         target = self.make_target()
         # when
         target.handle_equipment(
-            status(equipped_ring=RingName.UNKNOWN.name, equipped_amulet=AmuletName.EMPTY.name))
+            status(equipped_ring=RingName.UNKNOWN, equipped_amulet=AmuletName.EMPTY))
         # then
         target.client.equip_amulet.assert_called_once()
         # when
         target.handle_equipment(
-            status(equipped_ring=RingName.EMPTY.name, equipped_amulet=AmuletName.UNKNOWN.name))
+            status(equipped_ring=RingName.EMPTY, equipped_amulet=AmuletName.UNKNOWN))
         # then
         target.client.equip_ring.assert_called_once()
         # when
         target.handle_equipment(
-            status(equipped_ring=RingName.UNKNOWN.name, equipped_amulet=AmuletName.UNKNOWN.name))
+            status(equipped_ring=RingName.UNKNOWN, equipped_amulet=AmuletName.UNKNOWN))
         # then
         self.assertEqual(target.client.eat_food.call_count, 3)
 
@@ -354,7 +354,7 @@ class TestCharKeeper(TestCase):
             self.make_char_config(should_equip_amulet=False))
         # when
         target.handle_equipment(
-            status(equipped_amulet=AmuletName.EMPTY.name, equipped_ring=RingName.EMPTY.name))
+            status(equipped_amulet=AmuletName.EMPTY.name, equipped_ring=RingName.EMPTY))
         # then
         target.client.equip_amulet.assert_not_called()
 
@@ -363,11 +363,11 @@ class TestCharKeeper(TestCase):
         target = self.make_target(
             self.make_char_config(should_equip_ring=False))
         target.handle_equipment(
-            status(equipped_amulet=AmuletName.EMPTY.name, equipped_ring=RingName.UNKNOWN.name))
+            status(equipped_amulet=AmuletName.EMPTY, equipped_ring=RingName.UNKNOWN))
         target.client.equip_amulet.assert_called_once()
         # when
         target.handle_equipment(
-            status(equipped_ring=RingName.EMPTY.name, equipped_amulet=AmuletName.UNKNOWN.name))
+            status(equipped_ring=RingName.EMPTY, equipped_amulet=AmuletName.UNKNOWN))
         # then
         target.client.equip_ring.assert_not_called()
 
@@ -376,14 +376,14 @@ class TestCharKeeper(TestCase):
         target = self.make_target(
             self.make_char_config(should_eat_food=False))
         target.handle_equipment(
-            status(equipped_ring=RingName.UNKNOWN.name, equipped_amulet=AmuletName.EMPTY.name))
+            status(equipped_ring=RingName.UNKNOWN, equipped_amulet=AmuletName.EMPTY))
         target.client.equip_amulet.assert_called_once()
         target.handle_equipment(
-            status(equipped_ring=RingName.EMPTY.name, equipped_amulet=AmuletName.EMPTY.name))
+            status(equipped_ring=RingName.EMPTY, equipped_amulet=AmuletName.EMPTY))
         target.client.equip_ring.assert_called_once()
         # when
         target.handle_equipment(
-            status(equipped_ring=RingName.UNKNOWN.name, equipped_amulet=AmuletName.EMPTY.name))
+            status(equipped_ring=RingName.UNKNOWN, equipped_amulet=AmuletName.EMPTY))
         # then
         target.client.eat_food.assert_not_called()
 

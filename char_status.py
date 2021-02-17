@@ -1,11 +1,13 @@
 """Knows the character's status."""
 
 
-from equipment_reader import (AmuletName, RingName)
+from typing import Dict
+from color_spec import (AmuletName, RingName)
 
 
 class CharStatus:
-    def __init__(self, hp, speed, mana, magic_shield_level, equipment_status):
+    def __init__(self, hp: int, speed: int, mana: int, magic_shield_level: int,
+      equipment_status: Dict):
         self.hp = hp
         self.speed = speed
         self.mana = mana
