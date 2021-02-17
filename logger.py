@@ -15,7 +15,8 @@ EMERGENCY_ACTION_AMULET_ROW = MAGIC_SHIELD_ROW + 1
 EMERGENCY_ACTION_RING_ROW = EMERGENCY_ACTION_AMULET_ROW + 1
 EQUIPPED_AMULET_ROW = EMERGENCY_ACTION_RING_ROW + 1
 EQUIPPED_RING_ROW = EQUIPPED_AMULET_ROW + 1
-DEBUG_ROW = EQUIPPED_RING_ROW + 1
+MAGIC_SHIELD_STATUS_ROW = EQUIPPED_RING_ROW + 1
+DEBUG_ROW = MAGIC_SHIELD_STATUS_ROW + 1
 
 
 global DEBUG_PPOOL
@@ -86,7 +87,7 @@ class StatsLogger(threading.Thread):
         self.log(entry)
 
     def log(self, entry):
-        self.queue.put_nowait(entry)
+        self.queue.put(entry)
 
     def stop(self):
         self.stopped = True
@@ -113,53 +114,31 @@ class StatsLogger(threading.Thread):
     def print_stats(self, stats, prev_stats, equipment_status,
                     prev_equipment_status):
         mana = stats['mana']
-        prev_mana = prev_stats['mana']
         hp = stats['hp']
-        prev_hp = prev_stats['hp']
         speed = stats['speed']
-        prev_speed = prev_stats['speed']
         magic_shield_level = stats['magic_shield']
-        prev_magic_shield_level = prev_stats['magic_shield']
         emergency_action_amulet = equipment_status['emergency_action_amulet']
-        prev_emergency_action_amulet = \
-            prev_equipment_status['emergency_action_amulet']
         emergency_action_ring = equipment_status['emergency_action_ring']
-        prev_emergency_action_ring = \
-            prev_equipment_status['emergency_action_ring']
         equipped_ring = equipment_status['equipped_ring']
-        prev_equipped_ring = prev_equipment_status['equipped_ring']
         equipped_amulet = equipment_status['equipped_amulet']
-        prev_equipped_amulet = prev_equipment_status['equipped_amulet']
+        magic_shield_status = equipment_status['magic_shield_status']
 
-        if mana != prev_mana:
-            self.winprint(f"Mana: {str(mana)}", MANA_ROW)
-
-        if hp != prev_hp:
-            self.winprint(f"HP: {str(hp)}", HP_ROW)
-
-        if speed != prev_speed:
-            self.winprint(f"Speed: {str(speed)}", SPEED_ROW)
-
-        if magic_shield_level != prev_magic_shield_level:
-            self.winprint(f"Magic Shield: {str(magic_shield_level)}",
-                          MAGIC_SHIELD_ROW)
-
-        if emergency_action_amulet != prev_emergency_action_amulet:
-            self.winprint(
-                f"Emergency Action Amulet: {emergency_action_amulet}",
-                EMERGENCY_ACTION_AMULET_ROW)
-
-        if emergency_action_ring != prev_emergency_action_ring:
-            self.winprint(f"Emergency Action Ring: {emergency_action_ring}",
-                          EMERGENCY_ACTION_RING_ROW)
-
-        if equipped_ring != prev_equipped_ring:
-            self.winprint(f"Equipped Ring: {equipped_ring}",
-                          EQUIPPED_RING_ROW)
-
-        if equipped_amulet != prev_equipped_amulet:
-            self.winprint(f"Equipped Amulet: {equipped_amulet}",
-                          EQUIPPED_AMULET_ROW)
+        self.winprint(f"Mana: {str(mana)}", MANA_ROW)
+        self.winprint(f"HP: {str(hp)}", HP_ROW)
+        self.winprint(f"Speed: {str(speed)}", SPEED_ROW)
+        self.winprint(f"Magic Shield: {str(magic_shield_level)}",
+                      MAGIC_SHIELD_ROW)
+        self.winprint(
+            f"Emergency Action Amulet: {emergency_action_amulet}",
+              EMERGENCY_ACTION_AMULET_ROW)
+        self.winprint(f"Emergency Action Ring: {emergency_action_ring}",
+                        EMERGENCY_ACTION_RING_ROW)
+        self.winprint(f"Equipped Amulet: {equipped_amulet}",
+                        EQUIPPED_AMULET_ROW)
+        self.winprint(f"Equipped Ring: {equipped_ring}",
+                        EQUIPPED_RING_ROW)
+        self.winprint(f"Magic Shield Status: {magic_shield_status}",
+                        MAGIC_SHIELD_STATUS_ROW)
 
         # self.winprint(f"Debug self.char_keeper.equipment_keeper.prev_mode:
         #                 {self.char_keeper.equipment_keeper.prev_mode}",
@@ -170,6 +149,7 @@ class StatsLogger(threading.Thread):
 
     def winprint(self, msg, row=0, col=0, end='\n'):
         self.cliwin.addstr(row, col, msg + end)
+        self.cliwin.refresh()
 
 if __name__ != "__main__":
     init_debug_ppool()
