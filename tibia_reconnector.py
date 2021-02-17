@@ -36,6 +36,12 @@ parser.add_argument(
   type=int,
   default=0
 )
+parser.add_argument(
+  '--max_wait',
+  help='Maximum amount of time to keep retrying in minutes',
+  type=int,
+  default=120
+)
 
 DEBUG_LEVEL=0
 
@@ -140,7 +146,7 @@ def wait_for_lock():
         return True
 
     print('Another Tibia account is reconnecting, waiting.')
-    max_wait_retry_secs = 60 * 16
+    max_wait_retry_secs = 60 * 64
     wait_retry_secs = 60
     while wait_retry_secs <= max_wait_retry_secs:
         locked = os.path.exists('.tibia_reconnector.lock')
@@ -155,7 +161,7 @@ def wait_for_lock():
     return False
 
 
-def handle_login(tibia_wid, credentials):
+def handle_login(tibia_wid, credentials, max_wait):
     if not wait_for_lock():
         print('Unable to acquire reconnector lock, quitting.')
         exit(1)
@@ -167,9 +173,10 @@ def handle_login(tibia_wid, credentials):
             print('The character is already in-game.')
             exit(0)
 
-        max_wait_retry_secs = 60 * 32
+        max_wait_secs = max_wait * 60
         wait_retry_secs = 60
-        while wait_retry_secs <= max_wait_retry_secs:
+        total_wait_secs = 0
+        while total_wait_secs + wait_retry_secs <= max_wait_secs:
             success = login(tibia_wid, credentials)
             if success:
                 print('Login succeeded.')
@@ -178,6 +185,7 @@ def handle_login(tibia_wid, credentials):
                 print('Login failed.')
                 print('Waiting %s seconds before retrying.' % wait_retry_secs)
                 time.sleep(wait_retry_secs)
+                total_wait_secs += wait_retry_secs
             wait_retry_secs *= 2
         exit(1)
     finally:
@@ -193,7 +201,7 @@ def handle_check(tibia_wid):
         exit(1)
 
 
-def main(tibia_pid, credentials_profile, only_check=False, login=False):
+def main(tibia_pid, credentials_profile, only_check=False, login=False, max_wait=120):
     """Main entry point of the program."""
     tibia_wid = get_tibia_wid(tibia_pid)
     if only_check:
@@ -206,10 +214,10 @@ def main(tibia_pid, credentials_profile, only_check=False, login=False):
         if credentials is None:
             print("Unknown credentials profile " + credentials_profile)
             exit(1)
-        handle_login(tibia_wid, credentials)
+        handle_login(tibia_wid, credentials, max_wait)
 
 
 if __name__ == '__main__':
     args = parser.parse_args()
     DEBUG_LEVEL=args.debug_level
-    main(args.pid, args.credentials_profile, args.check_if_ingame, args.login)
+    main(args.pid, args.credentials_profile, args.check_if_ingame, args.login, args.max_wait)
