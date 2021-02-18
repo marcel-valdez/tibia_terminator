@@ -70,7 +70,7 @@ def debug(msg, debug_level=0):
 class IntroScreenReader():
     def is_screen(self, tibia_wid, name):
         def fn(xy):
-            get_pixel_color_slow(tibia_wid, xy[0], xy[1])
+            return get_pixel_color_slow(tibia_wid, xy[0], xy[1])
 
         pixels = list(map(fn, SCREEN_COORDS))
         for i in range(0, 3):
