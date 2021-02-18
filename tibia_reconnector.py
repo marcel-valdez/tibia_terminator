@@ -69,8 +69,8 @@ def debug(msg, debug_level=0):
 
 class IntroScreenReader():
     def is_screen(self, tibia_wid, name):
-        def fn(x, y):
-            get_pixel_color_slow(tibia_wid, x, y)
+        def fn(xy):
+            get_pixel_color_slow(tibia_wid, xy[0], xy[1])
 
         pixels = list(map(fn, SCREEN_COORDS))
         for i in range(0, 3):
@@ -106,7 +106,6 @@ def close_dialogs(tibia_wid):
     time.sleep(2)
     send_key(tibia_wid, Key.ENTER)
     time.sleep(2)
-
 
 
 def login(tibia_wid, credentials):
