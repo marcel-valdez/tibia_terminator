@@ -17,7 +17,10 @@ EQUIPPED_AMULET_ROW = EMERGENCY_ACTION_RING_ROW + 1
 EQUIPPED_RING_ROW = EQUIPPED_AMULET_ROW + 1
 MAGIC_SHIELD_STATUS_ROW = EQUIPPED_RING_ROW + 1
 DEBUG_ROW = MAGIC_SHIELD_STATUS_ROW + 1
+LOG_ROW = DEBUG_ROW + 1
 
+LOG_BUFFER_COUNTER = 0
+MAX_LOG_BUFFER = 10
 
 global DEBUG_PPOOL
 DEBUG_PPOOL = None
@@ -57,6 +60,12 @@ class StatsEntry():
         self.prev_equipment_status = prev_equipment_status
 
 
+class ActionLogEntry():
+    def __init__(self, debug_level, msg):
+        self.debug_level = debug_level
+        self.msg = msg
+
+
 class LogEntry():
     def __init__(self, msg, row=0, col=0, end='\n'):
         self.msg = msg
@@ -80,22 +89,26 @@ class StatsLogger(threading.Thread):
     def __init__(self, cliwin):
         super().__init__(daemon=True)
         self.cliwin = cliwin
-        self.queue = queue.Queue()
+        self.log_queue = queue.Queue()
         self.stopped = False
+        self.logs = []
+
+    def log_action(self, debug_level, msg):
+        self.log(ActionLogEntry(debug_level, msg))
 
     def log_stats(self, entry):
         self.log(entry)
 
     def log(self, entry):
-        self.queue.put(entry)
+        self.log_queue.put(entry)
 
     def stop(self):
         self.stopped = True
 
     def run(self):
-        while True:
-            if self.queue.qsize() > 0:
-                entry = self.queue.get()
+        while not self.stopped:
+            if self.log_queue.qsize() > 0:
+                entry = self.log_queue.get()
                 try:
                     if isinstance(entry, StatsEntry):
                         self.print_stats(entry.stats, entry.prev_stats,
@@ -103,13 +116,28 @@ class StatsLogger(threading.Thread):
                                          entry.prev_equipment_status)
                     elif isinstance(entry, LogEntry):
                         self.print_entry(entry)
+                    elif isinstance(entry, ActionLogEntry):
+                        self.print_action(entry.debug_level, entry.msg)
                 finally:
-                    self.queue.task_done()
-            elif self.stopped:
-                break
+                    self.log_queue.task_done()
             else:
                 # sleep 10 ms
                 time.sleep(0.01)
+
+    def print_action(self, debug_level, msg):
+        if debug_level > DEBUG_LEVEL:
+            return
+        self.cliwin.move(LOG_ROW, 0)
+        self.cliwin.clrtobot()
+        self.cliwin.addstr(LOG_ROW, 0, 'Log Entries')
+        if len(self.logs) > MAX_LOG_BUFFER:
+            self.logs.pop(0)
+        self.logs.append(msg)
+        rowi = LOG_ROW
+        for log in self.logs:
+            self.cliwin.move(rowi + 1, 0)
+            self.cliwin.insstr(log)
+            rowi += 1
 
     def print_stats(self, stats, prev_stats, equipment_status,
                     prev_equipment_status):
