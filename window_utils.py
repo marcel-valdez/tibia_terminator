@@ -215,7 +215,7 @@ class ScreenReader():
     def pixels_match(self, pixels_a, pixels_b):
         match = True
         for i in range(0, len(pixels_a)):
-            match &= pixels_a[i].lower() == pixels_b[i].lower()
+            match &= str(pixels_a[i]).lower() == str(pixels_b[i]).lower()
         return match
 
     def matches_screen(self, coords, color_spec):

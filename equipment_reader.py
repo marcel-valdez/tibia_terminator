@@ -105,39 +105,39 @@ MAGIC_SHIELD_COORDS = [
 class EquipmentReader(ScreenReader):
 
     def matches_screen(self, coords, specs):
-        if type(specs[0]) == list:
+        if type(specs) == list or type(specs) == tuple:
             for animation_spec in specs:
-                if ScreenReader.matches_screen(self, coords, animation_spec):
+                if ScreenReader.matches_screen(self, coords, animation_spec.colors):
                     return True
             return False
         else:
-            return ScreenReader.matches_screen(self, coords, specs)
+            return ScreenReader.matches_screen(self, coords, specs.colors)
 
     def get_emergency_action_bar_amulet_name(self):
-        color_spec = spec(self.get_pixels(EMERGENCY_ACTION_BAR_AMULET_COORDS))
+        color_spec = spec(*self.get_pixels(EMERGENCY_ACTION_BAR_AMULET_COORDS))
         return AMULET_REPOSITORY.get_action_name(color_spec)
 
     def get_equipped_amulet_name(self):
-        color_spec = spec(self.get_pixels(EQUIPPED_AMULET_COORDS))
+        color_spec = spec(*self.get_pixels(EQUIPPED_AMULET_COORDS))
         return AMULET_REPOSITORY.get_equipment_name(color_spec)
 
     def get_emergency_action_bar_ring_name(self):
-        color_spec = spec(self.get_pixels(EMERGENCY_ACTION_BAR_RING_COORDS))
+        color_spec = spec(*self.get_pixels(EMERGENCY_ACTION_BAR_RING_COORDS))
         return RING_REPOSITORY.get_action_name(color_spec)
 
     def get_equipped_ring_name(self):
-        color_spec = spec(self.get_pixels(EQUIPPED_RING_COORDS))
+        color_spec = spec(*self.get_pixels(EQUIPPED_RING_COORDS))
         return RING_REPOSITORY.get_equipment_name(color_spec)
 
     def is_emergency_action_bar_amulet(self, name: ItemName):
-        spec = AMULET_REPOSITORY.get(name)
+        amulet = AMULET_REPOSITORY.get(name)
         return self.matches_screen(EMERGENCY_ACTION_BAR_AMULET_COORDS,
-                                   spec)
+                                   amulet.action_color_specs)
 
     def is_emergency_action_bar_ring(self, name: ItemName):
-        spec = RING_REPOSITORY.get(name)
+        ring = RING_REPOSITORY.get(name)
         return self.matches_screen(EMERGENCY_ACTION_BAR_RING_COORDS,
-                                   spec)
+                                   ring.action_color_specs)
 
     def is_amulet(self, name: ItemName):
         spec = AMULET_REPOSITORY.get(name).eq_color_specs
@@ -156,7 +156,7 @@ class EquipmentReader(ScreenReader):
     def get_magic_shield_status(self):
         for name in MAGIC_SHIELD_SPEC:
             if self.matches_screen(MAGIC_SHIELD_COORDS,
-                                   MAGIC_SHIELD_SPEC[name]):
+                                   spec(*MAGIC_SHIELD_SPEC[name])):
                 return name
         # There are only 3 possible states: recently cast, off cooldown and
         # on cooldown.
@@ -212,7 +212,7 @@ def check_specs():
         for (x, y) in EMERGENCY_ACTION_BAR_AMULET_COORDS:
             print(eq_reader.get_pixel_color(x, y))
 
-        for name in RING_REPOSITORY.name_to_item.keys():
+        for name in AMULET_REPOSITORY.name_to_item.keys():
             def fn():
                 return eq_reader.is_emergency_action_bar_amulet(name)
             time_perf(f"\nis_emergency_action_bar_amulet({name})", fn)

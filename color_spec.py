@@ -4,8 +4,12 @@ from typing import (List, Union)
 
 
 class ItemName():
-    def __init__(self, name):
+    __items = {}
+
+    def __init__(self, name: str):
         self.name = name
+        self.__class__.register(self.__class__, self)
+
 
     def __hash__(self):
         return hash(self.name)
@@ -13,8 +17,21 @@ class ItemName():
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.name == other.name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
+
+    @staticmethod
+    def from_name(cls, name: str):
+        return cls.items().get(name, None)
+
+    @staticmethod
+    def register(cls, item):
+        cls.items(cls)[item.name] = item
+
+    @staticmethod
+    def items(cls):
+        return cls.__items
+
 
 
 class AmuletName(ItemName):
@@ -72,6 +89,9 @@ class PixelColor():
 
     def __eq__(self, other):
         return isinstance(other, PixelColor) and self.color == other.color
+
+    def __str__(self):
+        return self.color
 
 
 class ColorSpec():
