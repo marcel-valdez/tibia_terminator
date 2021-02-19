@@ -2,7 +2,6 @@
 
 import argparse
 import subprocess
-import mouse
 import time
 import keyboard
 from window_utils import get_tibia_wid
