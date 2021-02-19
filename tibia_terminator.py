@@ -14,11 +14,18 @@ from char_keeper import CharKeeper
 from char_reader38 import CharReader38 as CharReader
 from char_status import CharStatus
 from equipment_reader import (EquipmentReader, AmuletName, RingName,
-    MagicShieldStatus)
+                              MagicShieldStatus)
 from char_config import CHAR_CONFIGS, HOTKEYS_CONFIG
 from app_config import MEM_CONFIG
 from logger import (set_debug_level, StatsLogger, StatsEntry, LogEntry)
 from looter import Looter
+from view_renderer import (ViewRenderer, PausedView,
+                           RunView, ConfigSelectionView)
+
+# If you get the error:
+# Xlib.error.DisplayConnectionError: Can't connect to display ":0": b'No protocol specified\n'
+# Then disable access control to the display by running this command: xhost +
+# Note that this program needs to be executed as superuser in order to access program memory pages.
 
 parser = argparse.ArgumentParser(
     description='Tibia terminator CLI parameters.')
@@ -45,7 +52,8 @@ parser.add_argument('--debug_level',
                     default=-1)
 
 PPOOL = None
-SPACE_KEYCODE = 263
+SPACE_KEYCODE_A = 263
+SPACE_KEYCODE_B = 32
 ENTER_KEYCODE = 10
 ESCAPE_KEY = 27
 LOOP_FREQ_MS = 100
@@ -55,7 +63,11 @@ MAIN_OPTIONS_ROW = TITLE_ROW + 1
 ERRORS_ROW = MAIN_OPTIONS_ROW + 1
 
 CONFIG_SELECTION_ROW = ERRORS_ROW + 2
+RUNNING_STATE_MAIN_OPTIONS_MSG = "[Space]: Pause, [Esc]: Exit, [Enter]: Config selection."
+PAUSED_STATE_MAIN_OPTIONS_MSG = "[Space]: Resume, [Esc]: Exit, [Enter]: Config selection."
+CONFIG_SELECTION_MAIN_OPTIONS_MSG = "[Esc]: Exit, [Enter]: Back to paused state."
 CONFIG_SELECTION_TITLE = "Type the number of the char config to load: "
+
 
 class AppStates:
     PAUSED = "__PAUSED__"
@@ -63,25 +75,26 @@ class AppStates:
     CONFIG_SELECTION = "__CONFIG_SELECTION__"
     EXIT = "__EXIT__"
 
-PAUSE_KEYCODE = SPACE_KEYCODE
-RESUME_KEYCODE = SPACE_KEYCODE
+
+PAUSE_KEYCODES = [SPACE_KEYCODE_A, SPACE_KEYCODE_B]
+RESUME_KEYCODES = [SPACE_KEYCODE_A, SPACE_KEYCODE_B]
 CONFIG_SELECTION_KEYCODE = ENTER_KEYCODE
 EXIT_KEYCODE = ESCAPE_KEY
-
 
 
 class TibiaTerminator:
     def __init__(self,
                  tibia_wid,
-                 char_keeper,
-                 char_reader,
-                 equipment_reader,
+                 char_keeper: CharKeeper,
+                 char_reader: CharReader,
+                 equipment_reader: EquipmentReader,
                  mem_config,
                  char_configs,
                  cliwin,
-                 looter,
-                 stats_logger,
-                 cmd_sender,
+                 looter: Looter,
+                 stats_logger: StatsLogger,
+                 view_renderer: ViewRenderer,
+                 cmd_sender: CommandSender,
                  enable_mana=True,
                  enable_hp=True,
                  enable_magic_shield=True,
@@ -96,6 +109,7 @@ class TibiaTerminator:
         self.equipment_reader = equipment_reader
         self.looter = looter
         self.stats_logger = stats_logger
+        self.view_renderer = view_renderer
         self.cmd_sender = cmd_sender
         self.enable_speed = enable_speed
         self.enable_mana = enable_mana
@@ -105,6 +119,7 @@ class TibiaTerminator:
         self.initial_pause = True
         self.app_state = None
         self.selected_config_name = char_configs[0]["name"]
+        self.view = None
 
     def monitor_char(self):
         # TODO: Rather than hardcoding these values, implement the init_*
@@ -145,31 +160,16 @@ class TibiaTerminator:
         if self.enable_magic_shield:
             self.char_reader.init_magic_shield_address(magic_shield_address)
 
-        self.prev_stats = {'mana': -1, 'hp': -1, 'speed': -1, 'magic_shield': -1}
-        self.prev_equipment_status = {
-            'emergency_action_amulet': '',
-            'equipped_amulet': '',
-            'emergency_action_ring': '',
-            'equipped_ring': '',
-            'magic_shield_status': ''
-        }
-
         self.equipment_reader.open()
-        self.cliwin.nodelay(True)
-        self.cliwin.idlok(True)
-        self.cliwin.leaveok(True)
-        self.cliwin.refresh()
-
-        self.app_state = AppStates.PAUSED
-        self.winprint("[Space]: Resume, [Esc]: Exit, [Enter]: Config selection.", MAIN_OPTIONS_ROW)
-
-        self.stats_logger.start()
+        self.view_renderer.start()
         self.cmd_sender.start()
         try:
+            self.app_state = AppStates.PAUSED
+            self.enter_paused_state()
             while True:
+                self.frame_counter += 1
                 start = time.time() * 1000
-                title = "Tibia Terminator. WID: " + str(self.tibia_wid) + " Active config: " + self.selected_config_name
-                self.winprint(title, TITLE_ROW)
+
                 keycode = self.cliwin.getch()
                 self.enter_next_app_state(keycode)
                 if self.app_state == AppStates.EXIT:
@@ -189,13 +189,12 @@ class TibiaTerminator:
         finally:
             self.looter.unhook_hotkey()
             self.equipment_reader.close()
-            self.stats_logger.stop()
+            self.view_renderer.stop()
             self.cmd_sender.stop()
 
     def handle_exit_state(self):
         """Exits the program based on user input."""
         sys.exit(0)
-
 
     def enter_next_app_state(self, keycode):
         next_state = self.app_state
@@ -203,11 +202,11 @@ class TibiaTerminator:
             next_state = AppStates.EXIT
 
         if self.app_state == AppStates.RUNNING:
-            if keycode == PAUSE_KEYCODE:
+            if keycode in PAUSE_KEYCODES:
                 next_state = AppStates.PAUSED
 
         if self.app_state == AppStates.PAUSED:
-            if keycode == RESUME_KEYCODE:
+            if keycode in RESUME_KEYCODES:
                 next_state = AppStates.RUNNING
 
         if self.app_state == AppStates.CONFIG_SELECTION:
@@ -235,7 +234,11 @@ class TibiaTerminator:
 
     def enter_running_state(self):
         self.looter.hook_hotkey()
-        self.winprint("[Space]: Pause, [Esc]: Exit, [Enter]: Config selection.", MAIN_OPTIONS_ROW)
+        self.view = RunView()
+        self.view.title = self.gen_title()
+        self.view.main_options = RUNNING_STATE_MAIN_OPTIONS_MSG
+        self.stats_logger.run_view = self.view
+        self.view_renderer.change_views(self.view)
 
     def handle_running_state(self):
         stats = self.char_reader.get_stats()
@@ -261,20 +264,23 @@ class TibiaTerminator:
         }
 
         self.handle_stats(stats, equipment_status)
-        self.stats_logger.log_stats(
-            StatsEntry(stats, self.prev_stats, equipment_status,
-            self.prev_equipment_status))
-        self.prev_stats = stats
-        self.prev_equipment_status = equipment_status
+        self.view.set_char_status(CharStatus(
+            mana=stats['mana'],
+            hp=stats['hp'],
+            speed=stats['speed'],
+            magic_shield_level=stats['magic_shield'],
+            equipment_status=equipment_status))
 
     def exit_running_state(self):
+        self.stats_logger.run_view = None
         pass
 
     def enter_paused_state(self):
         self.looter.unhook_hotkey()
-        self.winprint(
-            "[Space]: Resume, [Esc]: Exit, [Enter]: Config selection.",
-            MAIN_OPTIONS_ROW)
+        self.view = PausedView()
+        self.view.title = self.gen_title()
+        self.view.main_options = PAUSED_STATE_MAIN_OPTIONS_MSG
+        self.view_renderer.change_views(self.view)
 
     def exit_paused_state(self):
         pass
@@ -282,74 +288,45 @@ class TibiaTerminator:
     def handle_paused_state(self):
         pass
 
-    def enter_config_selection_state(self):
-        self.winprint("[Esc]: Exit, [Enter]: Back to paused state.",
-                      MAIN_OPTIONS_ROW)
-        self.winprint(CONFIG_SELECTION_TITLE, CONFIG_SELECTION_ROW)
-        self.cliwin.clrtobot()
-        self.cliwin.nodelay(False)
-
-    def exit_config_selection_state(self):
-        self.cliwin.clear()
-        self.cliwin.refresh()
-        self.cliwin.nodelay(True)
-
-    def handle_config_selection_state(self):
-        i = 0
-        total_char_configs = len(self.char_configs)
-        for char_config in self.char_configs:
-            row = CONFIG_SELECTION_ROW + i + 1
-            self.cliwin.move(row, 0)
-            self.cliwin.clrtoeol()
-            self.cliwin.insstr(str(i) + ': ' + char_config["name"])
-            i += 1
-
-        number_str = ''
-        getting_number = True
-        input_col = len(CONFIG_SELECTION_TITLE)
-        col = input_col
-        while getting_number:
-            keycode = self.cliwin.getch(CONFIG_SELECTION_ROW, col)
-            if keycode >= 48 and keycode <= 57:
-                number_str += str(keycode - 48)
-                self.cliwin.insstr(CONFIG_SELECTION_ROW,
-                                   col,
-                                   str(keycode - 48))
-                col += 1
-            elif keycode == ENTER_KEYCODE:
-                if number_str == '':
+    def config_input_cb(self, view: ConfigSelectionView, keycode):
+        if keycode >= 48 and keycode <= 57:
+            view.user_input += str(keycode - 48)
+        elif keycode == ENTER_KEYCODE:
+            if view.user_input == '':
+                self.exit_config_selection_state()
+                self.enter_paused_state()
+                self.app_state = AppStates.PAUSED
+            else:
+                selection = int(view.user_input)
+                if selection >= len(self.char_configs):
+                    view.error = f"Selection index {view.user_input} is invalid."
+                    view.user_input = ''
+                else:
+                    self.selected_config_name = self.char_configs[selection]["name"]
+                    self.char_keeper.change_char_config(selection)
                     self.exit_config_selection_state()
                     self.enter_paused_state()
                     self.app_state = AppStates.PAUSED
-                    break
-                elif not number_str.isdigit():
-                    self.winprint("Only numbers allowed.", ERRORS_ROW)
-                    col = input_col
-                    self.cliwin.move(CONFIG_SELECTION_ROW, col)
-                    self.cliwin.clrtoeol()
-                    number_str = ''
-                else:
-                    selection = int(number_str)
-                    if selection >= total_char_configs:
-                        self.winprint(f"Selection index {number_str} is invalid.", ERRORS_ROW)
-                        col = input_col
-                        self.cliwin.move(CONFIG_SELECTION_ROW, input_col)
-                        self.cliwin.clrtoeol()
-                        number_str = ''
-                    else:
-                        self.selected_config_name = self.char_configs[selection]["name"]
-                        self.char_keeper.change_char_config(selection)
-                        self.exit_config_selection_state()
-                        self.enter_paused_state()
-                        self.app_state = AppStates.PAUSED
-                        break
-            elif keycode == EXIT_KEYCODE:
-                self.handle_exit_state()
-            elif keycode == curses.KEY_BACKSPACE:
-                if len(number_str) > 0:
-                    self.cliwin.delch(CONFIG_SELECTION_ROW, col - 1)
-                    number_str = number_str[:len(number_str) - 1]
-                    col -= 1
+        elif keycode == EXIT_KEYCODE:
+            self.handle_exit_state()
+        elif keycode == curses.KEY_BACKSPACE:
+            if len(view.user_input) > 0:
+                view.user_input = view.user_input[:len(view.user_input) - 1]
+
+    def enter_config_selection_state(self):
+        config_names = list(map(lambda c: c['name'], self.char_configs))
+        self.view = ConfigSelectionView(config_names, self.config_input_cb)
+        self.view.title = self.gen_title()
+        self.view.main_options = CONFIG_SELECTION_MAIN_OPTIONS_MSG
+        self.view_renderer.change_views(self.view)
+
+    def exit_config_selection_state(self):
+        pass
+
+    def handle_config_selection_state(self):
+        while self.app_state == AppStates.CONFIG_SELECTION:
+            # temporarily override state transitions
+            time.sleep(0.01)
 
     def handle_stats(self, stats, equipment_status):
         mana = stats['mana']
@@ -373,8 +350,8 @@ class TibiaTerminator:
         if self.enable_speed:
             self.char_keeper.handle_speed_change(char_status)
 
-    def winprint(self, msg, row=0, col=0, end='\n'):
-        self.stats_logger.log(LogEntry(msg, row, col, end))
+    def gen_title(self):
+        return "Tibia Terminator. WID: " + str(self.tibia_wid) + " Active config: " + self.selected_config_name
 
 
 def fprint(fargs):
@@ -398,7 +375,8 @@ def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
                         "to find the process id")
     mem_config = MEM_CONFIG[str(pid)]
     tibia_wid = get_tibia_wid(pid)
-    stats_logger = StatsLogger(cliwin)
+    stats_logger = StatsLogger()
+    view_renderer = ViewRenderer(cliwin)
     cmd_sender = CommandSender(tibia_wid, stats_logger, only_monitor)
     client = ClientInterface(HOTKEYS_CONFIG,
                              cliwin,
@@ -418,6 +396,7 @@ def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
                                        cliwin,
                                        looter,
                                        stats_logger,
+                                       view_renderer,
                                        cmd_sender,
                                        enable_mana=enable_mana,
                                        enable_hp=enable_hp,
