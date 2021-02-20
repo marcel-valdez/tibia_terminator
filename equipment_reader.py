@@ -230,9 +230,9 @@ def check_specs():
             print(eq_reader.get_pixel_color(x, y))
 
         for name in RING_REPOSITORY.name_to_item.keys():
-            def fn():
+            def is_action_ring():
                 return eq_reader.is_emergency_action_bar_ring(name)
-            time_perf(f"\nis_emergency_action_bar_ring({name})", fn)
+            time_perf(f"\nis_emergency_action_bar_ring({name})", is_action_ring)
 
         def emergency_action_bar_ring_name_fn():
             return eq_reader.get_emergency_action_bar_ring_name()
@@ -247,9 +247,9 @@ def check_specs():
             print(eq_reader.get_pixel_color(x, y))
 
         for name in AMULET_REPOSITORY.name_to_item.keys():
-            def fn():
+            def is_amulet():
                 return eq_reader.is_amulet(name)
-            time_perf(f"\nis_amulet('{name}')", fn)
+            time_perf(f"\nis_amulet('{name}')", is_amulet)
 
         def equipped_amulet_name_fn():
             return eq_reader.get_equipped_amulet_name()
@@ -262,9 +262,9 @@ def check_specs():
             print(eq_reader.get_pixel_color(x, y))
 
         for name in RING_REPOSITORY.name_to_item.keys():
-            def fn():
+            def is_ring():
                 return eq_reader.is_ring(name)
-            time_perf(f"\nis_ring('{name}')", fn)
+            time_perf(f"\nis_ring('{name}')", is_ring)
 
         def equipped_ring_name_fn():
             return eq_reader.get_equipped_ring_name()

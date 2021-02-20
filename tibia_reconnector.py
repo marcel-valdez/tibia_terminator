@@ -132,7 +132,7 @@ def login(tibia_wid, credentials):
     # Click [OK] in char menu
     left_click(tibia_wid, 1226, 725)
     #   - Spin-wait for 30 seconds waiting for character to be in-game
-    for i in range(1, 30):
+    for _ in range(1, 30):
         if check_ingame(tibia_wid):
             return True
         time.sleep(1)
