@@ -8,7 +8,7 @@ import sys
 from multiprocessing import Pool
 
 from window_utils import get_tibia_wid
-from client_interface import (ClientInterface, CommandSender)
+from client_interface import (ClientInterface, CommandProcessor)
 from memory_reader38 import MemoryReader38 as MemoryReader
 from char_keeper import CharKeeper
 from char_reader38 import CharReader38 as CharReader
@@ -94,7 +94,7 @@ class TibiaTerminator:
                  looter: Looter,
                  stats_logger: StatsLogger,
                  view_renderer: ViewRenderer,
-                 cmd_sender: CommandSender,
+                 cmd_processor: CommandProcessor,
                  enable_mana=True,
                  enable_hp=True,
                  enable_magic_shield=True,
@@ -110,7 +110,7 @@ class TibiaTerminator:
         self.looter = looter
         self.stats_logger = stats_logger
         self.view_renderer = view_renderer
-        self.cmd_sender = cmd_sender
+        self.cmd_processor = cmd_processor
         self.enable_speed = enable_speed
         self.enable_mana = enable_mana
         self.enable_hp = enable_hp
@@ -162,12 +162,11 @@ class TibiaTerminator:
 
         self.equipment_reader.open()
         self.view_renderer.start()
-        self.cmd_sender.start()
+        self.cmd_processor.start()
         try:
             self.app_state = AppStates.PAUSED
             self.enter_paused_state()
             while True:
-                self.frame_counter += 1
                 start = time.time() * 1000
 
                 keycode = self.cliwin.getch()
@@ -190,7 +189,7 @@ class TibiaTerminator:
             self.looter.unhook_hotkey()
             self.equipment_reader.close()
             self.view_renderer.stop()
-            self.cmd_sender.stop()
+            self.cmd_processor.stop()
 
     def handle_exit_state(self):
         """Exits the program based on user input."""
@@ -377,12 +376,10 @@ def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
     tibia_wid = get_tibia_wid(pid)
     stats_logger = StatsLogger()
     view_renderer = ViewRenderer(cliwin)
-    cmd_sender = CommandSender(tibia_wid, stats_logger, only_monitor)
+    cmd_processor = CommandProcessor(tibia_wid, stats_logger, only_monitor)
     client = ClientInterface(HOTKEYS_CONFIG,
-                             cliwin,
-                             only_monitor=only_monitor,
                              logger=stats_logger,
-                             cmd_sender=cmd_sender)
+                             cmd_processor=cmd_processor)
     char_keeper = CharKeeper(client, CHAR_CONFIGS)
     char_reader = CharReader(MemoryReader(pid, print_async))
     eq_reader = EquipmentReader()
@@ -397,7 +394,7 @@ def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
                                        looter,
                                        stats_logger,
                                        view_renderer,
-                                       cmd_sender,
+                                       cmd_processor,
                                        enable_mana=enable_mana,
                                        enable_hp=enable_hp,
                                        enable_magic_shield=enable_magic_shield,
