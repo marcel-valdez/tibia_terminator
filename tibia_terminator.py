@@ -5,7 +5,6 @@ import time
 import curses
 import sys
 
-from multiprocessing import Pool
 
 from window_utils import get_tibia_wid
 from client_interface import (ClientInterface, CommandProcessor)
@@ -51,7 +50,6 @@ parser.add_argument('--debug_level',
                     type=int,
                     default=-1)
 
-PPOOL = None
 SPACE_KEYCODE_A = 263
 SPACE_KEYCODE_B = 32
 ENTER_KEYCODE = 10
@@ -353,20 +351,6 @@ class TibiaTerminator:
         return "Tibia Terminator. WID: " + str(self.tibia_wid) + " Active config: " + self.selected_config_name
 
 
-def fprint(fargs):
-    if PPOOL is None:
-        print(fargs)
-    else:
-        PPOOL.apply_async(fprint, tuple(fargs))
-
-
-def print_async(*pargs):
-    if PPOOL is None:
-        print(pargs)
-    else:
-        PPOOL.apply_async(fprint, tuple(pargs))
-
-
 def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
          only_monitor):
     if pid is None or pid == "":
@@ -375,6 +359,7 @@ def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
     mem_config = MEM_CONFIG[str(pid)]
     tibia_wid = get_tibia_wid(pid)
     stats_logger = StatsLogger()
+    print_async = lambda msg: stats_logger.log_action(2, msg)
     view_renderer = ViewRenderer(cliwin)
     cmd_processor = CommandProcessor(tibia_wid, stats_logger, only_monitor)
     client = ClientInterface(HOTKEYS_CONFIG,
@@ -405,7 +390,6 @@ def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    #    PPOOL = Pool(processes=3)
     set_debug_level(args.debug_level)
     curses.wrapper(main,
                    args.pid,
