@@ -24,12 +24,11 @@ class View():
         self.title = ''
         self.main_options = ''
         self.error = ''
-    
+
     def render_header(self, cliwin):
         cliwin.addstr(View.TITLE_ROW, 0, self.title)
         cliwin.addstr(View.MAIN_OPTIONS_ROW, 0, self.main_options)
         cliwin.addstr(View.ERRORS_ROW, 0, self.error)
-
 
     def set_modes(self, cliwin):
         """Called once when the view is being transitioned to. Use this to set the
@@ -89,6 +88,7 @@ class ViewRenderer(Thread):
         if not self.view is None:
             self.view.render(self.cliwin)
 
+
 class ConfigSelectionView(View):
     CONFIG_SELECTION_ROW = View.ERRORS_ROW + 1
 
@@ -98,7 +98,7 @@ class ConfigSelectionView(View):
         self.input_cb = input_cb
         self.selection_title = "Type the number of the char config to load: "
         self.user_input = ''
-    
+
     def set_modes(self, cliwin):
         cliwin.nodelay(True)
         cliwin.idlok(True)
@@ -118,7 +118,7 @@ class ConfigSelectionView(View):
             ConfigSelectionView.CONFIG_SELECTION_ROW,
             len(subtitle))
         self.input_cb(self, keycode)
-    
+
     def render_content(self, cliwin, subtitle):
         cliwin.addstr(
             ConfigSelectionView.CONFIG_SELECTION_ROW,
@@ -130,18 +130,17 @@ class ConfigSelectionView(View):
                 ConfigSelectionView.CONFIG_SELECTION_ROW + i + 1, 0,
                 f"{i}: {config}")
             i += 1
-            
 
 
 class PausedView(View):
     def __init__(self):
         super().__init__()
-    
+
     def set_modes(self, cliwin):
         cliwin.nodelay(True)
         cliwin.idlok(True)
         cliwin.leaveok(True)
-    
+
     def render(self, cliwin):
         cliwin.clear()
         self.render_header(cliwin)
@@ -174,21 +173,13 @@ class RunView(View):
         self.equipped_amulet = 'N/A'
         self.equipped_ring = 'N/A'
         self.magic_shield_status = 'N/A'
+        self.action_log_queue = Queue()
         self.log_entries = []
         self.lock = Lock()
 
     def add_log(self, log, debug_level=0):
-        if debug_level > get_debug_level():
-            return
-
-        self.lock.acquire()
-        # Note: This is semi-slow, it is 2*K to add 1 entry.
-        try:
-            self.log_entries.append(log)
-            while len(self.log_entries) > RunView.MAX_LOG_BUFFER:
-                self.log_entries.pop(0)
-        finally:
-            self.lock.release()
+        if debug_level <= get_debug_level():
+            self.action_log_queue.put_nowait(log)
 
     def set_char_status(self, char_status: CharStatus):
         self.mana = char_status.mana
@@ -207,9 +198,24 @@ class RunView(View):
         self.render_stats(cliwin)
         self.render_logs(cliwin)
         cliwin.refresh()
-    
+
+    def drain_log_queue(self):
+        new_logs = []
+        # queue: 0,1,2,3
+        # new_logs: 0,1,2,3 <-- wrong, we want 3,2,1,0
+        while (self.action_log_queue.qsize() > 0 and
+                len(new_logs) <= RunView.MAX_LOG_BUFFER):
+            new_logs.append(self.action_log_queue.get_nowait())
+
+        carryon = RunView.MAX_LOG_BUFFER - len(new_logs)
+        new_logs.extend(self.log_entries[:carryon])
+        self.log_entries = new_logs
+
     def render_logs(self, cliwin):
         cliwin.addstr(RunView.LOG_ROW, 0, 'Log Entries')
+        if self.action_log_queue.qsize() > 0:
+            self.drain_log_queue()
+
         i = 0
         while i < RunView.MAX_LOG_BUFFER:
             if i < len(self.log_entries):
@@ -217,23 +223,24 @@ class RunView(View):
             else:
                 cliwin.addstr(RunView.LOG_ROW + i + 1, 0, " ")
             i += 1
-    
+
     def render_stats(self, cliwin):
         cliwin.addstr(RunView.MANA_ROW, 0, f"Mana: {str(self.mana)}")
         cliwin.addstr(RunView.HP_ROW, 0, f"HP: {str(self.hp)}")
         cliwin.addstr(RunView.SPEED_ROW, 0, f"Speed: {str(self.speed)}")
         cliwin.addstr(RunView.MAGIC_SHIELD_ROW, 0,
-                    f"Magic Shield: {str(self.magic_shield_level)}")
+                      f"Magic Shield: {str(self.magic_shield_level)}")
         cliwin.addstr(RunView.EMERGENCY_ACTION_AMULET_ROW, 0,
-                     f"Emergency Action Amulet: {self.emergency_action_amulet}")
+                      f"Emergency Action Amulet: {self.emergency_action_amulet}")
         cliwin.addstr(RunView.EMERGENCY_ACTION_RING_ROW, 0,
-                     f"Emergency Action Ring: {self.emergency_action_ring}")
+                      f"Emergency Action Ring: {self.emergency_action_ring}")
         cliwin.addstr(RunView.EQUIPPED_AMULET_ROW, 0,
-                     f"Equipped Amulet: {self.equipped_amulet}")
+                      f"Equipped Amulet: {self.equipped_amulet}")
         cliwin.addstr(RunView.EQUIPPED_RING_ROW, 0,
-                     f"Equipped Ring: {self.equipped_ring}")
+                      f"Equipped Ring: {self.equipped_ring}")
         cliwin.addstr(RunView.MAGIC_SHIELD_STATUS_ROW, 0,
-                     f"Magic Shield Status: {self.magic_shield_status}")
+                      f"Magic Shield Status: {self.magic_shield_status}")
+
 
 def stress_run_view(cliwin):
     # set the view's state
@@ -254,16 +261,22 @@ def stress_run_view(cliwin):
     )
 
     i = 0
+
     def update_status(char_status, idx):
         char_status.hp = int_rotation[idx % len(int_rotation)]
         char_status.speed = int_rotation[(idx + 1) % len(int_rotation)]
         char_status.mana = int_rotation[(idx + 2) % len(int_rotation)]
-        char_status.magic_shield_level = int_rotation[(idx + 3) % len(int_rotation)]
-        char_status.emergency_action_amulet = str_rotation[(idx + 0) % len(str_rotation)]
-        char_status.emergency_action_ring = str_rotation[(idx + 1) % len(str_rotation)]
+        char_status.magic_shield_level = int_rotation[(
+            idx + 3) % len(int_rotation)]
+        char_status.emergency_action_amulet = str_rotation[(
+            idx + 0) % len(str_rotation)]
+        char_status.emergency_action_ring = str_rotation[(
+            idx + 1) % len(str_rotation)]
         char_status.equipped_ring = str_rotation[(idx + 2) % len(str_rotation)]
-        char_status.equipped_amulet = str_rotation[(idx + 3) % len(str_rotation)]
-        char_status.magic_shield_status = str_rotation[(idx + 4) % len(str_rotation)]
+        char_status.equipped_amulet = str_rotation[(
+            idx + 3) % len(str_rotation)]
+        char_status.magic_shield_status = str_rotation[(
+            idx + 4) % len(str_rotation)]
 
     view = RunView()
     view.title = "This is a stress test of the RunView."
@@ -277,22 +290,26 @@ def stress_run_view(cliwin):
     try:
         while True:
             view.set_char_status(char_status)
-            view.add_log(f"This is log #{i} and it is very very long. Let us see.", -100)
+            view.add_log(
+                f"This is log #{i} and it is very very long. Let us see.", -100)
             view.error = f"Number of log entries: {i}"
             i += 1
             update_status(char_status, i)
-            sleep(0.1)
+            sleep(0.125)
     finally:
         renderer.stop()
+
 
 def stress_config_selection_view(cliwin):
     def update_cb(config_view, keycode):
         if keycode >= 48 and keycode <= 57:
             config_view.user_input += str(keycode - 48)
         elif keycode == curses.KEY_BACKSPACE:
-            config_view.user_input = config_view.user_input[:len(config_view.user_input) - 1]
+            config_view.user_input = config_view.user_input[:len(
+                config_view.user_input) - 1]
 
-    view = ConfigSelectionView(['one', 'two', 'three', 'four', 'five'], update_cb)
+    view = ConfigSelectionView(
+        ['one', 'two', 'three', 'four', 'five'], update_cb)
     view.title = "This is a stress test of the ConfigSelectionView."
     view.main_options = "These are the main options of the ConfigSelectionView."
     view.error = "This is the error row of the RunView."
@@ -307,11 +324,13 @@ def stress_config_selection_view(cliwin):
     finally:
         renderer.stop()
 
+
 def main(cliwin, layout):
     if layout == 'main':
         stress_run_view(cliwin)
     if layout == 'config_selection':
         stress_config_selection_view(cliwin)
+
 
 if __name__ == '__main__':
     args = parser.parse_args()
