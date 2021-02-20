@@ -32,7 +32,7 @@ class MagicShieldStatus:
     ON_COOLDOWN = 'on_cooldown'
 
 
-# Playable area set at Y: 696 with 2 cols on left and 2 cols on right
+# Playable area set at Y: 696 (698 on laptop) with 2 cols on left and 2 cols on right
 ACTION_BAR_SQUARE_LEN = 36
 # 10th action bar item right to left, 2 columns on the left, 2 columns on the right
 EMERGENCY_ACTION_BAR_AMULET_CENTER_X = 1178
@@ -155,8 +155,13 @@ class EquipmentReader(ScreenReader):
 
     def get_magic_shield_status(self):
         for name in MAGIC_SHIELD_SPEC:
-            if self.matches_screen(MAGIC_SHIELD_COORDS,
-                                   spec(*MAGIC_SHIELD_SPEC[name])):
+            specs = []
+            if isinstance(MAGIC_SHIELD_SPEC[name][0], list):
+                specs = [spec(*_spec) for _spec in MAGIC_SHIELD_SPEC[name]]
+            else:
+                specs = spec(*MAGIC_SHIELD_SPEC[name])
+
+            if self.matches_screen(MAGIC_SHIELD_COORDS, specs):
                 return name
         # There are only 3 possible states: recently cast, off cooldown and
         # on cooldown.
@@ -183,7 +188,12 @@ class EquipmentReaderSlow():
 
     def get_magic_shield_status(self):
         for name in MAGIC_SHIELD_SPEC:
-            if matches_screen_slow(self.wid,
+            if isinstance(MAGIC_SHIELD_SPEC[name][0], list):
+                # there are multiple alternatives that match the name
+                for spec in MAGIC_SHIELD_SPEC[name]:
+                    if matches_screen_slow(self.wid, MAGIC_SHIELD_COORDS, spec):
+                        return name
+            elif matches_screen_slow(self.wid,
                                    MAGIC_SHIELD_COORDS,
                                    MAGIC_SHIELD_SPEC[name]):
                 return name
