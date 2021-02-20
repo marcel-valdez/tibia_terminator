@@ -12,8 +12,8 @@ class MagicShieldKeeper:
         self.client = client
         self.total_hp = total_hp
         self.magic_shield_treshold = magic_shield_treshold
-        self.last_cast_timestamp = 0
-        self.cast_counter = 0
+        self.last_cast_ts = 0
+        self.last_attempted_cast_ts = False
         self.prev_magic_shield_status = MagicShieldStatus.ON_COOLDOWN
         if time_fn is None:
             self.time = time.time
@@ -26,15 +26,18 @@ class MagicShieldKeeper:
             self.total_hp = char_status.hp
 
         magic_shield_status = char_status.magic_shield_status
-        if (self.prev_magic_shield_status is MagicShieldStatus.OFF_COOLDOWN and
+        if (self.last_attempted_cast_ts is not None and
+            self.prev_magic_shield_status is MagicShieldStatus.OFF_COOLDOWN and
             (magic_shield_status is MagicShieldStatus.RECENTLY_CAST or
              magic_shield_status is MagicShieldStatus.ON_COOLDOWN)):
-            self.last_cast_timestamp = self.timestamp_secs() - 0.5
+            self.last_cast_ts = self.last_attempted_cast_ts
+            self.last_attempted_cast_ts = None
 
         self.prev_magic_shield_status = magic_shield_status
 
         if (char_status.magic_shield_status is MagicShieldStatus.OFF_COOLDOWN
                 and self.should_cast(char_status)):
+            self.last_attempted_cast_ts = self.timestamp_secs()
             self.cast()
         elif self.should_cast_cancel(char_status):
             self.cast_cancel()
@@ -58,7 +61,7 @@ class MagicShieldKeeper:
             char_status.magic_shield_level > char_status.mana / 2
 
     def secs_since_cast(self):
-        return self.timestamp_secs() - self.last_cast_timestamp
+        return self.timestamp_secs() - self.last_cast_ts
 
     def cast(self):
         self.client.cast_magic_shield()
