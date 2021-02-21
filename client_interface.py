@@ -4,7 +4,7 @@ import queue
 import subprocess
 import threading
 import time
-from typing import Dict
+from typing import Dict, List
 
 from logger import ActionLogEntry, StatsLogger, debug, get_debug_level
 from random import randint
@@ -21,20 +21,20 @@ class CommandType():
     UTILITY_SPELL = 'utility_spell'
 
     @staticmethod
-    def types():
+    def types() -> List[str]:
         return [CommandType.HEAL_SPELL, CommandType.EQUIP_ITEM,
                 CommandType.USE_ITEM, CommandType.UTILITY_SPELL]
 
 
 class Command():
-    def __init__(self, throttle_key, throttle_ms, hotkey):
+    def __init__(self, throttle_key: str, throttle_ms: int, hotkey: str):
         self.throttle_key = throttle_key
         self.throttle_ms = throttle_ms
         self.hotkey = hotkey
 
 
 class CommandSender(threading.Thread):
-    def __init__(self, tibia_wid, logger: StatsLogger, only_monitor):
+    def __init__(self, tibia_wid, logger: StatsLogger, only_monitor: bool):
         super().__init__(daemon=True)
         self.tibia_wid = tibia_wid
         self.cmd_queue = queue.Queue()
@@ -43,24 +43,24 @@ class CommandSender(threading.Thread):
         self.only_monitor = only_monitor
         self.last_cmd_ts = 0
 
-    def send(self, command):
+    def send(self, command: Command):
         self.cmd_queue.put(command)
 
     def stop(self):
         self.stopped = True
 
-    def _send_keystroke(self, hotkey):
+    def _send_keystroke(self, hotkey: str):
         subprocess.Popen([
             "/usr/bin/xdotool", "key", "--window",
             str(self.tibia_wid),
-            str(hotkey)
+            hotkey
         ])
 
-    def __log_cmd(self, cmd):
+    def __log_cmd(self, cmd: Command):
         msg = f'[send_keystroke] {cmd.throttle_key} ({cmd.throttle_ms}): {cmd.hotkey}'
         self.logger.log_action(0, msg)
 
-    def __throttle(self, throttle_ms=250):
+    def __throttle(self, throttle_ms: int=250):
         """Throttles an action.
         Returns:
 
@@ -124,7 +124,7 @@ class CommandProcessor():
 
 
 class ClientInterface:
-    def __init__(self, hotkeys_config, logger=None,
+    def __init__(self, hotkeys_config, logger: StatsLogger=None,
                  cmd_processor: CommandProcessor = None):
         self.hotkeys_config = hotkeys_config
         self.logger = logger
@@ -197,7 +197,7 @@ class ClientInterface:
 
 
 class FakeLogger():
-    def log_action(self, debug_level, msg):
+    def log_action(self, debug_level: int, msg: str):
         print(f'{debug_level}, {msg}')
 
 
@@ -205,7 +205,7 @@ class FakeCommandSender(CommandSender):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def _send_keystroke(self, hotkey):
+    def _send_keystroke(self, hotkey: str):
         print(f'_send_keystroke {hotkey}')
 
 

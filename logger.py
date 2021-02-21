@@ -82,7 +82,7 @@ class StatsLogger():
     def __init__(self):
         self.run_view = None
 
-    def log_action(self, debug_level, msg):
+    def log_action(self, debug_level: int, msg: str):
         if self.run_view is not None:
             self.run_view.add_log(msg, debug_level)
 
