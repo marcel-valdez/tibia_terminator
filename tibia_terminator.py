@@ -258,13 +258,14 @@ class TibiaTerminator:
             'magic_shield_status': magic_shield_status
         }
 
-        self.handle_stats(stats, equipment_status)
-        self.view.set_char_status(CharStatus(
+        char_status = CharStatus(
             mana=stats['mana'],
             hp=stats['hp'],
             speed=stats['speed'],
             magic_shield_level=stats['magic_shield'],
-            equipment_status=equipment_status))
+            equipment_status=equipment_status)
+        self.handle_char_status(char_status)
+        self.view.set_char_status(char_status)
 
     def exit_running_state(self):
         self.stats_logger.run_view = None
@@ -326,13 +327,7 @@ class TibiaTerminator:
             # temporarily override state transitions
             time.sleep(0.01)
 
-    def handle_stats(self, stats, equipment_status):
-        mana = stats['mana']
-        hp = stats['hp']
-        speed = stats['speed']
-        magic_shield_level = stats['magic_shield']
-        char_status = CharStatus(
-            hp, speed, mana, magic_shield_level, equipment_status)
+    def handle_char_status(self, char_status: CharStatus):
         # Note that we have to handle the mana change always, even if
         # it hasn't actually changed, because a command to heal or drink mana
         # or haste could be ignored if the character is exhausted, therefore
