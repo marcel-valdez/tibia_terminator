@@ -85,7 +85,7 @@ class ViewRenderer(Thread):
             self.lock.release()
 
     def render(self):
-        if not self.view is None:
+        if self.view is not None:
             self.view.render(self.cliwin)
 
 

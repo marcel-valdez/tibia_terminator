@@ -305,7 +305,7 @@ class TibiaTerminator:
                     self.enter_paused_state()
                     self.app_state = AppStates.PAUSED
         elif keycode == EXIT_KEYCODE:
-            self.handle_exit_state()
+            self.app_state = AppStates.EXIT
         elif keycode == curses.KEY_BACKSPACE:
             if len(view.user_input) > 0:
                 view.user_input = view.user_input[:len(view.user_input) - 1]
