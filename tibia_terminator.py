@@ -21,10 +21,13 @@ from looter import Looter
 from view_renderer import (ViewRenderer, PausedView,
                            RunView, ConfigSelectionView)
 
-# If you get the error:
-# Xlib.error.DisplayConnectionError: Can't connect to display ":0": b'No protocol specified\n'
-# Then disable access control to the display by running this command: xhost +
-# Note that this program needs to be executed as superuser in order to access program memory pages.
+# - If you get the error:
+#     Xlib.error.DisplayConnectionError: Can't connect to display ":0": b'No protocol specified\n'
+#   Then disable access control to the display by running this command:
+#     xhost +
+#
+# -  Note that this program needs to be executed as superuser in order to
+#    access program memory pages.
 
 parser = argparse.ArgumentParser(
     description='Tibia terminator CLI parameters.')
