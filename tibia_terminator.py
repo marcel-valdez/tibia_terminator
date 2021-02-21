@@ -297,6 +297,7 @@ class TibiaTerminator:
                 selection = int(view.user_input)
                 if selection >= len(self.char_configs):
                     view.error = f"Selection index {view.user_input} is invalid."
+                    view.signal_error()
                     view.user_input = ''
                 else:
                     self.selected_config_name = self.char_configs[selection]["name"]
@@ -309,6 +310,8 @@ class TibiaTerminator:
         elif keycode == curses.KEY_BACKSPACE:
             if len(view.user_input) > 0:
                 view.user_input = view.user_input[:len(view.user_input) - 1]
+        else:
+            view.signal_error()
 
     def enter_config_selection_state(self):
         config_names = list(map(lambda c: c['name'], self.char_configs))
