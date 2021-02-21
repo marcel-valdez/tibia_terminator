@@ -56,11 +56,6 @@ ENTER_KEYCODE = 10
 ESCAPE_KEY = 27
 LOOP_FREQ_MS = 100
 
-TITLE_ROW = 0
-MAIN_OPTIONS_ROW = TITLE_ROW + 1
-ERRORS_ROW = MAIN_OPTIONS_ROW + 1
-
-CONFIG_SELECTION_ROW = ERRORS_ROW + 2
 RUNNING_STATE_MAIN_OPTIONS_MSG = "[Space]: Pause, [Esc]: Exit, [Enter]: Config selection."
 PAUSED_STATE_MAIN_OPTIONS_MSG = "[Space]: Resume, [Esc]: Exit, [Enter]: Config selection."
 CONFIG_SELECTION_MAIN_OPTIONS_MSG = "[Esc]: Exit, [Enter]: Back to paused state."
