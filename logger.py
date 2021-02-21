@@ -1,7 +1,6 @@
 #!/usr/bin/env python3.8
 
 import os
-from multiprocessing import Pool
 import threading
 import queue
 import time
@@ -23,16 +22,9 @@ LOG_ROW = DEBUG_ROW + 1
 LOG_BUFFER_COUNTER = 0
 MAX_LOG_BUFFER = 10
 
-global DEBUG_PPOOL
-DEBUG_PPOOL = None
+
 global DEBUG_LEVEL
 DEBUG_LEVEL = None
-
-
-def init_debug_ppool():
-    global DEBUG_PPOOL
-    if DEBUG_PPOOL is None:
-        DEBUG_PPOOL = Pool(processes=3)
 
 
 def init_debug_level():
@@ -88,5 +80,4 @@ class StatsLogger():
 
 
 if __name__ != "__main__":
-    init_debug_ppool()
     init_debug_level()
