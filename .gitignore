@@ -6,3 +6,4 @@ credentials.py
 char_configs
 char_config.py
 app_config.py
+.vscode
