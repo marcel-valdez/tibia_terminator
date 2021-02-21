@@ -237,17 +237,17 @@ class TibiaTerminator:
 
     def handle_running_state(self):
         stats = self.char_reader.get_stats()
-        # 20-30 ms
+        # 1-5 ms
         emergency_amulet_action_bar_name = \
             self.equipment_reader.get_emergency_action_bar_amulet_name()
-        # 20-30 ms
+        # 1-5 ms
         emergency_ring_action_bar_name = \
             self.equipment_reader.get_emergency_action_bar_ring_name()
-        # 20-30 ms
+        # 1-5 ms
         equipped_amulet_name = self.equipment_reader.get_equipped_amulet_name()
-        # 20-30 ms
+        # 1-5 ms
         equipped_ring_name = self.equipment_reader.get_equipped_ring_name()
-        # 20-30 ms
+        # 1-5 ms
         magic_shield_status = \
             self.equipment_reader.get_magic_shield_status()
         equipment_status = {
