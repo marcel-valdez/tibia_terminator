@@ -112,7 +112,6 @@ class TibiaTerminator:
         self.enable_hp = enable_hp
         self.enable_magic_shield = enable_magic_shield
         self.only_monitor = only_monitor
-        self.initial_pause = True
         self.app_state = None
         self.selected_config_name = char_configs[0]["name"]
         self.view = None
@@ -162,13 +161,14 @@ class TibiaTerminator:
         try:
             self.app_state = AppStates.PAUSED
             self.enter_paused_state()
-            while True:
+            while self.app_state != AppStates.EXIT:
                 start = time.time() * 1000
 
                 keycode = self.cliwin.getch()
                 self.enter_next_app_state(keycode)
                 if self.app_state == AppStates.EXIT:
                     self.handle_exit_state()
+                    break
                 elif self.app_state == AppStates.PAUSED:
                     self.handle_paused_state()
                 elif self.app_state == AppStates.RUNNING:
@@ -189,7 +189,7 @@ class TibiaTerminator:
 
     def handle_exit_state(self):
         """Exits the program based on user input."""
-        sys.exit(0)
+        pass
 
     def enter_next_app_state(self, keycode):
         next_state = self.app_state
