@@ -13,7 +13,7 @@ class MagicShieldKeeper:
         self.total_hp = total_hp
         self.magic_shield_treshold = magic_shield_treshold
         self.last_cast_ts = 0
-        self.last_attempted_cast_ts = False
+        self.last_attempted_cast_ts = None
         self.prev_magic_shield_status = MagicShieldStatus.ON_COOLDOWN
         if time_fn is None:
             self.time = time.time

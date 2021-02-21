@@ -1,46 +1,16 @@
 """Keeps the magic shield (utamo vita) up."""
 
 import time
+from magic_shield_keeper import (MagicShieldKeeper, MAGIC_SHIELD_DURATION_SECS)
 from equipment_reader import MagicShieldStatus
 
-MAGIC_SHIELD_DURATION_SECS = 180
 
-
-class EmergencyMagicShieldKeeper:
+class EmergencyMagicShieldKeeper(MagicShieldKeeper):
     def __init__(self, client, emergency_reporter, total_hp, mana_lo,
                  magic_shield_treshold,
                  time_fn=None):
-        self.client = client
+        super().__init__(client, total_hp, magic_shield_treshold, time_fn)
         self.emergency_reporter = emergency_reporter
-        self.total_hp = total_hp
-        self.mana_lo = mana_lo
-        self.magic_shield_treshold = magic_shield_treshold
-        self.last_cast_timestamp = 0
-        self.cast_counter = 0
-        self.prev_magic_shield_status = MagicShieldStatus.ON_COOLDOWN
-        if time_fn is None:
-            self.time = time.time
-        else:
-            self.time = time_fn
-
-    def handle_status_change(self, char_status):
-        # WARNING: NOT THREAD SAFE
-        if char_status.hp > self.total_hp:
-            self.total_hp = char_status.hp
-
-        magic_shield_status = char_status.magic_shield_status
-        if (self.prev_magic_shield_status is MagicShieldStatus.OFF_COOLDOWN and
-            (magic_shield_status is MagicShieldStatus.RECENTLY_CAST or
-             magic_shield_status is MagicShieldStatus.ON_COOLDOWN)):
-            self.last_cast_timestamp = self.timestamp_secs() - 0.5
-
-        self.prev_magic_shield_status = magic_shield_status
-
-        if (char_status.magic_shield_status is MagicShieldStatus.OFF_COOLDOWN
-             and self.should_cast(char_status)):
-            self.cast()
-        elif self.should_cast_cancel(char_status):
-            self.cast_cancel()
 
     def should_cast(self, char_status):
         return (self.emergency_reporter.in_emergency and
@@ -59,15 +29,3 @@ class EmergencyMagicShieldKeeper:
         is_magic_shield_too_high = \
             char_status.magic_shield_level > char_status.mana / 2
         return is_full_hp and is_mana_very_low and is_magic_shield_too_high
-
-    def secs_since_cast(self):
-        return self.timestamp_secs() - self.last_cast_timestamp
-
-    def cast(self):
-        self.client.cast_magic_shield()
-
-    def cast_cancel(self):
-        self.client.cancel_magic_shield()
-
-    def timestamp_secs(self):
-        return self.time()
