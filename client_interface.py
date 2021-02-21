@@ -34,20 +34,22 @@ class Command():
 
 
 class CommandSender(threading.Thread):
+
+    STOP_COMMAND = Command('stop', 0, 'stop')
+
     def __init__(self, tibia_wid, logger: StatsLogger, only_monitor: bool):
         super().__init__(daemon=True)
         self.tibia_wid = tibia_wid
         self.cmd_queue = queue.Queue()
-        self.stopped = False
         self.logger = logger
         self.only_monitor = only_monitor
         self.last_cmd_ts = 0
 
     def send(self, command: Command):
-        self.cmd_queue.put(command)
+        self.cmd_queue.put_nowait(command)
 
     def stop(self):
-        self.stopped = True
+        self.cmd_queue.put_nowait(CommandSender.STOP_COMMAND)
 
     def _send_keystroke(self, hotkey: str):
         subprocess.Popen([
@@ -70,17 +72,15 @@ class CommandSender(threading.Thread):
         return timestamp_ms() - self.last_cmd_ts >= throttle_ms
 
     def run(self):
-        while not self.stopped:
-            if self.cmd_queue.qsize() > 0:
-                cmd = self.cmd_queue.get()
-                if self.__throttle(cmd.throttle_ms):
-                    self.last_cmd_ts = timestamp_ms()
-                    if not self.only_monitor:
-                        self._send_keystroke(cmd.hotkey)
-                    self.__log_cmd(cmd)
-            else:
-                # sleep 10 ms
-                time.sleep(0.01)
+        while True:
+            cmd = self.cmd_queue.get()
+            if cmd == CommandSender.STOP_COMMAND:
+                break
+            elif self.__throttle(cmd.throttle_ms):
+                self.last_cmd_ts = timestamp_ms()
+                if not self.only_monitor:
+                    self._send_keystroke(cmd.hotkey)
+                self.__log_cmd(cmd)
 
 
 class CommandProcessor():
