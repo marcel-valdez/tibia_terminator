@@ -12,7 +12,7 @@ from char_status import CharStatus
 parser = argparse.ArgumentParser(
     description='Maually test the Tibia Terminator renderer.')
 parser.add_argument('--layout',
-                    help='Options: main, char_config.')
+                    help='Options: run, selection.')
 
 
 class View():
@@ -98,38 +98,44 @@ class ConfigSelectionView(View):
         self.input_cb = input_cb
         self.selection_title = "Type the number of the char config to load: "
         self.user_input = ''
+        self.error_count = 0
 
     def set_modes(self, cliwin):
         cliwin.nodelay(True)
         cliwin.idlok(True)
-        cliwin.leaveok(True)
+        cliwin.leaveok(False)
         cliwin.clear()
 
     def unset_modes(self, cliwin):
         cliwin.clear()
 
+    def signal_error(self):
+        self.error_count += 1
+
     def render(self, cliwin):
         cliwin.clear()
         subtitle = self.selection_title + self.user_input
+        input_yx = (ConfigSelectionView.CONFIG_SELECTION_ROW, len(subtitle))
         self.render_header(cliwin)
         self.render_content(cliwin, subtitle)
-        cliwin.refresh()
-        keycode = cliwin.getch(
-            ConfigSelectionView.CONFIG_SELECTION_ROW,
-            len(subtitle))
+        keycode = cliwin.getch(*input_yx)
         self.input_cb(self, keycode)
+        if self.error_count > 0:
+            curses.beep()
+            self.error_count -= 1
+        cliwin.refresh()
 
     def render_content(self, cliwin, subtitle):
-        cliwin.addstr(
-            ConfigSelectionView.CONFIG_SELECTION_ROW,
-            0,
-            subtitle)
         i = 0
         for config in self.config_options:
             cliwin.addstr(
                 ConfigSelectionView.CONFIG_SELECTION_ROW + i + 1, 0,
                 f"{i}: {config}")
             i += 1
+        cliwin.addstr(
+            ConfigSelectionView.CONFIG_SELECTION_ROW,
+            0,
+            subtitle)
 
 
 class PausedView(View):
@@ -177,6 +183,12 @@ class RunView(View):
         self.log_entries = []
         self.lock = Lock()
 
+    def set_modes(self, cliwin):
+        cliwin.nodelay(True)
+        cliwin.idlok(True)
+        cliwin.leaveok(True)
+
+
     def add_log(self, log, debug_level=0):
         if debug_level <= get_debug_level():
             self.action_log_queue.put_nowait(log)
@@ -201,14 +213,14 @@ class RunView(View):
 
     def drain_log_queue(self):
         new_logs = []
-        # queue: 0,1,2,3
-        # new_logs: 0,1,2,3 <-- wrong, we want 3,2,1,0
         while (self.action_log_queue.qsize() > 0 and
                 len(new_logs) <= RunView.MAX_LOG_BUFFER):
             new_logs.append(self.action_log_queue.get_nowait())
 
         carryon = RunView.MAX_LOG_BUFFER - len(new_logs)
         new_logs.extend(self.log_entries[:carryon])
+        # completely override the log entries list, rather than
+        # mutate in-place.
         self.log_entries = new_logs
 
     def render_logs(self, cliwin):
@@ -217,9 +229,11 @@ class RunView(View):
             self.drain_log_queue()
 
         i = 0
+        # lock in logs at the moment they're rendered
+        logs = self.log_entries
         while i < RunView.MAX_LOG_BUFFER:
-            if i < len(self.log_entries):
-                cliwin.addstr(RunView.LOG_ROW + i + 1, 0, self.log_entries[i])
+            if i < len(logs):
+                cliwin.addstr(RunView.LOG_ROW + i + 1, 0, logs[i])
             else:
                 cliwin.addstr(RunView.LOG_ROW + i + 1, 0, " ")
             i += 1
@@ -260,8 +274,6 @@ def stress_run_view(cliwin):
         }
     )
 
-    i = 0
-
     def update_status(char_status, idx):
         char_status.hp = int_rotation[idx % len(int_rotation)]
         char_status.speed = int_rotation[(idx + 1) % len(int_rotation)]
@@ -288,6 +300,7 @@ def stress_run_view(cliwin):
     # transition into main view
     renderer.change_views(view)
     try:
+        i = 0
         while True:
             view.set_char_status(char_status)
             view.add_log(
@@ -307,6 +320,8 @@ def stress_config_selection_view(cliwin):
         elif keycode == curses.KEY_BACKSPACE:
             config_view.user_input = config_view.user_input[:len(
                 config_view.user_input) - 1]
+        else:
+            config_view.signal_error()
 
     view = ConfigSelectionView(
         ['one', 'two', 'three', 'four', 'five'], update_cb)
@@ -326,9 +341,9 @@ def stress_config_selection_view(cliwin):
 
 
 def main(cliwin, layout):
-    if layout == 'main':
+    if layout == 'run':
         stress_run_view(cliwin)
-    if layout == 'config_selection':
+    if layout == 'selection':
         stress_config_selection_view(cliwin)
 
 
