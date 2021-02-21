@@ -68,10 +68,10 @@ class CharReader38():
         self.verbose = verbose
 
     def get_stats(self):
+        stats = {'mana': 99999, 'hp': 99999,
+                 'speed': 999, 'soul_points': 0, 'magic_shield': 9999}
         self.memory_reader.open()
         try:
-            stats = {'mana': 99999, 'hp': 99999,
-                     'speed': 999, 'soul_points': 0, 'magic_shield': 9999}
             if self.mana_address is not None:
                 stats['mana'] = self.memory_reader.read_address(
                     self.mana_address, 4)
