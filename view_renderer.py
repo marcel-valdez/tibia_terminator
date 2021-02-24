@@ -8,11 +8,80 @@ from threading import Thread, Lock
 from time import sleep
 from char_status import CharStatus
 
+from typing import List
+
 
 parser = argparse.ArgumentParser(
     description='Maually test the Tibia Terminator renderer.')
 parser.add_argument('--layout',
                     help='Options: run, selection.')
+
+
+class CliScreen():
+    def __init__(self, cli):
+        self.cli = cli
+        self.lines = []
+
+    def clear(self):
+        self.lines = []
+        self.cli.clear()
+
+    def refresh(self):
+        self.cli.refresh()
+
+    def readonly_mode(self):
+        self.cli.nodelay(True)
+        self.cli.idlok(True)
+        self.cli.leaveok(True)
+
+    def input_mode(self):
+        self.cli.nodelay(True)
+        self.cli.idlok(True)
+        self.cli.leaveok(False)
+
+    def getch(self, y, x):
+        return self.cli.getch(y, x)
+
+    def __resize(self, lines: List[str], new_len: int):
+        while len(lines) < new_len:
+            lines.append('')
+
+    def print(self, line: str, row: int, col: int=0):
+        """Efficiently prints the line. It will only print the diff of what was
+           previously printed on that particular row."""
+        if row >= len(self.lines):
+            self.__resize(self.lines, row + 1)
+
+        diff_substr, diff_idx = self.__diff_substr(self.lines[row], line)
+        if diff_idx != -1:
+            self.lines[row] = line
+            self.cli.move(row, diff_idx + col)
+            self.cli.clrtoeol()
+            self.cli.addstr(row, diff_idx + col, diff_substr)
+
+    def __diff_substr(self, old: str, new: str) -> str:
+        diff_idx = self.__diff_index(old, new)
+        # they're different
+        if diff_idx != -1:
+            return new[diff_idx:], diff_idx
+        # they're the same
+        else:
+            return None, -1
+
+    def __diff_index(self, a: str, b: str) -> int:
+        if (len(a) == 0 and len(b) != 0) or (len(a) != 0 and len(b) == 0):
+            return 0
+
+        i = 0
+        while i < len(a) and i < len(b):
+            if a[i] != b[i]:
+                return i
+            i += 1
+
+        if i < len(a) or i < len(b):
+            return i
+        else:
+            return -1
 
 
 class View():
@@ -25,31 +94,30 @@ class View():
         self.main_options = ''
         self.error = ''
 
-    def render_header(self, cliwin):
-        cliwin.addstr(View.TITLE_ROW, 0, self.title)
-        cliwin.addstr(View.MAIN_OPTIONS_ROW, 0, self.main_options)
-        cliwin.addstr(View.ERRORS_ROW, 0, self.error)
+    def render_header(self, cli_screen: CliScreen):
+        cli_screen.print(self.title, View.TITLE_ROW)
+        cli_screen.print(self.main_options, View.MAIN_OPTIONS_ROW)
+        cli_screen.print(self.error, View.ERRORS_ROW)
 
-    def set_modes(self, cliwin):
+    def set_modes(self, cli_screen: CliScreen):
         """Called once when the view is being transitioned to. Use this to set the
-        required modes in cliwin."""
-        cliwin.nodelay(True)
-        cliwin.idlok(True)
-        cliwin.leaveok(True)
+        required modes in cli_screen."""
+        cli_screen.readonly_mode()
+        cli_screen.clear()
 
-    def unset_modes(self, cliwin):
+    def unset_modes(self, cli_screen: CliScreen):
         """Called once when the view is being transitioned to. Use this to unset any
         special/conflicting modes that were set in set_modes."""
-        pass
+        cli_screen.clear()
 
-    def render(self, cliwin):
+    def render(self, cli_screen: CliScreen):
         raise Exception("This method needs to be implemented by a subclass.")
 
 
 class ViewRenderer(Thread):
-    def __init__(self, cliwin):
+    def __init__(self, cliwin, cli_screen: CliScreen = None):
         super().__init__(daemon=True)
-        self.cliwin = cliwin
+        self.cli_screen = cli_screen or CliScreen(cliwin)
         self.view = None
         self.next_view = None
         self.stopped = False
@@ -65,8 +133,8 @@ class ViewRenderer(Thread):
                 self.lock.acquire()
                 try:
                     if self.view is not None:
-                        self.view.unset_modes(self.cliwin)
-                    self.next_view.set_modes(self.cliwin)
+                        self.view.unset_modes(self.cli_screen)
+                    self.next_view.set_modes(self.cli_screen)
                     self.view = self.next_view
                     self.next_view = None
                     self.transition = False
@@ -86,7 +154,7 @@ class ViewRenderer(Thread):
 
     def render(self):
         if self.view is not None:
-            self.view.render(self.cliwin)
+            self.view.render(self.cli_screen)
 
 
 class ConfigSelectionView(View):
@@ -100,57 +168,41 @@ class ConfigSelectionView(View):
         self.user_input = ''
         self.error_count = 0
 
-    def set_modes(self, cliwin):
-        cliwin.nodelay(True)
-        cliwin.idlok(True)
-        cliwin.leaveok(False)
-        cliwin.clear()
-
-    def unset_modes(self, cliwin):
-        cliwin.clear()
+    def set_modes(self, cli_screen: CliScreen):
+        cli_screen.input_mode()
+        cli_screen.clear()
 
     def signal_error(self):
         self.error_count += 1
 
-    def render(self, cliwin):
-        cliwin.clear()
+    def render(self, cli_screen: CliScreen):
         subtitle = self.selection_title + self.user_input
         input_yx = (ConfigSelectionView.CONFIG_SELECTION_ROW, len(subtitle))
-        self.render_header(cliwin)
-        self.render_content(cliwin, subtitle)
-        keycode = cliwin.getch(*input_yx)
+        self.render_header(cli_screen)
+        self.render_content(cli_screen, subtitle)
+        keycode = cli_screen.getch(*input_yx)
         self.input_cb(self, keycode)
         if self.error_count > 0:
             curses.beep()
             self.error_count -= 1
-        cliwin.refresh()
+        cli_screen.refresh()
 
-    def render_content(self, cliwin, subtitle):
+    def render_content(self, cli_screen, subtitle):
         i = 0
         for config in self.config_options:
-            cliwin.addstr(
-                ConfigSelectionView.CONFIG_SELECTION_ROW + i + 1, 0,
-                f"{i}: {config}")
+            cli_screen.print(f"{i}: {config}",
+                             ConfigSelectionView.CONFIG_SELECTION_ROW + i + 1)
             i += 1
-        cliwin.addstr(
-            ConfigSelectionView.CONFIG_SELECTION_ROW,
-            0,
-            subtitle)
+        cli_screen.print(subtitle, ConfigSelectionView.CONFIG_SELECTION_ROW)
 
 
 class PausedView(View):
     def __init__(self):
         super().__init__()
 
-    def set_modes(self, cliwin):
-        cliwin.nodelay(True)
-        cliwin.idlok(True)
-        cliwin.leaveok(True)
-
-    def render(self, cliwin):
-        cliwin.clear()
-        self.render_header(cliwin)
-        cliwin.refresh()
+    def render(self, cli_screen: CliScreen):
+        self.render_header(cli_screen)
+        cli_screen.refresh()
 
 
 class RunView(View):
@@ -183,12 +235,6 @@ class RunView(View):
         self.log_entries = []
         self.lock = Lock()
 
-    def set_modes(self, cliwin):
-        cliwin.nodelay(True)
-        cliwin.idlok(True)
-        cliwin.leaveok(True)
-
-
     def add_log(self, log, debug_level=0):
         if debug_level <= get_debug_level():
             self.action_log_queue.put_nowait(log)
@@ -204,12 +250,11 @@ class RunView(View):
         self.equipped_amulet = char_status.equipped_amulet
         self.magic_shield_status = char_status.magic_shield_status
 
-    def render(self, cliwin):
-        cliwin.clear()
-        self.render_header(cliwin)
-        self.render_stats(cliwin)
-        self.render_logs(cliwin)
-        cliwin.refresh()
+    def render(self, cli_screen: CliScreen):
+        self.render_header(cli_screen)
+        self.render_stats(cli_screen)
+        self.render_logs(cli_screen)
+        cli_screen.refresh()
 
     def drain_log_queue(self):
         new_logs = []
@@ -223,8 +268,8 @@ class RunView(View):
         # mutate in-place.
         self.log_entries = new_logs
 
-    def render_logs(self, cliwin):
-        cliwin.addstr(RunView.LOG_ROW, 0, 'Log Entries')
+    def render_logs(self, cli_screen: CliScreen):
+        cli_screen.print('Log Entries', RunView.LOG_ROW)
         if self.action_log_queue.qsize() > 0:
             self.drain_log_queue()
 
@@ -233,27 +278,27 @@ class RunView(View):
         logs = self.log_entries
         while i < RunView.MAX_LOG_BUFFER:
             if i < len(logs):
-                cliwin.addstr(RunView.LOG_ROW + i + 1, 0, logs[i])
+                cli_screen.print(logs[i], RunView.LOG_ROW + i + 1)
             else:
-                cliwin.addstr(RunView.LOG_ROW + i + 1, 0, " ")
+                cli_screen.print(" ", RunView.LOG_ROW + i + 1)
             i += 1
 
-    def render_stats(self, cliwin):
-        cliwin.addstr(RunView.MANA_ROW, 0, f"Mana: {str(self.mana)}")
-        cliwin.addstr(RunView.HP_ROW, 0, f"HP: {str(self.hp)}")
-        cliwin.addstr(RunView.SPEED_ROW, 0, f"Speed: {str(self.speed)}")
-        cliwin.addstr(RunView.MAGIC_SHIELD_ROW, 0,
-                      f"Magic Shield: {str(self.magic_shield_level)}")
-        cliwin.addstr(RunView.EMERGENCY_ACTION_AMULET_ROW, 0,
-                      f"Emergency Action Amulet: {self.emergency_action_amulet}")
-        cliwin.addstr(RunView.EMERGENCY_ACTION_RING_ROW, 0,
-                      f"Emergency Action Ring: {self.emergency_action_ring}")
-        cliwin.addstr(RunView.EQUIPPED_AMULET_ROW, 0,
-                      f"Equipped Amulet: {self.equipped_amulet}")
-        cliwin.addstr(RunView.EQUIPPED_RING_ROW, 0,
-                      f"Equipped Ring: {self.equipped_ring}")
-        cliwin.addstr(RunView.MAGIC_SHIELD_STATUS_ROW, 0,
-                      f"Magic Shield Status: {self.magic_shield_status}")
+    def render_stats(self, cli_screen: CliScreen):
+        cli_screen.print(f"Mana: {self.mana}", RunView.MANA_ROW)
+        cli_screen.print(f"HP: {self.hp}", RunView.HP_ROW)
+        cli_screen.print(f"Speed: {self.speed}", RunView.SPEED_ROW)
+        cli_screen.print(f"Magic Shield: {self.magic_shield_level}",
+                         RunView.MAGIC_SHIELD_ROW)
+        cli_screen.print(f"Emergency Action Amulet: {self.emergency_action_amulet}",
+                         RunView.EMERGENCY_ACTION_AMULET_ROW)
+        cli_screen.print(f"Emergency Action Ring: {self.emergency_action_ring}",
+                         RunView.EMERGENCY_ACTION_RING_ROW)
+        cli_screen.print(f"Equipped Amulet: {self.equipped_amulet}",
+                         RunView.EQUIPPED_AMULET_ROW)
+        cli_screen.print(f"Equipped Ring: {self.equipped_ring}",
+                         RunView.EQUIPPED_RING_ROW)
+        cli_screen.print(f"Magic Shield Status: {self.magic_shield_status}",
+                         RunView.MAGIC_SHIELD_STATUS_ROW)
 
 
 def stress_run_view(cliwin):
@@ -343,8 +388,10 @@ def stress_config_selection_view(cliwin):
 def main(cliwin, layout):
     if layout == 'run':
         stress_run_view(cliwin)
-    if layout == 'selection':
+    elif layout == 'selection':
         stress_config_selection_view(cliwin)
+    else:
+        raise Exception(f'Unknown layout <{layout}>. Please specify a valid layout.')
 
 
 if __name__ == '__main__':
