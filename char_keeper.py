@@ -1,5 +1,7 @@
 """Keeps the character healthy in every way."""
 
+from typing import List, Dict, Any
+
 from equipment_keeper import EquipmentKeeper
 from hp_keeper import HpKeeper
 from magic_shield_keeper import MagicShieldKeeper
@@ -7,6 +9,7 @@ from emergency_magic_shield_keeper import EmergencyMagicShieldKeeper
 from mana_keeper import ManaKeeper
 from speed_keeper import SpeedKeeper
 from emergency_reporter import EmergencyReporter
+from item_crosshair_macro import ItemCrosshairMacro
 
 
 class CharKeeper:
@@ -14,6 +17,7 @@ class CharKeeper:
                  mana_keeper=None, hp_keeper=None,
                  speed_keeper=None, equipment_keeper=None,
                  magic_shield_keeper=None):
+        self.item_crosshair_macros = []
         self.client = client
         self.char_configs = char_configs
         # load the first one by default
@@ -24,6 +28,8 @@ class CharKeeper:
         self.init_speed_keeper(client, char_config, speed_keeper)
         self.init_equipment_keeper(client, char_config, equipment_keeper)
         self.init_magic_shield_keeper(client, char_config, magic_shield_keeper)
+        self.init_item_crosshair_macros(
+            char_config.get('item_crosshair_macros', []))
 
     def change_char_config(self, index):
         self.load_char_config(self.char_configs[index]["config"])
@@ -35,6 +41,8 @@ class CharKeeper:
         self.init_speed_keeper(self.client, char_config)
         self.init_equipment_keeper(self.client, char_config)
         self.init_magic_shield_keeper(self.client, char_config)
+        self.init_item_crosshair_macros(
+            char_config.get('item_crosshair_macros', []))
 
     def init_emergency_reporter(self, char_config, emergency_reporter=None):
         if emergency_reporter is None:
@@ -56,7 +64,7 @@ class CharKeeper:
     def init_hp_keeper(self, client, char_config, hp_keeper=None):
         if hp_keeper is None:
             self.hp_keeper = HpKeeper(
-                client, char_config['total_hp'],
+                client, self.emergency_reporter, char_config['total_hp'],
                 char_config['heal_at_missing'], char_config['exura_heal'],
                 char_config['exura_gran_heal'],
                 char_config['downtime_heal_at_missing'])
@@ -105,6 +113,30 @@ class CharKeeper:
             self.magic_shield_keeper = NoopKeeper()
         elif magic_shield_type is not None:
             raise Exception("Unknown magic shield type " + magic_shield_type)
+
+    def init_item_crosshair_macros(self, macro_configs: List[Dict[str, Any]]):
+        self.unload_item_crosshair_macros()
+        for macro_config in macro_configs:
+            self.item_crosshair_macros.append(
+                ItemCrosshairMacro(macro_config['hotkey']))
+
+    def __unhook_macros(self, macros):
+        for macro in macros:
+            macro.unhook_hotkey()
+
+    def unhook_macros(self):
+        self.__unhook_macros(self.item_crosshair_macros)
+
+    def __hook_macros(self, macros):
+        for macro in macros:
+            macro.hook_hotkey()
+
+    def hook_macros(self):
+        self.__hook_macros(self.item_crosshair_macros)
+
+    def unload_item_crosshair_macros(self):
+        self.__unhook_macros(self.item_crosshair_macros)
+        self.item_crosshair_macros = []
 
     def handle_hp_change(self, char_status):
         is_downtime = self.speed_keeper.is_hasted(char_status.speed) and \

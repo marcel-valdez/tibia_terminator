@@ -183,6 +183,7 @@ class TibiaTerminator:
                     time.sleep(loop_wait_ms / 1000)
         finally:
             self.looter.unhook_hotkey()
+            self.char_keeper.unhook_macros()
             self.equipment_reader.close()
             self.view_renderer.stop()
             self.cmd_processor.stop()
@@ -229,6 +230,7 @@ class TibiaTerminator:
 
     def enter_running_state(self):
         self.looter.hook_hotkey()
+        self.char_keeper.hook_macros()
         self.view = RunView()
         self.view.title = self.gen_title()
         self.view.main_options = RUNNING_STATE_MAIN_OPTIONS_MSG
@@ -273,6 +275,7 @@ class TibiaTerminator:
 
     def enter_paused_state(self):
         self.looter.unhook_hotkey()
+        self.char_keeper.unhook_macros()
         self.view = PausedView()
         self.view.title = self.gen_title()
         self.view.main_options = PAUSED_STATE_MAIN_OPTIONS_MSG
@@ -355,7 +358,9 @@ def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
     mem_config = MEM_CONFIG[str(pid)]
     tibia_wid = get_tibia_wid(pid)
     stats_logger = StatsLogger()
-    print_async = lambda msg: stats_logger.log_action(2, msg)
+
+    def print_async(msg):
+        stats_logger.log_action(2, msg)
     view_renderer = ViewRenderer(cliwin)
     cmd_processor = CommandProcessor(tibia_wid, stats_logger, only_monitor)
     client = ClientInterface(HOTKEYS_CONFIG,

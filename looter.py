@@ -1,18 +1,15 @@
 #!/usr/bin/env python3.8
 
 import argparse
-import subprocess
-import time
 import keyboard
-from window_utils import get_tibia_wid
 import pyautogui
+
+from key_listener import KeyListener
 
 pyautogui.PAUSE = 0.02
 
 parser = argparse.ArgumentParser(
     description='Loots all 9 SQMs around a char.')
-parser.add_argument('tibia_pid',
-                    help='Tibia proceses identifier.')
 
 LEFT_BTN = "1"
 RIGHT_BTN = "3"
@@ -34,41 +31,25 @@ LOOT_SQMS = [
 ]
 
 
-class Looter():
+class Looter(KeyListener):
     def __init__(self, hotkeys={}):
-        self.loot_hotkey = hotkeys.get('loot')
-        self.hotkey_hook = None
+        super().__init__(hotkeys.get('loot'))
 
-    def loot(self):
+    def _action(self):
         pyautogui.keyDown('shiftleft')
         for (sqm_x, sqm_y) in LOOT_SQMS:
             pyautogui.click(sqm_x, sqm_y, button='right', interval=0)
-        pyautogui.keyUp('shiftleft') # try shiftleft and shiftright
-
-    def hook_hotkey(self, hotkey=None):
-        if hotkey is None:
-            if self.loot_hotkey is None:
-              raise Exception("Please configure the loot hotkey.")
-            else:
-              hotkey = self.loot_hotkey
-
-        self.unhook_hotkey()
-        self.hotkey_hook = keyboard.add_hotkey(hotkey, self.loot)
-
-    def unhook_hotkey(self):
-        if self.hotkey_hook is not None:
-            keyboard.remove_hotkey(self.hotkey_hook)
-            self.hotkey_hook = None
-
+        pyautogui.keyUp('shiftleft')
 
 
 def main(args):
-    tibia_wid = get_tibia_wid(args.tibia_pid)
-    looter = Looter(tibia_wid)
-    print("Looting NOW!")
-    looter.hook_hotkey('v')
-    keyboard.wait('enter')
-    looter.unhook_hotkey()
+    looter = Looter({'loot': 'v'})
+    looter.hook_hotkey()
+    try:
+        print("Press [Enter] to exit.")
+        keyboard.wait('enter')
+    finally:
+        looter.unhook_hotkey()
 
 
 if __name__ == '__main__':
