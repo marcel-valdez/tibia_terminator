@@ -2,9 +2,7 @@
 
 
 from macro import Macro
-
-pyautogui.PAUSE = 0.02
-
+from emergency_reporter import EmergencyReporter
 
 class CancelEmergencyMacro(Macro):
     def __init__(self, emergency_reporter: EmergencyReporter, hotkey: str):

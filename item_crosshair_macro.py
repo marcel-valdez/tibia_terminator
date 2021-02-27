@@ -8,9 +8,9 @@ import sys
 
 from macro import Macro
 
-pyautogui.PAUSE = 0.02
-
 parser = argparse.ArgumentParser(description='Test item cross hair macro.')
+parser.add_argument("keys", nargs='+', type=str,
+                    help="Keys to hook for crosshair macro.")
 
 
 class ItemCrosshairMacro(Macro):
@@ -25,18 +25,18 @@ class ItemCrosshairMacro(Macro):
 
 
 def main(args):
-    print('Macros with keys "r" and "shift+end" were added, test by pressing those'
-          ' keys.')
-    macro_r = ItemCrosshairMacro('r')
-    macro_shift_end = ItemCrosshairMacro('shift+end')
-    macro_r.hook_hotkey()
-    macro_shift_end.hook_hotkey()
+    macros = []
+    for key in args.keys:
+        print(f'Listening on key {key}, a click will be issued when it is pressed.')
+        macro = ItemCrosshairMacro(key)
+        macro.hook_hotkey()
+        macros.append(macro)
     try:
         print('Press [Enter] to exit.')
         keyboard.wait('enter')
     finally:
-        macro_r.unhook_hotkey()
-        macro_shift_end.unhook_hotkey()
+        for macro in macros:
+            macro.unhook_hotkey()
 
 
 if __name__ == '__main__':

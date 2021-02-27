@@ -6,8 +6,6 @@ import pyautogui
 
 from macro import Macro
 
-pyautogui.PAUSE = 0.02
-
 parser = argparse.ArgumentParser(
     description='Loots all 9 SQMs around a char.')
 
