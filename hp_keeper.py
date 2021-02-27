@@ -1,9 +1,14 @@
 """Keeps health points at healthy levels."""
 
+from emergency_reporter import EmergencyReporter
+
+
 class HpKeeper:
-    def __init__(self, client, total_hp, heal_at_missing, exura_heal,
+    def __init__(self, client, emergency_reporter: EmergencyReporter,
+                 total_hp, heal_at_missing, exura_heal,
                  exura_gran_heal, downtime_heal_at_missing):
         self.client = client
+        self.emergency_reporter = emergency_reporter
         self.total_hp = total_hp
         self.heal_at_missing = heal_at_missing
         self.exura_heal = exura_heal
@@ -14,7 +19,11 @@ class HpKeeper:
         self.update_max(char_status)
         missing_hp = self.get_missing_hp(char_status.hp)
         if missing_hp >= self.heal_at_missing:
-            if missing_hp <= self.exura_heal:
+            # Always use strongest heal during emergencies, because by the time
+            # the heal goes through, we've already received a several hits.
+            if self.emergency_reporter.is_emergency:
+                self.client.cast_exura_sio(throttle_ms=250)
+            elif missing_hp <= self.exura_heal:
                 self.client.cast_exura(throttle_ms=500)
             elif missing_hp <= self.exura_gran_heal:
                 self.client.cast_exura_gran(throttle_ms=250)
