@@ -127,7 +127,7 @@ class CharKeeper:
     def init_item_crosshair_macros(self, macro_configs: List[Dict[str, str]],
                         item_crosshair_macros: List[Macro] = None):
         self.unload_item_crosshair_macros()
-        if item_crosshair_macros is None:
+        if item_crosshair_macros is not None:
             self.item_crosshair_macros = item_crosshair_macros
         else:
             for macro_config in macro_configs:
@@ -170,6 +170,7 @@ class CharKeeper:
 
     def hook_macros(self):
         self.__hook_macros(self.item_crosshair_macros)
+        self.__hook_macros(self.core_macros)
 
     def __hook_macros(self, macros: List[Macro] = None):
         for macro in (macros or []):

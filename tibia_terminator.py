@@ -268,6 +268,10 @@ class TibiaTerminator:
             equipment_status=equipment_status)
         self.handle_char_status(char_status)
         self.view.set_char_status(char_status)
+        if self.char_keeper.emergency_reporter.in_emergency:
+            self.view.emergency_status = 'ON'
+        else:
+            self.view.emergency_status = 'OFF'
 
     def exit_running_state(self):
         self.stats_logger.run_view = None
@@ -377,7 +381,7 @@ def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
                                        mem_config,
                                        CHAR_CONFIGS,
                                        cliwin,
-                                       looter,
+                                       loot_macro,
                                        stats_logger,
                                        view_renderer,
                                        cmd_processor,

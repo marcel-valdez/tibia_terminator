@@ -215,7 +215,8 @@ class RunView(View):
     EQUIPPED_AMULET_ROW = EMERGENCY_ACTION_RING_ROW + 1
     EQUIPPED_RING_ROW = EQUIPPED_AMULET_ROW + 1
     MAGIC_SHIELD_STATUS_ROW = EQUIPPED_RING_ROW + 1
-    DEBUG_ROW = MAGIC_SHIELD_STATUS_ROW + 1
+    EMERGENCY_STATUS_ROW = MAGIC_SHIELD_STATUS_ROW + 1
+    DEBUG_ROW = EMERGENCY_STATUS_ROW + 1
     LOG_ROW = DEBUG_ROW + 1
     MAX_LOG_BUFFER = 10
 
@@ -231,6 +232,7 @@ class RunView(View):
         self.equipped_amulet = 'N/A'
         self.equipped_ring = 'N/A'
         self.magic_shield_status = 'N/A'
+        self.emergency_status = 'N/A'
         self.action_log_queue = Queue()
         self.log_entries = []
         self.lock = Lock()
@@ -299,6 +301,8 @@ class RunView(View):
                          RunView.EQUIPPED_RING_ROW)
         cli_screen.print(f"Magic Shield Status: {self.magic_shield_status}",
                          RunView.MAGIC_SHIELD_STATUS_ROW)
+        cli_screen.print(f"Emergency Status: {self.emergency_status}",
+                         RunView.EMERGENCY_STATUS_ROW)
 
 
 def stress_run_view(cliwin):
