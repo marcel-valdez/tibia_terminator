@@ -29,5 +29,5 @@ class KeyListener():
 
     def unhook_hotkey(self):
         if self.hotkey_hook is not None:
-            keyboard.remove_hotkey(self.hotkey_hook)
+            keyboard.unhook(self.hotkey_hook)
             self.hotkey_hook = None

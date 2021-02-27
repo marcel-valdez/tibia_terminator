@@ -25,8 +25,6 @@ class ItemCrosshairMacro(KeyListener):
         # Tibia will detect the key to trigger the crosshair and this macro
         # will actually trigger the mouse click, so it is all done in a single
         # action.
-
-        print(f'Macro {self.hotkey} triggered', file=sys.stderr)
         pyautogui.click(button='left', interval=0)
 
 
