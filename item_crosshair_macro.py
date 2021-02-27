@@ -6,19 +6,15 @@ import pyautogui
 import time
 import sys
 
-from key_listener import KeyListener
+from macro import Macro
 
 pyautogui.PAUSE = 0.02
 
 parser = argparse.ArgumentParser(description='Test item cross hair macro.')
 
 
-LEFT_BTN = "1"
-RIGHT_BTN = "3"
-
-
-class ItemCrosshairMacro(KeyListener):
-    def __init__(self, hotkey):
+class ItemCrosshairMacro(Macro):
+    def __init__(self, hotkey: str):
         super().__init__(hotkey)
 
     def _action(self):
@@ -29,18 +25,18 @@ class ItemCrosshairMacro(KeyListener):
 
 
 def main(args):
-    print('Macros with keys "r" and "f" were added, test by pressing those'
+    print('Macros with keys "r" and "shift+end" were added, test by pressing those'
           ' keys.')
-    macroR = ItemCrosshairMacro('r')
-    macroF = ItemCrosshairMacro('f')
-    macroR = macroR.hook_hotkey()
-    macroF = macroF.hook_hotkey()
+    macro_r = ItemCrosshairMacro('r')
+    macro_shift_end = ItemCrosshairMacro('shift+end')
+    macro_r.hook_hotkey()
+    macro_shift_end.hook_hotkey()
     try:
         print('Press [Enter] to exit.')
         keyboard.wait('enter')
     finally:
-        macroR.unhook_hotkey()
-        macroF.unhook_hotkey()
+        macro_r.unhook_hotkey()
+        macro_shift_end.unhook_hotkey()
 
 
 if __name__ == '__main__':

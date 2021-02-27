@@ -10,16 +10,24 @@ from mana_keeper import ManaKeeper
 from speed_keeper import SpeedKeeper
 from emergency_reporter import EmergencyReporter
 from item_crosshair_macro import ItemCrosshairMacro
+from cancel_emergency_macro import CancelEmergencyMacro
+from start_emergency_macro import StartEmergencyMacro
+from macro import Macro
 
 
 class CharKeeper:
-    def __init__(self, client, char_configs, emergency_reporter=None,
+    def __init__(self, client, char_configs, hotkeys: Dict[str, str],
+                 emergency_reporter=None,
                  mana_keeper=None, hp_keeper=None,
                  speed_keeper=None, equipment_keeper=None,
-                 magic_shield_keeper=None):
+                 magic_shield_keeper=None,
+                 item_crosshair_macros=None,
+                 core_macros=None):
         self.item_crosshair_macros = []
+        self.core_macros = []
         self.client = client
         self.char_configs = char_configs
+        self.hotkeys = hotkeys
         # load the first one by default
         char_config = char_configs[0]["config"]
         self.init_emergency_reporter(char_config, emergency_reporter)
@@ -29,7 +37,8 @@ class CharKeeper:
         self.init_equipment_keeper(client, char_config, equipment_keeper)
         self.init_magic_shield_keeper(client, char_config, magic_shield_keeper)
         self.init_item_crosshair_macros(
-            char_config.get('item_crosshair_macros', []))
+            char_config.get('item_crosshair_macros', []), item_crosshair_macros)
+        self.init_core_macros(self.hotkeys, core_macros)
 
     def change_char_config(self, index):
         self.load_char_config(self.char_configs[index]["config"])
@@ -43,6 +52,7 @@ class CharKeeper:
         self.init_magic_shield_keeper(self.client, char_config)
         self.init_item_crosshair_macros(
             char_config.get('item_crosshair_macros', []))
+        self.init_core_macros(self.hotkeys)
 
     def init_emergency_reporter(self, char_config, emergency_reporter=None):
         if emergency_reporter is None:
@@ -112,31 +122,58 @@ class CharKeeper:
         elif magic_shield_type is None:
             self.magic_shield_keeper = NoopKeeper()
         elif magic_shield_type is not None:
-            raise Exception("Unknown magic shield type " + magic_shield_type)
+            raise Exception(f"Unknown magic shield type {magic_shield_type}")
 
-    def init_item_crosshair_macros(self, macro_configs: List[Dict[str, Any]]):
+    def init_item_crosshair_macros(self, macro_configs: List[Dict[str, str]],
+                        item_crosshair_macros: List[Macro] = None):
         self.unload_item_crosshair_macros()
-        for macro_config in macro_configs:
-            self.item_crosshair_macros.append(
-                ItemCrosshairMacro(macro_config['hotkey']))
-
-    def __unhook_macros(self, macros):
-        for macro in macros:
-            macro.unhook_hotkey()
-
-    def unhook_macros(self):
-        self.__unhook_macros(self.item_crosshair_macros)
-
-    def __hook_macros(self, macros):
-        for macro in macros:
-            macro.hook_hotkey()
-
-    def hook_macros(self):
-        self.__hook_macros(self.item_crosshair_macros)
+        if item_crosshair_macros is None:
+            self.item_crosshair_macros = item_crosshair_macros
+        else:
+            for macro_config in macro_configs:
+                self.item_crosshair_macros.append(
+                    ItemCrosshairMacro(macro_config['hotkey']))
 
     def unload_item_crosshair_macros(self):
         self.__unhook_macros(self.item_crosshair_macros)
         self.item_crosshair_macros = []
+
+    def init_core_macros(self, hotkeys_configs: Dict[str, str],
+                         core_macros: List[Macro] = None):
+        self.unload_core_macros()
+        if core_macros is not None:
+            self.core_macros = core_macros
+        else:
+            cancel_emergency_key = hotkeys_configs.get('cancel_emergency')
+            if cancel_emergency_key is not None:
+                self.core_macros.append(
+                    CancelEmergencyMacro(
+                        self.emergency_reporter, cancel_emergency_key))
+
+            start_emergency_key = hotkeys_configs.get('start_emergency')
+            if start_emergency_key is not None:
+                self.core_macros.append(
+                    StartEmergencyMacro(
+                        self.emergency_reporter, start_emergency_key))
+
+    def unload_core_macros(self):
+        self.__unhook_macros(self.core_macros)
+        self.core_macros = []
+
+    def unhook_macros(self):
+        self.__unhook_macros(self.item_crosshair_macros)
+        self.__unhook_macros(self.core_macros)
+
+    def __unhook_macros(self, macros: List[Macro] = None):
+        for macro in (macros or []):
+            macro.unhook_hotkey()
+
+    def hook_macros(self):
+        self.__hook_macros(self.item_crosshair_macros)
+
+    def __hook_macros(self, macros: List[Macro] = None):
+        for macro in (macros or []):
+            macro.hook_hotkey()
 
     def handle_hp_change(self, char_status):
         is_downtime = self.speed_keeper.is_hasted(char_status.speed) and \

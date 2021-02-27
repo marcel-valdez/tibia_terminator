@@ -17,7 +17,7 @@ from equipment_reader import (EquipmentReader, AmuletName, RingName,
 from char_config import CHAR_CONFIGS, HOTKEYS_CONFIG
 from app_config import MEM_CONFIG
 from logger import (set_debug_level, StatsLogger, StatsEntry, LogEntry)
-from looter import Looter
+from loot_macro import LootMacro
 from view_renderer import (ViewRenderer, PausedView,
                            RunView, ConfigSelectionView)
 
@@ -87,7 +87,7 @@ class TibiaTerminator:
                  mem_config,
                  char_configs,
                  cliwin,
-                 looter: Looter,
+                 loot_macro: LootMacro,
                  stats_logger: StatsLogger,
                  view_renderer: ViewRenderer,
                  cmd_processor: CommandProcessor,
@@ -103,7 +103,7 @@ class TibiaTerminator:
         self.char_configs = char_configs
         self.cliwin = cliwin
         self.equipment_reader = equipment_reader
-        self.looter = looter
+        self.loot_macro = loot_macro
         self.stats_logger = stats_logger
         self.view_renderer = view_renderer
         self.cmd_processor = cmd_processor
@@ -182,7 +182,7 @@ class TibiaTerminator:
                 if loop_wait_ms > 0:
                     time.sleep(loop_wait_ms / 1000)
         finally:
-            self.looter.unhook_hotkey()
+            self.loot_macro.unhook_hotkey()
             self.char_keeper.unhook_macros()
             self.equipment_reader.close()
             self.view_renderer.stop()
@@ -229,7 +229,7 @@ class TibiaTerminator:
         self.app_state = next_state
 
     def enter_running_state(self):
-        self.looter.hook_hotkey()
+        self.loot_macro.hook_hotkey()
         self.char_keeper.hook_macros()
         self.view = RunView()
         self.view.title = self.gen_title()
@@ -274,7 +274,7 @@ class TibiaTerminator:
         pass
 
     def enter_paused_state(self):
-        self.looter.unhook_hotkey()
+        self.loot_macro.unhook_hotkey()
         self.char_keeper.unhook_macros()
         self.view = PausedView()
         self.view.title = self.gen_title()
@@ -366,10 +366,10 @@ def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
     client = ClientInterface(HOTKEYS_CONFIG,
                              logger=stats_logger,
                              cmd_processor=cmd_processor)
-    char_keeper = CharKeeper(client, CHAR_CONFIGS)
+    char_keeper = CharKeeper(client, CHAR_CONFIGS, HOTKEYS_CONFIG)
     char_reader = CharReader(MemoryReader(pid, print_async))
     eq_reader = EquipmentReader()
-    looter = Looter(HOTKEYS_CONFIG)
+    loot_macro = LootMacro(HOTKEYS_CONFIG)
     tibia_terminator = TibiaTerminator(tibia_wid,
                                        char_keeper,
                                        char_reader,

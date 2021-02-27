@@ -4,7 +4,7 @@ import argparse
 import keyboard
 import pyautogui
 
-from key_listener import KeyListener
+from macro import Macro
 
 pyautogui.PAUSE = 0.02
 
@@ -31,7 +31,7 @@ LOOT_SQMS = [
 ]
 
 
-class Looter(KeyListener):
+class LootMacro(Macro):
     def __init__(self, hotkeys={}):
         super().__init__(hotkeys.get('loot'))
 
@@ -43,13 +43,13 @@ class Looter(KeyListener):
 
 
 def main(args):
-    looter = Looter({'loot': 'v'})
-    looter.hook_hotkey()
+    macro = LootMacro({'loot': 'v'})
+    macro.hook_hotkey()
     try:
         print("Press [Enter] to exit.")
         keyboard.wait('enter')
     finally:
-        looter.unhook_hotkey()
+        macro.unhook_hotkey()
 
 
 if __name__ == '__main__':
