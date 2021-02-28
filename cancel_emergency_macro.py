@@ -10,4 +10,4 @@ class CancelEmergencyMacro(Macro):
         self.emergency_reporter = emergency_reporter
 
     def _action(self):
-        self.emergency_reporter.stop_emergency()
+        self.emergency_reporter.stop_emergency_override()

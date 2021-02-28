@@ -11,4 +11,4 @@ class StartEmergencyMacro(Macro):
         self.emergency_reporter = emergency_reporter
 
     def _action(self):
-        self.emergency_reporter.start_emergency()
+        self.emergency_reporter.start_emergency_override()
