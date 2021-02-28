@@ -1,10 +1,14 @@
+#!/usr/bin/env python3.8
 """Keeps equipment always ON."""
 
 import time
 from equipment_reader import (RingName, AmuletName)
 
+# We throttle commands here and ask the client_interface
+# to use 0 throttling.
 DEFAULT_EQUIP_FREQ = 0.5
-DEFAULT_EQUIP_EMERGENCY_FREQ = 0.25
+DEFAULT_EQUIP_EMERGENCY_FREQ = 0.5
+
 
 
 class EquipmentMode:
@@ -51,14 +55,18 @@ class EquipmentKeeper:
     def handle_emergency_transition_change(self, char_status):
         # stay emergency mode until emergency equipment is off
         if self.is_emergency_ring_on(char_status):
-            # this may be a problem if we run out of 'normal' rings, since
-            # we won't be able to get rid of the emergency ring.
-            self.toggle_emergency_ring()
-            self.equip_ring()
+            if self.secs_since_toggle_emergency_ring() >= DEFAULT_EQUIP_EMERGENCY_FREQ:
+                # this may be a problem if we run out of 'normal' rings, since
+                # we won't be able to get rid of the emergency ring.
+                self.toggle_emergency_ring()
+            elif self.secs_since_equip_ring() >= DEFAULT_EQUIP_FREQ:
+                self.equip_ring()
 
         if self.is_emergency_amulet_on(char_status):
-            self.toggle_emergency_amulet()
-            self.equip_amulet()
+            if self.secs_since_toggle_emergency_amulet() >= DEFAULT_EQUIP_EMERGENCY_FREQ:
+                self.toggle_emergency_amulet()
+            elif self.secs_since_equip_amulet() >= DEFAULT_EQUIP_FREQ:
+                self.equip_amulet()
 
     def handle_emergency_status_change(self, char_status):
         if char_status.emergency_action_amulet == AmuletName.UNKNOWN:
@@ -76,6 +84,16 @@ class EquipmentKeeper:
             self.secs_since_toggle_emergency_ring() >=
                 DEFAULT_EQUIP_EMERGENCY_FREQ):
             self.toggle_emergency_ring()
+
+    def is_emergency_ring_on(self, char_status):
+        return (char_status.equipped_ring ==
+            char_status.emergency_action_ring and
+            char_status.emergency_action_ring != RingName.UNKNOWN)
+
+    def is_emergency_amulet_on(self, char_status):
+        return (char_status.equipped_amulet ==
+            char_status.emergency_action_amulet and
+            char_status.emergency_action_amulet != AmuletName.UNKNOWN)
 
     def handle_normal_status_change(self, char_status):
         self.handle_equip_amulet_normal(char_status)
@@ -101,11 +119,11 @@ class EquipmentKeeper:
 
     def equip_ring(self):
         self.timestamps['ring'] = self.timestamp_secs()
-        self.client.equip_ring()
+        self.client.equip_ring(0)
 
     def toggle_emergency_ring(self):
         self.timestamps['emergency_ring'] = self.timestamp_secs()
-        self.client.toggle_emergency_ring()
+        self.client.toggle_emergency_ring(0)
 
     def secs_since_toggle_emergency_ring(self):
         return self.timestamp_secs() - self.timestamps['emergency_ring']
@@ -115,11 +133,11 @@ class EquipmentKeeper:
 
     def equip_amulet(self):
         self.timestamps['amulet'] = self.timestamp_secs()
-        self.client.equip_amulet()
+        self.client.equip_amulet(0)
 
     def toggle_emergency_amulet(self):
         self.timestamps['emergency_amulet'] = self.timestamp_secs()
-        self.client.toggle_emergency_amulet()
+        self.client.toggle_emergency_amulet(0)
 
     def secs_since_toggle_emergency_amulet(self):
         return self.timestamp_secs() - self.timestamps['emergency_amulet']
@@ -145,13 +163,3 @@ class EquipmentKeeper:
             return EquipmentMode.EMERGENCY
         else:
             return EquipmentMode.NORMAL
-
-    def is_emergency_ring_on(self, char_status):
-        return (char_status.equipped_ring ==
-            char_status.emergency_action_ring and
-            char_status.emergency_action_ring != RingName.UNKNOWN)
-
-    def is_emergency_amulet_on(self, char_status):
-        return (char_status.equipped_amulet ==
-            char_status.emergency_action_amulet and
-            char_status.emergency_action_amulet != AmuletName.UNKNOWN)
