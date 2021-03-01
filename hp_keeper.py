@@ -21,7 +21,7 @@ class HpKeeper:
         if missing_hp >= self.heal_at_missing:
             # Always use strongest heal during emergencies, because by the time
             # the heal goes through, we've already received a several hits.
-            if self.emergency_reporter.is_emergency:
+            if self.emergency_reporter.in_emergency:
                 self.client.cast_exura_sio(throttle_ms=250)
             elif missing_hp <= self.exura_heal:
                 self.client.cast_exura(throttle_ms=500)
