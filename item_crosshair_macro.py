@@ -17,11 +17,9 @@ parser.add_argument("keys", nargs='+', type=str,
 class ItemCrosshairMacro(Macro):
     class_lock: threading.Lock = threading.Lock()
     last_click_ts_ms: int = 0
-    __hotkey: str = None
 
     def __init__(self, hotkey: str):
         super().__init__(hotkey)
-        self.__hotkey = hotkey
 
     def _action(self):
         # Tibia will detect the key to trigger the crosshair and this macro
