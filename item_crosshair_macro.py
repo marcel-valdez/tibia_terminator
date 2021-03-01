@@ -34,8 +34,9 @@ class ItemCrosshairMacro(Macro):
         if not cls.class_lock.locked() and cls.time_since_click_ms() >= 100:
             cls.class_lock.acquire()
             try:
-                cls.last_click_ts_ms = time.time() * 1000
-                pyautogui.leftClick()
+                if cls.time_since_click_ms() >= 100:
+                    cls.last_click_ts_ms = time.time() * 1000
+                    pyautogui.leftClick()
             finally:
                 cls.class_lock.release()
 
