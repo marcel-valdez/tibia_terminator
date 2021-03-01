@@ -6,7 +6,7 @@ from emergency_reporter import EmergencyReporter
 
 class CancelEmergencyMacro(Macro):
     def __init__(self, emergency_reporter: EmergencyReporter, hotkey: str):
-        super().__init__(hotkey)
+        super().__init__(hotkey, key_event_type='down')
         self.emergency_reporter = emergency_reporter
 
     def _action(self):

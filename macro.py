@@ -17,12 +17,13 @@ class Macro():
     key: str = None
     hotkey_hook = None
 
-    def __init__(self, hotkey: str):
+    def __init__(self, hotkey: str, key_event_type = 'up'):
         self.modifiers, self.key = self.__parse_hotkey(hotkey)
         self.hotkey_hook = None
+        self.key_event_type = key_event_type
 
     def __action(self, event: KeyboardEvent):
-        if event.event_type == keyboard.KEY_UP:
+        if event.event_type != self.key_event_type:
             return
 
         if len(self.modifiers) == 0 and len(event.modifiers) > 0:
