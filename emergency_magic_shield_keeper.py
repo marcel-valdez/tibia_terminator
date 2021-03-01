@@ -21,8 +21,7 @@ class EmergencyMagicShieldKeeper(MagicShieldKeeper):
         is_full_hp = char_status.hp >= self.total_hp
         # Cancel magic shield when we're in safety
         if (not self.emergency_reporter.in_emergency and
-           char_status.magic_shield_level > 1000 and
-           self.secs_since_cast() >= 6):
+            char_status.magic_shield_level > 1000):
             return True
         # Cancel magic shield if we have better chances tanking with HP
         is_mana_very_low = char_status.mana <= self.total_hp * 1.25
