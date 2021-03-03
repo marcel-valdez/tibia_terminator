@@ -6,24 +6,30 @@ import sys
 import time
 from window_utils import (ScreenReader, matches_screen_slow)
 from color_spec import (spec, AMULET_REPOSITORY,
-                        RING_REPOSITORY, ItemName, AmuletName, RingName)
+                        RING_REPOSITORY, ItemName, AmuletName, RingName, PixelColor)
+from typing import Tuple
 
 
 parser = argparse.ArgumentParser(
     description='Reads equipment status for the Tibia window')
-parser.add_argument('--check_specs',
+
+parser.add_argument('--equipment_status',
+                    help='Prints all of the equipment status.',
+                    action='store_true')
+wid_group = parser.add_argument_group()
+wid_group.add_argument('tibia_wid', help='Window id of the tibia client.')
+wid_group_options = wid_group.add_mutually_exclusive_group()
+wid_group_options.add_argument('--check_specs',
                     help='Checks the color specs for the different equipment.',
                     action='store_true')
-parser.add_argument('--check_slot_empty',
+wid_group_options.add_argument('--check_slot_empty',
                     help=('Returns exit code 0 if it is empty, 1 otherwise.\n'
                           'Options: ring, amulet'),
                     type=str,
                     default=None)
-parser.add_argument('--magic_shield_status',
+wid_group_options.add_argument('--magic_shield_status',
                     help='Prints the magic shield status.',
                     action='store_true')
-parser.add_argument('tibia_wid',
-                    help='Window id of the tibia client.')
 
 
 class MagicShieldStatus:
@@ -103,15 +109,17 @@ MAGIC_SHIELD_COORDS = [
 
 
 class EquipmentReader(ScreenReader):
+    def _compare_screen_coords(self, coords: Tuple[int, int], color_spec: Tuple[str, ...]):
+        return ScreenReader.matches_screen(self, coords, color_spec)
 
     def matches_screen(self, coords, specs):
         if type(specs) == list or type(specs) == tuple:
             for animation_spec in specs:
-                if ScreenReader.matches_screen(self, coords, animation_spec.colors):
+                if self._compare_screen_coords(coords, animation_spec.colors):
                     return True
             return False
         else:
-            return ScreenReader.matches_screen(self, coords, specs.colors)
+            return self._compare_screen_coords(coords, specs.colors)
 
     def get_emergency_action_bar_amulet_name(self):
         color_spec = spec(*self.get_pixels(EMERGENCY_ACTION_BAR_AMULET_COORDS))
@@ -168,38 +176,16 @@ class EquipmentReader(ScreenReader):
         return MagicShieldStatus.ON_COOLDOWN
 
 
-class EquipmentReaderSlow():
+class EquipmentReaderSlow(EquipmentReader):
     def __init__(self, wid):
         self.wid = wid
 
-    def is_amulet(self, name: ItemName):
-        spec = AMULET_REPOSITORY.get(name).eq_color_specs
-        return matches_screen_slow(self.wid, EQUIPPED_AMULET_COORDS, spec)
+    def get_pixels(self, coords: Tuple[int, int]):
+        return self.get_pixels_slow(self.wid, coords)
 
-    def is_amulet_empty(self):
-        return self.is_amulet(AmuletName.EMPTY)
-
-    def is_ring(self, name: ItemName):
-        spec = RING_REPOSITORY.get(name).eq_color_specs
-        return matches_screen_slow(self.wid, EQUIPPED_RING_COORDS, spec)
-
-    def is_ring_empty(self):
-        return self.is_ring(RingName.EMPTY)
-
-    def get_magic_shield_status(self):
-        for name in MAGIC_SHIELD_SPEC:
-            if isinstance(MAGIC_SHIELD_SPEC[name][0], list):
-                # there are multiple alternatives that match the name
-                for spec in MAGIC_SHIELD_SPEC[name]:
-                    if matches_screen_slow(self.wid, MAGIC_SHIELD_COORDS, spec):
-                        return name
-            elif matches_screen_slow(self.wid,
-                                   MAGIC_SHIELD_COORDS,
-                                   MAGIC_SHIELD_SPEC[name]):
-                return name
-        # There are only 3 possible states: recently cast, off cooldown and
-        # on cooldown.
-        return MagicShieldStatus.ON_COOLDOWN
+    def _compare_screen_coords(self, coords: Tuple[int, int], color_spec: Tuple[PixelColor, ...]):
+        colors = list(map(lambda c: str(c), color_spec))
+        return matches_screen_slow(self.wid, coords, colors)
 
 
 def time_perf(title, fn):
@@ -308,18 +294,33 @@ def check_magic_shield_status(tibia_wid):
     print(eq_reader.get_magic_shield_status())
 
 
+def check_equipment_status(tibia_wid):
+    eq_reader = EquipmentReader()
+    eq_reader.open()
+    try:
+        start = time.time() * 1000
+        print(f'equipped_ring_name: {eq_reader.get_equipped_ring_name()}')
+        print(f'emergency_action_ring_name: {eq_reader.get_emergency_action_bar_ring_name()}')
+        print(f'equipped_amulet_name: {eq_reader.get_equipped_amulet_name()}')
+        print(f'emergency_action_amulet_name: {eq_reader.get_emergency_action_bar_amulet_name()}')
+        print(f'magic_shield_status: {eq_reader.get_magic_shield_status()}')
+        end = time.time() * 1000
+        print(f'Elapsed time: {end - start} ms')
+    finally:
+        eq_reader.close()
+
 def main(args):
     if args.check_specs is True:
         check_specs()
-
-    if args.check_slot_empty is not None:
+    elif args.check_slot_empty is not None:
         if check_slot_empty(args.tibia_wid, args.check_slot_empty):
             sys.exit(0)
         else:
             sys.exit(1)
-
-    if args.magic_shield_status:
+    elif args.magic_shield_status:
         check_magic_shield_status(args.tibia_wid)
+    elif args.equipment_status:
+        check_equipment_status(args.tibia_wid)
 
 
 if __name__ == '__main__':

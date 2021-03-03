@@ -206,6 +206,12 @@ class ScreenReader():
     def get_pixel_color_slow(self, wid, x, y):
         return get_pixel_color_slow(wid, x, y)
 
+    def get_pixels_slow(self, wid, coords):
+        def get_pixel(coord):
+            return self.get_pixel_color_slow(wid, *coord)
+
+        return list(map(get_pixel, coords))
+
     def get_pixels(self, coords):
         def get_pixel(coord):
             return self.get_pixel_color(*coord)
