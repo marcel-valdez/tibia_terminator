@@ -17,10 +17,11 @@ class Macro():
     key: str = None
     hotkey_hook = None
 
-    def __init__(self, hotkey: str, key_event_type = 'up'):
+    def __init__(self, hotkey: str, key_event_type = 'up', suppress=False):
         self.modifiers, self.key = self.__parse_hotkey(hotkey)
         self.hotkey_hook = None
         self.key_event_type = key_event_type
+        self.suppress = suppress
 
     def __action(self, event: KeyboardEvent):
         if event.event_type != self.key_event_type:
@@ -54,7 +55,7 @@ class Macro():
         # Do nothing if we're already hooked
         if self.hotkey_hook is None:
             Macro.key_macro_count[hotkey] = Macro.key_macro_count.get(hotkey, 0) + 1
-            self.hotkey_hook = keyboard.hook_key(hotkey, self.__action)
+            self.hotkey_hook = keyboard.hook_key(hotkey, self.__action, self.suppress)
 
     def unhook_hotkey(self):
         if self.hotkey_hook is not None:
