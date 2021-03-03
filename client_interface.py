@@ -4,7 +4,7 @@ import queue
 import subprocess
 import threading
 import time
-from typing import Dict, List
+from typing import Dict, List, Callable
 
 from logger import ActionLogEntry, StatsLogger, debug, get_debug_level
 from random import randint
@@ -27,15 +27,46 @@ class CommandType():
 
 
 class Command():
-    def __init__(self, throttle_key: str, throttle_ms: int, hotkey: str):
-        self.throttle_key = throttle_key
+    def __init__(self, cmd_type: str, throttle_ms: int):
+        self.cmd_type = cmd_type
         self.throttle_ms = throttle_ms
+
+    def _send(self, tibia_wid):
+        raise Exception("Needs to be implemented by subclass")
+
+class KeeperHotkeyCommand(Command):
+    """Hotkey command issued by one of Terminator's keepers."""
+
+    def __init__(self, cmd_type: str, throttle_ms: int, hotkey: str):
+        super().__init__(cmd_type, throttle_ms)
         self.hotkey = hotkey
+
+    def _send(self, tibia_wid):
+        subprocess.Popen([
+            "/usr/bin/xdotool", "key", "--window",
+            str(tibia_wid),
+            self.hotkey
+        ])
+
+    def __str__(self):
+        return f'[keystroke] {self.cmd_type} ({self.throttle_ms}): {self.hotkey}'
+
+
+class MacroCommand(Command):
+    def __init__(self, cmd_type: str, throttle_ms: int, macro_fn: Callable[[str], None]):
+        super().__init__(cmd_type, throttle_ms)
+        self.macro_fn = macro_fn
+
+    def _send(self, tibia_wid):
+        self.macro_fn(str(tibia_wid))
+
+    def __str__(self):
+        return f'[macro] {self.cmd_type} ({self.throttle_ms})'
 
 
 class CommandSender(threading.Thread):
 
-    STOP_COMMAND = Command('stop', 0, 'stop')
+    STOP_COMMAND = Command('stop', 0)
 
     def __init__(self, tibia_wid, logger: StatsLogger, only_monitor: bool):
         super().__init__(daemon=True)
@@ -51,16 +82,8 @@ class CommandSender(threading.Thread):
     def stop(self):
         self.cmd_queue.put_nowait(CommandSender.STOP_COMMAND)
 
-    def _send_keystroke(self, hotkey: str):
-        subprocess.Popen([
-            "/usr/bin/xdotool", "key", "--window",
-            str(self.tibia_wid),
-            hotkey
-        ])
-
     def __log_cmd(self, cmd: Command):
-        msg = f'[send_keystroke] {cmd.throttle_key} ({cmd.throttle_ms}): {cmd.hotkey}'
-        self.logger.log_action(0, msg)
+        self.logger.log_action(0, str(cmd))
 
     def __throttle(self, throttle_ms: int=250):
         """Throttles an action.
@@ -79,7 +102,7 @@ class CommandSender(threading.Thread):
             elif self.__throttle(cmd.throttle_ms):
                 self.last_cmd_ts = timestamp_ms()
                 if not self.only_monitor:
-                    self._send_keystroke(cmd.hotkey)
+                    cmd._send(self.tibia_wid)
                 self.__log_cmd(cmd)
 
 
@@ -111,7 +134,7 @@ class CommandProcessor():
             self.stopped = True
 
     def send(self, cmd: Command):
-        self.cmd_senders[cmd.throttle_key].send(cmd)
+        self.cmd_senders[cmd.cmd_type].send(cmd)
 
     @staticmethod
     def gen_cmd_senders(tibia_wid: str, logger: StatsLogger, only_monitor: bool) -> Dict[str, CommandSender]:
@@ -130,9 +153,9 @@ class ClientInterface:
         self.logger = logger
         self.cmd_processor = cmd_processor
 
-    def send_keystroke_async(self, throttle_key: str, throttle_ms: int, hotkey: str):
+    def send_keystroke_async(self, cmd_type: str, throttle_ms: int, hotkey: str):
         self.cmd_processor.send(
-            Command(throttle_key, throttle_ms, hotkey))
+            KeeperHotkeyCommand(cmd_type, throttle_ms, hotkey))
 
     def cast_exura(self, throttle_ms: int):
         self.logger.log_action(2, f'cast_exura {throttle_ms} ms')
@@ -194,6 +217,10 @@ class ClientInterface:
         self.logger.log_action(2, f'cancel_magic_shield {throttle_ms} ms')
         self.send_keystroke_async(CommandType.UTILITY_SPELL, throttle_ms,
                                   self.hotkeys_config['cancel_magic_shield'])
+
+    def execute_macro(self, macro_fn: Callable[[str], None], cmd_type: str, throttle_ms: int = 125):
+        self.logger.log_action(2, f'execute_macro {throttle_ms} ms')
+        self.cmd_processor.send(MacroCommand(cmd_type, throttle_ms, macro_fn))
 
 
 class FakeLogger():
