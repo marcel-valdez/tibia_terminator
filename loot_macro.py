@@ -31,13 +31,15 @@ LOOT_SQMS = [
 
 class LootMacro(Macro):
     def __init__(self, hotkeys={}):
-        super().__init__(hotkeys.get('loot'))
+        super().__init__(hotkeys.get('loot'), key_event_type='up')
 
     def _action(self):
-        pyautogui.keyDown('shiftleft')
+        mouse_x, mouse_y = pyautogui.position()
+        pyautogui.keyDown('altleft')
         for (sqm_x, sqm_y) in LOOT_SQMS:
-            pyautogui.click(sqm_x, sqm_y, button='right', interval=0)
-        pyautogui.keyUp('shiftleft')
+            pyautogui.click(sqm_x, sqm_y, button='left', interval=0)
+        pyautogui.keyUp('altleft')
+        pyautogui.moveTo(mouse_x, mouse_y)
 
 
 def main(args):
