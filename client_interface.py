@@ -100,9 +100,9 @@ class CommandSender(threading.Thread):
             if cmd == CommandSender.STOP_COMMAND:
                 break
             elif self.__throttle(cmd.throttle_ms):
-                self.last_cmd_ts = timestamp_ms()
                 if not self.only_monitor:
                     cmd._send(self.tibia_wid)
+                self.last_cmd_ts = timestamp_ms()
                 self.__log_cmd(cmd)
 
 
