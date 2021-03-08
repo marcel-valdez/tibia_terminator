@@ -373,7 +373,7 @@ def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
     char_keeper = CharKeeper(client, CHAR_CONFIGS, HOTKEYS_CONFIG)
     char_reader = CharReader(MemoryReader(pid, print_async))
     eq_reader = EquipmentReader()
-    loot_macro = LootMacro(HOTKEYS_CONFIG)
+    loot_macro = LootMacro(client, HOTKEYS_CONFIG)
     tibia_terminator = TibiaTerminator(tibia_wid,
                                        char_keeper,
                                        char_reader,

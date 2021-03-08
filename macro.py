@@ -7,17 +7,18 @@ import sys
 from typing import List, Set, Dict
 
 from keyboard import KeyboardEvent
+from client_interface import ClientInterface
 
 pyautogui.PAUSE = 0.02
 
 
-class Macro():
+class Macro:
     key_macro_count: Dict[str, int] = {}
     modifiers: Set = None
     key: str = None
     hotkey_hook = None
 
-    def __init__(self, hotkey: str, key_event_type = 'up', suppress=False):
+    def __init__(self, hotkey: str, key_event_type="up", suppress=False):
         self.modifiers, self.key = self.__parse_hotkey(hotkey)
         self.hotkey_hook = None
         self.key_event_type = key_event_type
@@ -38,10 +39,10 @@ class Macro():
 
     def __parse_hotkey(self, hotkey: str) -> (List[str], str):
         modifiers = []
-        while '+' in hotkey:
-            modifier_idx = hotkey.index('+')
+        while "+" in hotkey:
+            modifier_idx = hotkey.index("+")
             modifiers.append(hotkey[:modifier_idx])
-            hotkey = hotkey[modifier_idx+1:]
+            hotkey = hotkey[modifier_idx + 1 :]
 
         return (set(modifiers), hotkey)
 
@@ -77,3 +78,36 @@ class Macro():
             for scan_code in scan_codes:
                 store[scan_code].remove(self.__action)
             self.hotkey_hook = None
+
+
+class ClientMacro(Macro):
+    client: ClientInterface = None
+    hotkey: str = None
+    command_type: str = None
+    throttle_ms: int = None
+
+    def __init__(
+        self,
+        client: ClientInterface,
+        hotkey: str,
+        command_type: str,
+        throttle_ms: int,
+        *args,
+        **kwargs
+    ):
+        super().__init__(hotkey, *args, **kwargs)
+        self.client = client
+        self.hotkey = hotkey
+        self.command_type = command_type
+        self.throttle_ms = throttle_ms
+
+    def _client_action(self, tibia_wid):
+        raise Exception("This should be implemented by the child class")
+
+    def _action(self):
+        # Tibia will detect the key to trigger the action and this macro
+        # will actually trigger the mouse click, so it is all done in a
+        # single action.
+        self.client.execute_macro(
+            self._client_action, self.command_type, throttle_ms=self.throttle_ms
+        )
