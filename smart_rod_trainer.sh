@@ -12,6 +12,7 @@ EXERCISE_DUMMY_CENTER_X=846
 EXERCISE_DUMMY_CENTER_Y=213
 SCREEN_NO=0
 MIN_SOUL_POINTS=6
+healthy_soul_points=
 
 
 function debug() {
@@ -30,11 +31,7 @@ function timestamp_secs() {
 }
 
 function get_tibia_window_id() {
-  if [[ "${tibia_pid}" ]]; then
-    echo $(xdotool search --pid ${tibia_pid})
-  else
-    echo $(xdotool search --class Tibia)
-  fi
+  echo $(xdotool search --pid ${tibia_pid})
 }
 
 function focus_window() {
@@ -42,46 +39,49 @@ function focus_window() {
   xdotool windowactivate --sync "${window_id}"
 }
 
-function get_mana() {
-  if [[ "${tibia_pid}" ]]; then
-    eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
-  else
-    eval "$(sudo ./char_reader38.py)"
+function update_max_mana() {
+    max_char_mana=$1
+    max_mana_threshold=$((max_char_mana - 200))
+    healthy_soul_points=$((max_char_mana * soul_pts_per_rune / mana_per_rune))
+}
+
+function fetch_char_stats() {
+  local silent=$1
+  eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
+  [[ -z ${silent} ]] && echo "mana: ${MANA}, soul points: ${SOUL_POINTS}, max mana: ${MAX_MANA}" >&2
+  if [[ "${MAX_MANA}" -ne "${max_char_mana}" ]]; then
+    [[ -z ${silent} ]] && echo "Updating MAX mana to ${MAX_MANA}" >&2
+    update_max_mana "${MAX_MANA}"
   fi
+}
+
+function get_mana() {
+  fetch_char_stats 1
   echo "${MANA}"
 }
 
 function get_soul_pts() {
-  if [[ "${tibia_pid}" ]]; then
-    eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
-  else
-    eval "$(sudo ./char_reader38.py)"
-  fi
+  fetch_char_stats 1
   echo "${SOUL_POINTS}"
 }
 
 function is_out_of_souls_or_max_mana() {
-  if [[ "${tibia_pid}" ]]; then
-    eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
-  else
-    eval "$(sudo ./char_reader38.py)"
-  fi
+  fetch_char_stats 1
   [[ ${MANA} -gt ${max_mana_threshold} ]] || \
     [[ ${SOUL_POINTS} -lt ${MIN_SOUL_POINTS} ]]
 }
 
 function send_keystroke() {
-  local window="$1"
-  local keystroke="$2"
-  local min="$3"
+  local keystroke="$1"
+  local min="$2"
   [[ -z "${min}" ]] && min=2
-  local max="$4"
+  local max="$3"
   [[ -z "${max}" ]] && max=2
   local reps=$(random ${min} ${max})
   for i in $(seq 1 ${reps}); do
     local delay="$(random 123 257)"
     echo "Sending ${keystroke} with delay 0.${delay}s"
-    xdotool key --delay "${delay}" --window "${window}" "${keystroke}"
+    xdotool key --delay "${delay}" --window "${tibia_window}" "${keystroke}"
     local wait_time="0.$(random 110 350)s"
     echo "Pausing ${wait_time}"
     sleep "${wait_time}"
@@ -95,40 +95,33 @@ function equip_regen_ring() {
   #     else if soul pts are greater than 5: equip the secondary one
   #     else: do not equip any ring
 
-  local tibia_window="$1"
   if is_out_of_souls_or_max_mana; then
     return 1
   fi
 
-  if [[ "${tibia_pid}" ]]; then
-    eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
-  else
-    eval "$(sudo ./char_reader38.py)"
-  fi
-  if [[ ${SOUL_POINTS} -lt 6 ]]; then
+  local soul_pts=$(get_soul_pts)
+  if [[ ${soul_pts} -lt 6 ]]; then
     echo '-------------------'
     echo 'Equipping life ring'
     echo '-------------------'
   fi
 
-  send_keystroke "${tibia_window}}" "${EQUIP_RING_LR_KEY}" 1
+  send_keystroke "${EQUIP_RING_LR_KEY}" 1
   if [[ ${SOUL_POINTS} -ge 6 ]]; then
     echo '-------------------------'
     echo 'Equipping ring of healing'
     echo '-------------------------'
     local wait_time="0.$(random 250 390)s"
     sleep "${wait_time}"
-    send_keystroke "${tibia_window}}" "${EQUIP_RING_ROH_KEY}" 1
+    send_keystroke "${EQUIP_RING_ROH_KEY}" 1
   fi
 }
 
 function is_ring_slot_empty() {
-  local tibia_window="$1"
   ./equipment_reader.py --check_slot_empty 'ring' "${tibia_window}"
 }
 
 function equip_soft_boots() {
-  local tibia_window="$1"
   if is_out_of_souls_or_max_mana; then
     return 1
   fi
@@ -136,60 +129,58 @@ function equip_soft_boots() {
   echo '-------------------'
   echo 'Equipping soft boots'
   echo '-------------------'
-  send_keystroke "${tibia_window}}" "${EQUIP_SOFT_BOOTS_KEY}" 2
+  send_keystroke "${EQUIP_SOFT_BOOTS_KEY}" 2
 }
 
 function eat_food() {
   # Eat food 4 times with a 1.25-1.39 sec interval
-  local tibia_window="$1"
   if is_out_of_souls_or_max_mana; then
     return 1
   fi
   echo '-----------'
   echo 'Eating food'
   echo '-----------'
-  send_keystroke "${tibia_window}" "${EAT_FOOD_KEY}" 1 1
+  send_keystroke "${EAT_FOOD_KEY}" 1 1
   sleep "1s"
-  send_keystroke "${tibia_window}" "${EAT_FOOD_KEY}" 1 1
+  send_keystroke "${EAT_FOOD_KEY}" 1 1
   sleep "1s"
-  send_keystroke "${tibia_window}" "${EAT_FOOD_KEY}" 1 1
+  send_keystroke "${EAT_FOOD_KEY}" 1 1
   sleep "1s"
-  send_keystroke "${tibia_window}" "${EAT_FOOD_KEY}" 1 1
+  send_keystroke "${EAT_FOOD_KEY}" 1 1
+  sleep "1s"
+  send_keystroke "${EAT_FOOD_KEY}" 1 1
 }
 
 function cast_rune_spell() {
-  local window="$1"
-  local min="$2"
+  local min="$1"
   [[ -z "${min}" ]] && min=1
-  local max="$3"
+  local max="$2"
   [[ -z "${min}" ]] && max=3
 
   echo '------------------'
   echo 'Calling rune spell'
   echo '------------------'
-  send_keystroke "${window}" "${CAST_RUNE_SPELL_KEY}" "${min}" "${max}"
+  send_keystroke "${CAST_RUNE_SPELL_KEY}" "${min}" "${max}"
 }
 
 function make_rune() {
-  local window="$1"
-  local min_wait="$2"
-  local max_wait="$3"
+  local min_wait="$1"
+  local max_wait="$2"
   local mana=$(get_mana)
   if [[ ${mana} -ge ${mana_per_rune} ]]; then
-    cast_rune_spell "${window}" "${min_wait}" "${max_wait}"
+    cast_rune_spell "${min_wait}" "${max_wait}"
   fi
 }
 
 function consume_mana_for_runes() {
   # Use up all the mana until it is less than the mana required for the spell
   # or we have less than 6 soul points
-  local tibia_window="$1"
   local mana=$(get_mana)
   sleep "1s"
   local soul_pts=$(get_soul_pts)
   while [[ ${mana} -ge ${mana_per_rune} ]] && \
         [[ ${soul_pts} -ge ${MIN_SOUL_POINTS} ]]; do
-    make_rune "${tibia_window}"
+    make_rune
     mana=$(get_mana)
     sleep "1s"
     soul_pts=$(get_soul_pts)
@@ -197,7 +188,6 @@ function consume_mana_for_runes() {
 }
 
 function wait_for_mana() {
-  local tibia_window="$1"
   # Wait until mana is nearly full
   echo
   echo '-------------------------------'
@@ -206,25 +196,32 @@ function wait_for_mana() {
   echo
   local mana=$(get_mana)
   while [[ ${mana} -lt ${max_mana_threshold} ]]; do
+    check_mana_soul_pts
     # Warning: If we run out of life rings, the ring slot will be empty
     # every time we're under 10 soul points. So we'd end up using the exercise
     # rod very often and thereby switching windows very often as well.
-    if ! is_out_of_souls_or_max_mana && is_ring_slot_empty "${tibia_window}"; then
+    if ! is_out_of_souls_or_max_mana && is_ring_slot_empty; then
       local secs_since_last_use=$((secs_since_last_rod_use))
       # only equip regen ring if it has been at least 30 seconds since the last
       # time we used the exercise rod.
-      if secs_since_last_rod_use -gt 30; then
-        equip_regen_ring "${tibia_window}"
-        equip_soft_boots "${tibia_window}"
-        eat_food "${tibia_window}"
-        # We have to re-use the rod, since equipping the ring will stops the
+      if secs_since_last_rod_use -gt 30 && [[ ${should_consume_regen} ]]; then
+        equip_regen_ring
+        equip_soft_boots
+        eat_food
+        # We have to re-use the rod, since equipping the ring will stop the
         # rod training.
-        use_exercise_rod "${tibia_window}"
+        use_exercise_rod
       fi
     fi
+      # else re-use rod every 120 seconds
+      # because otherwise if the rod runs out of hits we could end-up in a state
+      # where we're not using the rod, nor are we regenerating mana. A solution
+      # to this is to re-use the rod every 120 seconds, since re-using the rod
+      # while it is already being used does not have any impact on the rod's
+      # cooldown and it won't stop the current usage.
 
     if [[ "${pending_rod_usage}" ]];  then
-        use_exercise_rod "${tibia_window}"
+      use_exercise_rod
     fi
     sleep "3s"
     if [[ "${credentials_profile}" ]] && is_logged_out; then
@@ -241,7 +238,6 @@ function wait_for_mana() {
 }
 
 function click_dummy() {
-  local tibia_window=$1
   local minX=$((EXERCISE_DUMMY_CENTER_X-4))
   local maxX=$((EXERCISE_DUMMY_CENTER_X+4))
   local minY=$((EXERCISE_DUMMY_CENTER_Y-4))
@@ -277,7 +273,6 @@ function use_exercise_rod() {
     pending_rod_usage=
   fi
   # get current focused window
-  local tibia_window="$1"
   eval "$(xdotool getmouselocation --shell)"
   local curr_x="${X}"
   local curr_y="${Y}"
@@ -298,8 +293,8 @@ function use_exercise_rod() {
     focus_window "${tibia_window}"
   fi
 
-  send_keystroke "${tibia_window}" "${USE_EXERCISE_ROD_KEY}" 1 1
-  click_dummy "${tibia_window}"
+  send_keystroke "${USE_EXERCISE_ROD_KEY}" 1 1
+  click_dummy
   last_rod_usage=$(timestamp_secs)
 
   # return to prev window
@@ -327,25 +322,43 @@ function login {
   fi
 }
 
+
+should_consume_regen=
+function check_mana_soul_pts() {
+  local mana=$(get_mana)
+  local soul_pts=$(get_soul_pts)
+
+  if [[ ${soul_pts} -lt ${MIN_SOUL_POINTS} ]]; then
+    if [[ ${mana} -ge $((max_mana_threshold * 4 / 5)) ]]; then
+      should_consume_regen=
+    fi
+  elif [[ ${soul_pts} -ge ${healthy_soul_points} ]]; then
+      should_consume_regen=1
+  fi
+}
+
 function train() {
-  local tibia_window=$(get_tibia_window_id)
   while true; do
     if [[ "${credentials_profile}" ]] && is_logged_out; then
         login
     fi
 
     sleep "0.$(random 210 550)s"
-    consume_mana_for_runes "${tibia_window}"
-    equip_regen_ring "${tibia_window}"
-    equip_soft_boots "${tibia_window}"
-    eat_food "${tibia_window}"
-    use_exercise_rod "${tibia_window}"
+    consume_mana_for_runes
+    check_mana_soul_pts
+    if [[ ${should_consume_regen} ]]; then
+      equip_regen_ring
+      equip_soft_boots
+      eat_food
+    fi
+    use_exercise_rod
+    fetch_char_stats
     if [[ "${credentials_profile}" ]] && is_logged_out; then
         sleep "$(random 180 300)s"
         login
     fi
 
-    wait_for_mana "${tibia_window}"
+    wait_for_mana
   done
 }
 
@@ -355,6 +368,7 @@ max_char_mana=
 max_mana_threshold=
 credentials_profile=
 tibia_pid=
+soul_pts_per_rune=3
 function parse_args() {
   while [[ $# -gt 0 ]]; do
     arg=$1
@@ -369,6 +383,10 @@ function parse_args() {
       ;;
     --mana-per-rune)
       mana_per_rune=$2
+      shift
+      ;;
+    --soul-pts-per-rune)
+      soul_pts_per_rune=$2
       shift
       ;;
     --refocus-tibia-to-train)
@@ -387,8 +405,8 @@ function parse_args() {
     shift
   done
 
-  if [[ -z "${max_char_mana}" ]]; then
-    echo "You need to provide the maximum character mana (--max-char-mana <amount>" >&2
+  if [[ -z "${tibia_pid}" ]]; then
+    echo "Please provide a tibia PID (--tibia-pid <PID>)" >&2
     exit 1
   fi
 
@@ -403,8 +421,12 @@ function parse_args() {
     echo "We will not refocus the Tibia window to use the exercise dummy (risky / unpredictable)."
   fi
 
+  echo "Soul points per rune: ${soul_pts_per_rune}"
   echo "Mana per rune spell: ${mana_per_rune}"
+  fetch_char_stats
   echo "Maximum character mana: ${max_char_mana}"
+  tibia_window=$(get_tibia_window_id)
+  echo "Tibia Window ID: ${tibia_window}"
 }
 
 function main() {
