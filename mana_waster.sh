@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 # requirements: xdotool
 
+SCREEN_WIDTH_PIXELS=1920
+CHAR_POS_Y=380
+CHAR_POS_X=960
+MANA_POTION_Y=300
+MANA_POTION_X=1715
+LEFT_BTN="1"
+
 function debug() {
   [[ "${DEBUG}" ]] && echo "$@" >&2
 }
@@ -14,11 +21,10 @@ function random() {
 
 
 function send_keystroke() {
-  local tibia_window="$1"
-  local keystroke="$2"
-  local min="$3"
+  local keystroke="$1"
+  local min="$2"
   [[ -z "${min}" ]] && min=2
-  local max="$4"
+  local max="$3"
   [[ -z "${max}" ]] && max=2
   local reps=$(random ${min} ${max})
   for i in $(seq 1 ${reps}); do
@@ -35,10 +41,6 @@ function sec_per_rune() {
   echo $((mana_per_spell / mana_per_sec))
 }
 
-function mana_potion_count() {
-  echo $(((mana_per_spell / 100) - 1))
-}
-
 function get_tibia_window_id() {
   echo $(xdotool search --pid ${tibia_pid})
 }
@@ -48,29 +50,31 @@ function timestamp_ms() {
 }
 
 function is_out_of_souls_or_mana() {
-  eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
+  eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
   echo "mana: ${MANA}, soul points: ${SOUL_POINTS}"
   # do not drink mana if we're at /maximum char mana
   # do not drink mana if we're running out of soul points.
   [[ ${MANA} -gt ${max_mana_threshold} ]] || [[ ${SOUL_POINTS} -lt 6 ]]
 }
 
-potions_seq_counter=0
-function get_potion_count() {
-  local mana_potions_seq_len=${#mana_potions_seq[@]}
-  if [[ ${mana_potions_seq_len} -gt 0 ]]; then
-    debug "mana_potions_seq_len=${mana_potions_seq_len}"
-    debug "potions_seq_counter=${potions_seq_counter}"
-    local seq_idx=$((potions_seq_counter % mana_potions_seq_len))
-    debug "seq_idx=${seq_idx}"
-    echo ${mana_potions_seq[seq_idx]}
-  else
-    echo $(random ${min_mana_potions_per_turn} ${max_mana_potions_per_turn})
-  fi
+function drink_mana_potion_click() {
+  # click mana potion
+  xdotool mousemove --window ${tibia_window} \
+                    --sync ${MANA_POTION_X} ${MANA_POTION_Y} \
+          sleep "0.125" \
+          click --window ${tibia_window} ${LEFT_BTN} \
+          sleep "0.125" \
+          mousemove --window ${tibia_window} \
+                    --sync ${CHAR_POS_X} ${CHAR_POS_Y} \
+          sleep "0.125" \
+          click --window ${tibia_window} ${LEFT_BTN}
+}
+
+function drink_mana_potion_keystroke() {
+  send_keystroke 'm' 1 1
 }
 
 function drink_mana_potion() {
-  local tibia_window=$1
   local mana="$(get_mana)"
   # don't drink a mana potion if we have enough mana for a spell
   if [[ ${mana} -ge ${mana_per_spell} ]] || \
@@ -78,27 +82,29 @@ function drink_mana_potion() {
     return 1
   fi
 
-  send_keystroke "${tibia_window}" 'm' 1 1
+  if [[ ${click_for_potion} ]]; then
+    drink_mana_potion_click
+  else
+    drink_mana_potion_keystroke
+  fi
 }
 
 function send_spell_keystroke() {
   # call the rune spell a random number of times between 2 and 5
-  local tibia_window="$1"
-  local spell_key="$2"
-  local min=$3
+  local spell_key="$1"
+  local min=$2
   [[ -z "${min}" ]] && min=2
-  local max=$4
+  local max=$3
   [[ -z "${min}" ]] && max=5
 
   echo '------------------'
   echo '   Casting spell  '
   echo '------------------'
-  send_keystroke "${tibia_window}" "${spell_key}" ${min} ${max}
+  send_keystroke "${spell_key}" ${min} ${max}
 }
 
 
 function eat_food() {
-  local tibia_window="$1"
   local mana=$(get_mana)
   if [[ ${mana} -ge ${max_char_mana} ]]; then
     return 1
@@ -108,28 +114,26 @@ function eat_food() {
   echo '-----------'
   echo 'Eating food'
   echo '-----------'
-  send_keystroke "${tibia_window}" 'h' 0 3
+  send_keystroke 'h' 0 3
 }
 
 function get_mana() {
-  eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
+  eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
   echo "${MANA}"
 }
 
 function cast_secondary_spell() {
-  local tibia_window="$1"
-  eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
+  eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
   if [[ ${MANA} -gt ${mana_per_secondary_spell} ]]; then
-    send_spell_keystroke "${tibia_window}" 'p' 1 1
+    send_spell_keystroke 'p' 1 1
   fi
 }
 
 
 function cast_spell() {
-  local tibia_window="$1"
-  eval "$(sudo ./char_reader.py --pid ${tibia_pid})"
+  eval "$(sudo ./char_reader38.py --pid ${tibia_pid})"
   if [[ ${MANA} -gt ${mana_per_spell} ]]; then
-    send_spell_keystroke "${tibia_window}" 'y' 2 2
+    send_spell_keystroke 'y' 1 1
   fi
 }
 
@@ -151,7 +155,7 @@ function login {
 }
 
 function waste_mana() {
-  local tibia_window=$(get_tibia_window_id)
+  tibia_window=$(get_tibia_window_id)
   while true; do
     if [[ "${credentials_profile}" ]] && is_logged_out; then
       echo "We were disconnected. We will attempt login after 3-5 minutes."
@@ -164,18 +168,19 @@ function waste_mana() {
 
     local mana=$(get_mana)
     while [[ ${mana} -ge ${mana_per_spell} ]]; do
-      cast_spell "${tibia_window}"
+      cast_spell
       sleep "0.$(random 210 550)s"
       mana=$(get_mana)
     done
 
     while [[ ${mana} -ge ${mana_per_secondary_spell} ]]; do
-      cast_secondary_spell "${tibia_window}"
+      cast_secondary_spell
       sleep "0.$(random 210 550)s"
       mana=$(get_mana)
     done
-    drink_mana_potion "${tibia_window}"
-    eat_food "${tibia_window}"
+    drink_mana_potion
+    sleep "0.$(random 125 250)s"
+    eat_food
   done
 }
 
@@ -185,6 +190,8 @@ mana_per_spell=
 mana_per_secondary_spell=99999
 max_mana_threshold=99999
 max_char_mana=
+click_for_potion=
+screen="left"
 function parse_args() {
   while [[ $# -gt 0 ]]; do
     arg=$1
@@ -207,6 +214,10 @@ function parse_args() {
       ;;
     --credentials-profile)
       credentials_profile=$2
+      shift
+      ;;
+    --click-for-potion)
+      click_for_potion=1
       shift
       ;;
     *)
