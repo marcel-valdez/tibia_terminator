@@ -13,18 +13,22 @@ class CharStatus:
         self.speed = speed
         self.mana = mana
         self.magic_shield_level = magic_shield_level
-        self.emergency_action_amulet = equipment_status.get('emergency_action_amulet', 'ERROR')
+        self.emergency_action_amulet = \
+            equipment_status.get('emergency_action_amulet', 'ERROR')
         self.equipped_amulet = equipment_status.get('equipped_amulet', 'ERROR')
-        self.emergency_action_ring = equipment_status.get('emergency_action_ring', 'ERROR')
+        self.emergency_action_ring = \
+            equipment_status.get('emergency_action_ring', 'ERROR')
         self.equipped_ring = equipment_status.get('equipped_ring', 'ERROR')
         self.is_amulet_slot_empty = self.equipped_amulet == AmuletName.EMPTY
         self.is_ring_slot_empty = self.equipped_ring == RingName.EMPTY
-        self.magic_shield_status = equipment_status.get('magic_shield_status', 'ERROR')
+        self.magic_shield_status = \
+            equipment_status.get('magic_shield_status', 'ERROR')
+
 
 class CharStatusAsync(CharStatus):
     def __init__(self,
-                future_stats: FutureValue[Dict[str, int]],
-                future_eq_status: FutureValue[Dict[str, Any]]):
+                 future_stats: FutureValue[Dict[str, int]],
+                 future_eq_status: FutureValue[Dict[str, Any]]):
         self.__future_stats = future_stats
         self.__future_eq_status = future_eq_status
 
@@ -33,6 +37,7 @@ class CharStatusAsync(CharStatus):
         return self.__future_stats.get()
 
     K = TypeVar('K')
+
     def __get_eq_status(self, name: str, default_value: K) -> K:
         return self.__future_eq_status.get().get(name, default_value)
 

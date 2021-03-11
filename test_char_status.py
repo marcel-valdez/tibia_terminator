@@ -1,23 +1,22 @@
 #!/usr/bin/env python3.8
 
 import unittest
-import time
 
 from unittest import TestCase
-from lazy_evaluator import FutureValue
 from char_status import CharStatusAsync, immediate
+
 
 class TestCharStatusAsync(TestCase):
     def test_gets_values(self):
         # given
-        stats = immediate({ 'mana': 1, 'speed': 2, 'hp': 3, 'magic_shield': 4 })
-        equipment = {
-            'emergency_action_amulet': immediate('a'),
-            'emergency_action_ring': immediate('b'),
-            'equipped_amulet': immediate('c'),
-            'equipped_ring': immediate('d'),
-            'magic_shield_status': immediate('e'),
-        }
+        stats = immediate({'mana': 1, 'speed': 2, 'hp': 3, 'magic_shield': 4})
+        equipment = immediate({
+            'emergency_action_amulet': 'a',
+            'emergency_action_ring': 'b',
+            'equipped_amulet': 'c',
+            'equipped_ring': 'd',
+            'magic_shield_status': 'e',
+        })
         # when
         target = CharStatusAsync(stats, equipment)
         # then
