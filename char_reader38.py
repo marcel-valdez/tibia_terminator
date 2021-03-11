@@ -4,6 +4,8 @@ import argparse
 from logger import debug
 from memory_reader38 import MemoryReader38 as MemoryReader
 from app_config import MEM_CONFIG
+from lazy_evaluator import future, FutureValue
+from typing import Dict
 
 PREV_MANA_MEMORY_ADDRESS = "41e18e0"  # [I32 I16 ]
 # common value
@@ -67,7 +69,7 @@ class CharReader38():
         self.max_mana_address = None
         self.verbose = verbose
 
-    def get_stats(self):
+    def __fetch_stats(self):
         stats = {'mana': 99999, 'hp': 99999,
                  'speed': 999, 'soul_points': 0, 'magic_shield': 9999}
         self.memory_reader.open()
@@ -90,6 +92,9 @@ class CharReader38():
         finally:
             self.memory_reader.close()
         return stats
+
+    def get_stats(self) -> FutureValue[Dict[str, int]]:
+        return future(self.__fetch_stats)
 
     def get_max_hp(self):
         if self.max_hp_address is None:
@@ -245,7 +250,7 @@ def main(pid,
     if max_mana_address is not None:
         reader.init_max_mana_address(int(max_mana_address, 16))
 
-    stats = reader.get_stats()
+    stats = reader.get_stats().get()
     print(f"HP={stats['hp']};MANA={stats['mana']};SPEED={stats['speed']};"
           f"SOUL_POINTS={stats['soul_points']};"
           f"MAGIC_SHIELD={stats['magic_shield']};"
