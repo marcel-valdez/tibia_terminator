@@ -7,7 +7,8 @@ import time
 from window_utils import (ScreenReader, matches_screen_slow)
 from color_spec import (spec, AMULET_REPOSITORY,
                         RING_REPOSITORY, ItemName, AmuletName, RingName, PixelColor)
-from typing import Tuple
+from lazy_evaluator import future, FutureValue
+from typing import Tuple, Dict, Any
 
 
 parser = argparse.ArgumentParser(
@@ -121,19 +122,33 @@ class EquipmentReader(ScreenReader):
         else:
             return self._compare_screen_coords(coords, specs.colors)
 
-    def get_emergency_action_bar_amulet_name(self):
+    def get_equipment_status(self) -> FutureValue[EquipmentStatus]:
+        return future(lambda: EquipmentStatus({
+            'emergency_action_amulet':
+                self.get_emergency_action_bar_amulet_name(),
+            'equipped_amulet':
+                self.get_equipped_amulet_name(),
+            'emergency_action_ring':
+                self.get_emergency_action_bar_ring_name(),
+            'equipped_ring':
+                self.get_equipped_ring_name(),
+            'magic_shield_status':
+                self.get_magic_shield_status(),
+        }))
+
+    def get_emergency_action_bar_amulet_name(self) -> AmuletName:
         color_spec = spec(*self.get_pixels(EMERGENCY_ACTION_BAR_AMULET_COORDS))
         return AMULET_REPOSITORY.get_action_name(color_spec)
 
-    def get_equipped_amulet_name(self):
+    def get_equipped_amulet_name(self) -> AmuletName:
         color_spec = spec(*self.get_pixels(EQUIPPED_AMULET_COORDS))
         return AMULET_REPOSITORY.get_equipment_name(color_spec)
 
-    def get_emergency_action_bar_ring_name(self):
+    def get_emergency_action_bar_ring_name(self) -> RingName:
         color_spec = spec(*self.get_pixels(EMERGENCY_ACTION_BAR_RING_COORDS))
         return RING_REPOSITORY.get_action_name(color_spec)
 
-    def get_equipped_ring_name(self):
+    def get_equipped_ring_name(self) -> RingName:
         color_spec = spec(*self.get_pixels(EQUIPPED_RING_COORDS))
         return RING_REPOSITORY.get_equipment_name(color_spec)
 
@@ -161,7 +176,7 @@ class EquipmentReader(ScreenReader):
     def is_ring_empty(self):
         return self.is_ring(RingName.EMPTY)
 
-    def get_magic_shield_status(self):
+    def get_magic_shield_status(self) -> str:
         for name in MAGIC_SHIELD_SPEC:
             specs = []
             if isinstance(MAGIC_SHIELD_SPEC[name][0], list):
@@ -293,19 +308,24 @@ def check_magic_shield_status(tibia_wid):
     eq_reader = EquipmentReaderSlow(tibia_wid)
     print(eq_reader.get_magic_shield_status())
 
+class EquipmentStatus(dict):
+    def __str__(self):
+        return ("{\n"
+        f"  emergency_action_amulet: {self['emergency_action_amulet']}\n"
+        f"  equipped_amulet: {self['equipped_amulet']}\n"
+        f"  emergency_action_ring: {self['emergency_action_ring']}\n"
+        f"  equipped_ring: {self['equipped_ring']}\n"
+        f"  magic_shield_status: {self['magic_shield_status']}\n"
+        "}\n")
 
 def check_equipment_status(tibia_wid):
     eq_reader = EquipmentReader()
+    def fn():
+        eq_status = eq_reader.get_equipment_status().get()
+        return EquipmentStatus(eq_status)
     eq_reader.open()
     try:
-        start = time.time() * 1000
-        print(f'equipped_ring_name: {eq_reader.get_equipped_ring_name()}')
-        print(f'emergency_action_ring_name: {eq_reader.get_emergency_action_bar_ring_name()}')
-        print(f'equipped_amulet_name: {eq_reader.get_equipped_amulet_name()}')
-        print(f'emergency_action_amulet_name: {eq_reader.get_emergency_action_bar_amulet_name()}')
-        print(f'magic_shield_status: {eq_reader.get_magic_shield_status()}')
-        end = time.time() * 1000
-        print(f'Elapsed time: {end - start} ms')
+        time_perf('check_equipment_status', fn)
     finally:
         eq_reader.close()
 
