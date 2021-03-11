@@ -6,7 +6,8 @@ import sys
 import time
 from window_utils import (ScreenReader, matches_screen_slow)
 from color_spec import (spec, AMULET_REPOSITORY,
-                        RING_REPOSITORY, ItemName, AmuletName, RingName, PixelColor)
+                        RING_REPOSITORY, ItemName, AmuletName, RingName,
+                        PixelColor)
 from lazy_evaluator import future, FutureValue
 from typing import Tuple, Dict, Any
 
@@ -109,8 +110,22 @@ MAGIC_SHIELD_COORDS = [
 ]
 
 
+class EquipmentStatus(dict):
+    def __str__(self):
+        return (
+            "{\n"
+            f"  emergency_action_amulet: {self['emergency_action_amulet']}\n"
+            f"  equipped_amulet: {self['equipped_amulet']}\n"
+            f"  emergency_action_ring: {self['emergency_action_ring']}\n"
+            f"  equipped_ring: {self['equipped_ring']}\n"
+            f"  magic_shield_status: {self['magic_shield_status']}\n"
+            "}\n"
+        )
+
+
 class EquipmentReader(ScreenReader):
-    def _compare_screen_coords(self, coords: Tuple[int, int], color_spec: Tuple[str, ...]):
+    def _compare_screen_coords(
+            self, coords: Tuple[int, int], color_spec: Tuple[str, ...]):
         return ScreenReader.matches_screen(self, coords, color_spec)
 
     def matches_screen(self, coords, specs):
@@ -308,15 +323,6 @@ def check_magic_shield_status(tibia_wid):
     eq_reader = EquipmentReaderSlow(tibia_wid)
     print(eq_reader.get_magic_shield_status())
 
-class EquipmentStatus(dict):
-    def __str__(self):
-        return ("{\n"
-        f"  emergency_action_amulet: {self['emergency_action_amulet']}\n"
-        f"  equipped_amulet: {self['equipped_amulet']}\n"
-        f"  emergency_action_ring: {self['emergency_action_ring']}\n"
-        f"  equipped_ring: {self['equipped_ring']}\n"
-        f"  magic_shield_status: {self['magic_shield_status']}\n"
-        "}\n")
 
 def check_equipment_status(tibia_wid):
     eq_reader = EquipmentReader()

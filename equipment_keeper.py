@@ -10,7 +10,6 @@ DEFAULT_EQUIP_FREQ = 0.5
 DEFAULT_EQUIP_EMERGENCY_FREQ = 0.5
 
 
-
 class EquipmentMode:
     NORMAL = 'normal'
     EMERGENCY = 'emergency'
