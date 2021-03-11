@@ -5,13 +5,15 @@ import time
 import curses
 import sys
 
-
+from typing import Dict, Any
+from char_status import CharStatus
+from lazy_evaluator import FutureValue
 from window_utils import get_tibia_wid
 from client_interface import (ClientInterface, CommandProcessor)
 from memory_reader38 import MemoryReader38 as MemoryReader
 from char_keeper import CharKeeper
 from char_reader38 import CharReader38 as CharReader
-from char_status import CharStatus
+from char_status import CharStatusAsync
 from equipment_reader import (EquipmentReader, AmuletName, RingName,
                               MagicShieldStatus)
 from char_config import CHAR_CONFIGS, HOTKEYS_CONFIG
@@ -237,36 +239,16 @@ class TibiaTerminator:
         self.stats_logger.run_view = self.view
         self.view_renderer.change_views(self.view)
 
-    def handle_running_state(self):
-        stats = self.char_reader.get_stats()
-        # 1-5 ms
-        emergency_amulet_action_bar_name = \
-            self.equipment_reader.get_emergency_action_bar_amulet_name()
-        # 1-5 ms
-        emergency_ring_action_bar_name = \
-            self.equipment_reader.get_emergency_action_bar_ring_name()
-        # 1-5 ms
-        equipped_amulet_name = self.equipment_reader.get_equipped_amulet_name()
-        # 1-5 ms
-        equipped_ring_name = self.equipment_reader.get_equipped_ring_name()
-        # 1-5 ms
-        magic_shield_status = \
-            self.equipment_reader.get_magic_shield_status()
-        equipment_status = {
-            'emergency_action_amulet': emergency_amulet_action_bar_name,
-            'equipped_amulet': equipped_amulet_name,
-            'emergency_action_ring': emergency_ring_action_bar_name,
-            'equipped_ring': equipped_ring_name,
-            'magic_shield_status': magic_shield_status
-        }
+    def gen_char_status(self) -> CharStatus:
+        return CharStatusAsync(
+            self.char_reader.get_stats(),
+            self.equipment_reader.get_equipment_status())
 
-        char_status = CharStatus(
-            mana=stats['mana'],
-            hp=stats['hp'],
-            speed=stats['speed'],
-            magic_shield_level=stats['magic_shield'],
-            equipment_status=equipment_status)
-        self.handle_char_status(char_status)
+    def handle_running_state(self):
+        char_status = self.gen_char_status()
+        self.char_keeper.handle_char_status(char_status)
+        # implicitly waits for all FutureValue objects, since it
+        # tries to fetch all values in order to print to screen
         self.view.set_char_status(char_status)
         if self.char_keeper.emergency_reporter.in_emergency:
             self.view.emergency_status = 'ON'
@@ -333,22 +315,6 @@ class TibiaTerminator:
         while self.app_state == AppStates.CONFIG_SELECTION:
             # temporarily override state transitions
             time.sleep(0.01)
-
-    def handle_char_status(self, char_status: CharStatus):
-        # Note that we have to handle the mana change always, even if
-        # it hasn't actually changed, because a command to heal or drink mana
-        # or haste could be ignored if the character is exhausted, therefore
-        # we have to spam the action until the effect takes place.
-        if self.enable_hp:
-            self.char_keeper.handle_hp_change(char_status)
-
-        if self.enable_mana:
-            self.char_keeper.handle_mana_change(char_status)
-
-        self.char_keeper.handle_equipment(char_status)
-
-        if self.enable_speed:
-            self.char_keeper.handle_speed_change(char_status)
 
     def gen_title(self):
         return "Tibia Terminator. WID: " + str(self.tibia_wid) + " Active config: " + self.selected_config_name
