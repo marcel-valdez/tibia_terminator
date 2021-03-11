@@ -7,10 +7,10 @@ from unittest import (TestCase)
 from lazy_evaluator import LazyValue, FutureValue
 
 
-
-def get_value(time_ms=10) -> int:
+def get_value(time_ms: float = 10) -> int:
     time.sleep(time_ms / 1000)
     return time.time() * 1000
+
 
 class TestLazyEvaluator(TestCase):
     def test_get(self):
