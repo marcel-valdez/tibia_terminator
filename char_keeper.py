@@ -5,7 +5,9 @@ from typing import List, Dict, Any
 from equipment_keeper import EquipmentKeeper
 from hp_keeper import HpKeeper
 from magic_shield_keeper import MagicShieldKeeper
-from emergency_magic_shield_keeper import EmergencyMagicShieldKeeper, MagicShieldStatus
+from emergency_magic_shield_keeper import (
+    EmergencyMagicShieldKeeper, MagicShieldStatus
+)
 from mana_keeper import ManaKeeper
 from speed_keeper import SpeedKeeper
 from emergency_reporter import EmergencyReporter
@@ -125,8 +127,9 @@ class CharKeeper:
         elif magic_shield_type is not None:
             raise Exception(f"Unknown magic shield type {magic_shield_type}")
 
-    def init_item_crosshair_macros(self, macro_configs: List[Dict[str, str]],
-                        item_crosshair_macros: List[Macro] = None):
+    def init_item_crosshair_macros(self,
+                                   macro_configs: List[Dict[str, str]],
+                                   item_crosshair_macros: List[Macro] = None):
         self.unload_item_crosshair_macros()
         if item_crosshair_macros is not None:
             self.item_crosshair_macros = item_crosshair_macros
@@ -260,3 +263,6 @@ class CharKeeper:
 class NoopKeeper:
     def handle_status_change(self, char_status: CharStatus):
         pass
+
+    def should_cast(self, char_status: CharStatus):
+        return False

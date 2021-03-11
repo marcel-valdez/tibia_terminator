@@ -389,7 +389,12 @@ class TestCharKeeper(TestCase):
 
     def make_target(self, char_config=None):
         config = char_config or self.make_char_config()
-        return CharKeeper(Mock(), [{'config': config}])
+        return CharKeeper(Mock(),
+                          [{'config': config}],
+                          {
+                              'cancel_emergency': 'a',
+                              'start_emergency': 'b'
+                          })
 
     def make_char_config(self,
                          total_hp=TOTAL_HP,
