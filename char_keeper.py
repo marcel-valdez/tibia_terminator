@@ -5,7 +5,7 @@ from typing import List, Dict, Any
 from equipment_keeper import EquipmentKeeper
 from hp_keeper import HpKeeper
 from magic_shield_keeper import MagicShieldKeeper
-from emergency_magic_shield_keeper import EmergencyMagicShieldKeeper
+from emergency_magic_shield_keeper import EmergencyMagicShieldKeeper, MagicShieldStatus
 from mana_keeper import ManaKeeper
 from speed_keeper import SpeedKeeper
 from emergency_reporter import EmergencyReporter
@@ -13,6 +13,7 @@ from item_crosshair_macro import ItemCrosshairMacro
 from cancel_emergency_macro import CancelEmergencyMacro
 from start_emergency_macro import StartEmergencyMacro
 from macro import Macro
+from char_status import CharStatus
 
 
 class CharKeeper:
@@ -176,13 +177,34 @@ class CharKeeper:
         for macro in (macros or []):
             macro.hook_hotkey()
 
-    def handle_hp_change(self, char_status):
+    def handle_char_status(self, char_status: CharStatus):
+        # First set the emergency status, so all sub-keepers can change their
+        # their behaviours accordingly.
+        self.handle_emergency_status_change(char_status)
+
+        # Note that we have to handle stats changes always, even if they
+        # haven't actually changed, because a command to heal or drink mana
+        # or haste could be ignored if the character is exhausted, therefore
+        # we have to spam the action until the effect takes place.
+        self.handle_hp_change(char_status)
+        self.handle_mana_change(char_status)
+        self.handle_equipment(char_status)
+        self.handle_speed_change(char_status)
+
+    def handle_emergency_status_change(self, char_status: CharStatus):
+        if self.emergency_reporter.in_emergency:
+            if self.emergency_reporter.should_stop_emergency(char_status):
+                self.emergency_reporter.stop_emergency()
+        elif self.emergency_reporter.is_emergency(char_status):
+            self.emergency_reporter.start_emergency()
+
+    def handle_hp_change(self, char_status: CharStatus):
         is_downtime = self.speed_keeper.is_hasted(char_status.speed) and \
             self.mana_keeper.is_healthy_mana(char_status.mana)
 
         self.hp_keeper.handle_status_change(char_status, is_downtime)
 
-    def handle_mana_change(self, char_status):
+    def handle_mana_change(self, char_status: CharStatus):
         if self.should_skip_drinking_mana(char_status):
             return False
 
@@ -190,7 +212,7 @@ class CharKeeper:
             self.speed_keeper.is_hasted(char_status.speed)
         self.mana_keeper.handle_status_change(char_status, is_downtime)
 
-    def should_skip_drinking_mana(self, char_status):
+    def should_skip_drinking_mana(self, char_status: CharStatus):
         # Do not issue order to use mana potion if we're at critical HP levels,
         # unless we're at critical mana levels in order to avoid delaying
         # heals.
@@ -206,12 +228,12 @@ class CharKeeper:
 
         return False
 
-    def handle_speed_change(self, char_status):
+    def handle_speed_change(self, char_status: CharStatus):
         if self.should_skip_haste(char_status):
             return False
         self.speed_keeper.handle_status_change(char_status)
 
-    def should_skip_haste(self, char_status):
+    def should_skip_haste(self, char_status: CharStatus):
         # Do not issue order to haste if we're at critical HP levels.
         if self.hp_keeper.is_critical_hp(char_status.hp):
             return True
@@ -221,22 +243,20 @@ class CharKeeper:
         if self.mana_keeper.is_critical_mana(char_status.mana) and \
            not self.speed_keeper.is_paralized(char_status.speed):
             return True
-        else:
-            return False
 
-    def handle_equipment(self, char_status):
-        if not self.emergency_reporter.in_emergency and \
-           self.emergency_reporter.is_emergency(char_status):
-            self.emergency_reporter.start_emergency()
+        # Do not issue haste, if we should be casting magic shield next, since
+        # haste and magic shield share cooldowns.
+        if char_status.magic_shield_status == MagicShieldStatus.OFF_COOLDOWN and \
+            self.magic_shield_keeper.should_cast(char_status):
+            return True
 
-        if self.emergency_reporter.in_emergency and \
-           self.emergency_reporter.should_stop_emergency(char_status):
-            self.emergency_reporter.stop_emergency()
+        return False
 
+    def handle_equipment(self, char_status: CharStatus):
         self.magic_shield_keeper.handle_status_change(char_status)
         self.equipment_keeper.handle_status_change(char_status)
 
 
 class NoopKeeper:
-    def handle_status_change(self, char_status):
+    def handle_status_change(self, char_status: CharStatus):
         pass
