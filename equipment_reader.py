@@ -8,7 +8,7 @@ from window_utils import (ScreenReader, matches_screen_slow)
 from color_spec import (spec, AMULET_REPOSITORY,
                         RING_REPOSITORY, ItemName, AmuletName, RingName,
                         PixelColor)
-from lazy_evaluator import future, FutureValue
+from lazy_evaluator import immediate, future, FutureValue, TaskLoop
 from typing import Tuple, Dict, Any
 
 
@@ -110,7 +110,31 @@ MAGIC_SHIELD_COORDS = [
 ]
 
 
-class EquipmentStatus(dict):
+class DictEquipmentStatus(dict, EquipmentStatus):
+    pass
+
+
+class EquipmentStatus():
+    @property
+    def emergency_action_amulet(self):
+        return self['emergency_action_amulet']
+
+    @property
+    def equipped_amulet(self):
+        return self['equipped_amulet']
+
+    @property
+    def emergency_action_ring(self):
+        return self['emergency_action_ring']
+
+    @property
+    def equipped_ring(self):
+        return self['equipped_ring']
+
+    @property
+    def magic_shield_status(self):
+        return self['magic_shield_status']
+
     def __str__(self):
         return (
             "{\n"
@@ -123,7 +147,28 @@ class EquipmentStatus(dict):
         )
 
 
+class FutureEquipmentStatus(EquipmentStatus):
+    def __init__(self, future_values: Dict[str, FutureValue[Any]]):
+        self.future_values = future_values
+
+    def __getitem__(self, key: str) -> Any:
+        return self.future_values[key].get()
+
+    def get(self, key: str, default: Any) -> Future[Any]:
+        return self.future_values.get(key, immediate(default))
+
+
 class EquipmentReader(ScreenReader):
+    def __init__(self):
+        super().__init__()
+        self.task_loop = TaskLoop()
+
+    def start(self):
+        self.task_loop.start()
+
+    def stop(self):
+        self.task_loop.stop()
+
     def _compare_screen_coords(
             self, coords: Tuple[int, int], color_spec: Tuple[str, ...]):
         return ScreenReader.matches_screen(self, coords, color_spec)
@@ -138,7 +183,7 @@ class EquipmentReader(ScreenReader):
             return self._compare_screen_coords(coords, specs.colors)
 
     def get_equipment_status(self) -> FutureValue[EquipmentStatus]:
-        return future(lambda: EquipmentStatus({
+        return future(lambda: DictEquipmentStatus({
             'emergency_action_amulet':
                 self.get_emergency_action_bar_amulet_name(),
             'equipped_amulet':
@@ -328,7 +373,7 @@ def check_equipment_status(tibia_wid):
     eq_reader = EquipmentReader()
     def fn():
         eq_status = eq_reader.get_equipment_status().get()
-        return EquipmentStatus(eq_status)
+        return DictEquipmentStatus(eq_status)
     eq_reader.open()
     try:
         time_perf('check_equipment_status', fn)

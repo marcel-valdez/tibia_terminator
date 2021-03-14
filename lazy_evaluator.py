@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.8
 
 
-from typing import Callable, TypeVar, Generic
+from typing import Callable, TypeVar, Generic, List
 from threading import Thread, Lock, Event
 from queue import Queue
 
@@ -33,13 +33,34 @@ class LazyValueNotReadyError(Exception):
 M = TypeVar("M")
 
 class FutureValue(Generic[M]):
-    def __init__(self):
-        self._result_ready_event = Event()
+    _result_ready_event: Event = None
+    __success_cbs: List[Callable[[M], None]] = None
+    __failure_cbs: List[Callable[[Exception], None]] = None
 
-    def set_result(self, value: M, error: Exception):
+    def __init__(self,
+                 success_cb: Callable[[M], None] = None,
+                 failure_cb: Callable[[Exception], None] = None):
+        self._result_ready_event = Event()
+        self.__success_cbs = [success_cb] if success_cb is not None else []
+        self.__failure_cbs = [failure_cb] if failure_cb is not None else []
+
+    def set_result(self, value: M, error: Exception = None):
         self.value = value
         self.error = error
         self._result_ready_event.set()
+        if value is not None:
+            for success_cb in self.__success_cbs:
+                success_cb(value)
+        elif error is not None:
+            for failure_cb in self.__failure_cbs:
+                failure_cb(error)
+
+    def add_callback(success_cb: Callable[[M], None],
+                     failure_cb: Callable[[Exception], None] = None):
+        if success_cb is not None:
+            self.__success_cbs.append(success_cb)
+        if failure_cb is not None:
+            self.__failure_cbs.append(failure_cb)
 
     def __get(self):
         if self.error is not None:
@@ -134,13 +155,15 @@ class TaskLoop(Thread):
     def add_task(self, task: Callable[[], None]):
         self.task_queue.put_nowait(task)
 
-    def add_future(self, getter: Callable[[], M]) -> FutureValue[M]:
+    def add_future(self,
+                   getter: Callable[[], M],
+                   success_cb: Callable[[M], None] = None,
+                   failure_cb: Callable[[Exception], None] = None) -> FutureValue[M]:
         """Creates a future value that will be set by this task loop."""
-        future_value = FutureValue()
+        future_value = FutureValue(success_cb, failure_cb)
         def task():
             try:
-                value = getter()
-                future_value.set_result(value, None)
+                future_value.set_result(getter())
             except Exception as e:
                 future_value.set_result(None, e)
         self.add_task(task)
@@ -150,11 +173,17 @@ class TaskLoop(Thread):
 K = TypeVar("K")
 
 
-def lazy(getter: Callable[[], K]) -> LazyValue[K]:
-    return LazyValue(getter)
+def lazy(getter: Callable[[], K], **kwargs) -> LazyValue[K]:
+    return LazyValue(getter, **kwargs)
 
 
-def future(getter: Callable[[], K]) -> FutureValue[K]:
-    future_value = FutureValueAsync(getter)
+def future(getter: Callable[[], K], **kwargs) -> FutureValue[K]:
+    future_value = FutureValueAsync(getter, **kwargs)
     future_value.start()
+    return future_value
+
+
+def immediate(value: K, **kwargs) -> FutureValue[K]:
+    future_value = FutureValue(**kwargs)
+    future_value.set_result(value)
     return future_value
