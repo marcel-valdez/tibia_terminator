@@ -110,10 +110,6 @@ MAGIC_SHIELD_COORDS = [
 ]
 
 
-class DictEquipmentStatus(dict, EquipmentStatus):
-    pass
-
-
 class EquipmentStatus():
     @property
     def emergency_action_amulet(self):
@@ -147,6 +143,10 @@ class EquipmentStatus():
         )
 
 
+class DictEquipmentStatus(dict, EquipmentStatus):
+    pass
+
+
 class FutureEquipmentStatus(EquipmentStatus):
     def __init__(self, future_values: Dict[str, FutureValue[Any]]):
         self.future_values = future_values
@@ -154,7 +154,7 @@ class FutureEquipmentStatus(EquipmentStatus):
     def __getitem__(self, key: str) -> Any:
         return self.future_values[key].get()
 
-    def get(self, key: str, default: Any) -> Future[Any]:
+    def get(self, key: str, default: Any) -> FutureValue[Any]:
         return self.future_values.get(key, immediate(default))
 
 
