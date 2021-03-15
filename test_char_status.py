@@ -10,13 +10,13 @@ class TestCharStatusAsync(TestCase):
     def test_gets_values(self):
         # given
         stats = immediate({'mana': 1, 'speed': 2, 'hp': 3, 'magic_shield': 4})
-        equipment = immediate({
-            'emergency_action_amulet': 'a',
-            'emergency_action_ring': 'b',
-            'equipped_amulet': 'c',
-            'equipped_ring': 'd',
-            'magic_shield_status': 'e',
-        })
+        equipment = {
+            'emergency_action_amulet': immediate('a'),
+            'emergency_action_ring': immediate('b'),
+            'equipped_amulet': immediate('c'),
+            'equipped_ring': immediate('d'),
+            'magic_shield_status': immediate('e'),
+        }
         # when
         target = CharStatusAsync(stats, equipment)
         # then

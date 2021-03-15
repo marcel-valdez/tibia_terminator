@@ -2,13 +2,15 @@
 
 import argparse
 import curses
+import sys
+
 from queue import Queue
 from logger import get_debug_level
 from threading import Thread, Lock
 from time import sleep
 from char_status import CharStatus
 
-from typing import List
+from typing import List, Any
 
 
 parser = argparse.ArgumentParser(
@@ -241,16 +243,26 @@ class RunView(View):
         if debug_level <= get_debug_level():
             self.action_log_queue.put_nowait(log)
 
-    def set_char_status(self, char_status: CharStatus):
+    def set_char_stats(self, char_status: CharStatus):
         self.mana = char_status.mana
         self.hp = char_status.hp
         self.speed = char_status.speed
         self.magic_shield_level = char_status.magic_shield_level
-        self.emergency_action_amulet = char_status.emergency_action_amulet
-        self.emergency_action_ring = char_status.emergency_action_ring
-        self.equipped_ring = char_status.equipped_ring
-        self.equipped_amulet = char_status.equipped_amulet
-        self.magic_shield_status = char_status.magic_shield_status
+
+    def set_emergency_action_amulet(self, value: Any = 'N/A'):
+        self.emergency_action_amulet = str(value)
+
+    def set_emergency_action_ring(self, value: Any = 'N/A'):
+        self.emergency_action_ring = str(value)
+
+    def set_equipped_ring(self, value: Any = 'N/A'):
+        self.equipped_ring = str(value)
+
+    def set_equipped_amulet(self, value: Any = 'N/A'):
+        self.equipped_amulet = str(value)
+
+    def set_magic_shield_status(self, value: Any = 'N/A'):
+        self.magic_shield_status = str(value)
 
     def render(self, cli_screen: CliScreen):
         self.render_header(cli_screen)
@@ -351,7 +363,12 @@ def stress_run_view(cliwin):
     try:
         i = 0
         while True:
-            view.set_char_status(char_status)
+            view.set_char_stats(char_status)
+            view.set_magic_shield_status(char_status.magic_shield_status)
+            view.set_equipped_ring(char_status.equipped_ring)
+            view.set_equipped_amulet(char_status.equipped_amulet)
+            view.set_emergency_action_amulet(char_status.emergency_action_amulet)
+            view.set_emergency_action_ring(char_status.emergency_action_ring)
             view.add_log(
                 f"This is log #{i} and it is very very long. Let us see.", -100)
             view.error = f"Number of log entries: {i}"

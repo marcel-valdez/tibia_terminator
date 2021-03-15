@@ -1,9 +1,8 @@
 """Knows the character's status."""
 
-
 from typing import Dict, Any, TypeVar
 from color_spec import (AmuletName, RingName)
-from lazy_evaluator import FutureValue, future
+from lazy_evaluator import FutureValue, future, immediate
 
 
 class CharStatus:
@@ -28,7 +27,7 @@ class CharStatus:
 class CharStatusAsync(CharStatus):
     def __init__(self,
                  future_stats: FutureValue[Dict[str, int]],
-                 future_eq_status: FutureValue[Dict[str, Any]]):
+                 future_eq_status: Dict[str, FutureValue[Any]]):
         self.__future_stats = future_stats
         self.__future_eq_status = future_eq_status
 
@@ -39,7 +38,7 @@ class CharStatusAsync(CharStatus):
     K = TypeVar('K')
 
     def __get_eq_status(self, name: str, default_value: K) -> K:
-        return self.__future_eq_status.get().get(name, default_value)
+        return self.__future_eq_status.get(name, immediate(default_value)).get()
 
     @property
     def hp(self) -> int:

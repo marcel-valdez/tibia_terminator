@@ -242,14 +242,21 @@ class TibiaTerminator:
     def gen_char_status(self) -> CharStatus:
         return CharStatusAsync(
             self.char_reader.get_stats(),
-            self.equipment_reader.get_equipment_status())
+            self.equipment_reader.get_equipment_status(
+                emergency_action_amulet_cb=self.view.set_emergency_action_amulet,
+                emergency_action_ring_cb=self.view.set_emergency_action_ring,
+                equipped_amulet_cb=self.view.set_equipped_amulet,
+                equipped_ring_cb=self.view.set_equipped_ring,
+                magic_shield_status_cb=self.view.set_magic_shield_status
+            ))
 
     def handle_running_state(self):
         char_status = self.gen_char_status()
         self.char_keeper.handle_char_status(char_status)
+        self.equipment_reader.cancel_pending_futures()
         # implicitly waits for all FutureValue objects, since it
         # tries to fetch all values in order to print to screen
-        self.view.set_char_status(char_status)
+        self.view.set_char_stats(char_status)
         if self.char_keeper.emergency_reporter.in_emergency:
             self.view.emergency_status = 'ON'
         else:

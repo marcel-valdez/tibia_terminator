@@ -9,7 +9,7 @@ from color_spec import (spec, AMULET_REPOSITORY,
                         RING_REPOSITORY, ItemName, AmuletName, RingName,
                         PixelColor)
 from lazy_evaluator import immediate, future, FutureValue, TaskLoop
-from typing import Tuple, Dict, Any
+from typing import Tuple, Dict, Any, Callable
 
 
 parser = argparse.ArgumentParser(
@@ -158,16 +158,24 @@ class FutureEquipmentStatus(EquipmentStatus):
         return self.future_values.get(key, immediate(default))
 
 
+NOOP: Callable[[str], None] = lambda x: None
 class EquipmentReader(ScreenReader):
+
     def __init__(self):
         super().__init__()
         self.task_loop = TaskLoop()
 
-    def start(self):
+    def open(self):
+        super().open()
         self.task_loop.start()
 
     def stop(self):
+        super().close()
         self.task_loop.stop()
+
+    def cancel_pending_futures(self):
+        """Cancels pending future values for equipment status"""
+        self.task_loop.cancel_pending_tasks()
 
     def _compare_screen_coords(
             self, coords: Tuple[int, int], color_spec: Tuple[str, ...]):
@@ -182,19 +190,41 @@ class EquipmentReader(ScreenReader):
         else:
             return self._compare_screen_coords(coords, specs.colors)
 
-    def get_equipment_status(self) -> FutureValue[EquipmentStatus]:
-        return future(lambda: DictEquipmentStatus({
-            'emergency_action_amulet':
-                self.get_emergency_action_bar_amulet_name(),
-            'equipped_amulet':
-                self.get_equipped_amulet_name(),
-            'emergency_action_ring':
-                self.get_emergency_action_bar_ring_name(),
-            'equipped_ring':
-                self.get_equipped_ring_name(),
-            'magic_shield_status':
-                self.get_magic_shield_status(),
-        }))
+    def get_equipment_status(
+        self,
+        emergency_action_amulet_cb: Callable[[str], None] = NOOP,
+        emergency_action_ring_cb: Callable[[str], None] = NOOP,
+        equipped_ring_cb: Callable[[str], None] = NOOP,
+        equipped_amulet_cb: Callable[[str], None] = NOOP,
+        magic_shield_status_cb: Callable[[str], None] = NOOP
+    ) -> EquipmentStatus:
+        return FutureEquipmentStatus({
+            'emergency_action_amulet': self.task_loop.add_future(
+                    self.get_emergency_action_bar_amulet_name,
+                    emergency_action_amulet_cb,
+                    lambda e: emergency_action_amulet_cb('ERROR, check logs')
+                ),
+            'equipped_amulet': self.task_loop.add_future(
+                    self.get_equipped_amulet_name,
+                    equipped_amulet_cb,
+                    lambda e: equipped_amulet_cb('ERROR, check logs')
+                ),
+            'emergency_action_ring': self.task_loop.add_future(
+                    self.get_emergency_action_bar_ring_name,
+                    emergency_action_ring_cb,
+                    lambda e: emergency_action_ring_cb('ERROR, check logs')
+                ),
+            'equipped_ring': self.task_loop.add_future(
+                    self.get_equipped_ring_name,
+                    equipped_ring_cb,
+                    lambda e: equipped_ring_cb('ERROR, check logs')
+                ),
+            'magic_shield_status': self.task_loop.add_future(
+                self.get_magic_shield_status,
+                magic_shield_status_cb,
+                lambda e: magic_shield_status_cb('ERROR, check logs')
+            )
+        })
 
     def get_emergency_action_bar_amulet_name(self) -> AmuletName:
         color_spec = spec(*self.get_pixels(EMERGENCY_ACTION_BAR_AMULET_COORDS))
@@ -371,12 +401,11 @@ def check_magic_shield_status(tibia_wid):
 
 def check_equipment_status(tibia_wid):
     eq_reader = EquipmentReader()
-    def fn():
-        eq_status = eq_reader.get_equipment_status().get()
-        return DictEquipmentStatus(eq_status)
     eq_reader.open()
+    def read():
+        return f'{eq_reader.get_equipment_status()}'
     try:
-        time_perf('check_equipment_status', fn)
+        time_perf('check_equipment_status', read)
     finally:
         eq_reader.close()
 
