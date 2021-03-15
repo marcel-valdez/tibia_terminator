@@ -25,18 +25,16 @@ class MagicShieldKeeper:
         if char_status.hp > self.total_hp:
             self.total_hp = char_status.hp
 
-        magic_shield_status = char_status.magic_shield_status
         if (self.last_attempted_cast_ts is not None and
             self.prev_magic_shield_status is MagicShieldStatus.OFF_COOLDOWN and
-            (magic_shield_status is MagicShieldStatus.RECENTLY_CAST or
-             magic_shield_status is MagicShieldStatus.ON_COOLDOWN)):
+            (char_status.magic_shield_status is MagicShieldStatus.RECENTLY_CAST or
+             char_status.magic_shield_status is MagicShieldStatus.ON_COOLDOWN)):
             self.last_cast_ts = self.last_attempted_cast_ts
             self.last_attempted_cast_ts = None
 
-        self.prev_magic_shield_status = magic_shield_status
-
-        if (char_status.magic_shield_status is MagicShieldStatus.OFF_COOLDOWN
-                and self.should_cast(char_status)):
+        self.prev_magic_shield_status = char_status.magic_shield_status
+        if (self.should_cast(char_status) and
+            char_status.magic_shield_status is MagicShieldStatus.OFF_COOLDOWN):
             self.last_attempted_cast_ts = self.timestamp_secs()
             self.cast()
         elif self.should_cast_cancel(char_status):
