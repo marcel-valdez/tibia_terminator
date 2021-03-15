@@ -1,5 +1,6 @@
 #!/usr/bin/env python3.8
 
+import sys
 
 from typing import Callable, TypeVar, Generic, List
 from threading import Thread, Lock, Event
@@ -128,6 +129,7 @@ class LazyValue(Generic[N]):
 class TaskLoop(Thread):
     """Daemon thread that executes tasks that provide Future values."""
     STOP = "__STOP__TaskLoop"
+    NOOP = "__NOOP__TaskLoop"
     task_queue: Queue = None
     cancel_pending_tasks: bool = False
 
@@ -137,7 +139,11 @@ class TaskLoop(Thread):
 
     def cancel_pending_tasks(self):
         """Cancels pending tasks by clearing them."""
+        # IMPORTANT: Not optimized for thread-safety, there may be issues
+        # when this is executed under concurrent/parallel execution.
+        old_task_queue = self.task_queue
         self.task_queue = Queue()
+        old_task_queue.put_nowait(TaskLoop.NOOP)
 
     def stop(self):
         """Completely stops this task loop and becomes unusable."""
@@ -146,11 +152,16 @@ class TaskLoop(Thread):
     def run(self):
         while True:
             next_task = self.task_queue.get()
+            if next_task is TaskLoop.NOOP:
+                continue
             if next_task is TaskLoop.STOP:
                 self.cancel_pending_tasks()
                 break
             else:
-                next_task()
+                try:
+                    next_task()
+                except Exception as e:
+                    print(f'[ERROR] TaskLoop.run: {e}', file=sys.stderr)
 
     def add_task(self, task: Callable[[], None]):
         self.task_queue.put_nowait(task)
