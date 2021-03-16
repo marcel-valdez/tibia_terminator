@@ -2,6 +2,11 @@
 *.bak
 \#*\#
 credentials.py
+src/credentials.py
+src/app_config.py
+src/char_config.py
+scripts/user/*
+src/char_configs/*
 .tibia_reconnector.lock
 char_configs
 char_config.py
