@@ -5,6 +5,7 @@ import time
 import curses
 import sys
 
+from collections import deque
 from typing import Dict, Any
 from char_status import CharStatus
 from lazy_evaluator import FutureValue
@@ -59,7 +60,8 @@ SPACE_KEYCODE_A = 263
 SPACE_KEYCODE_B = 32
 ENTER_KEYCODE = 10
 ESCAPE_KEY = 27
-LOOP_FREQ_MS = 100
+LOOP_FREQ_MS = 50
+AVG_LOOP_TIME_SAMPLE_SIZE = 50
 
 RUNNING_STATE_MAIN_OPTIONS_MSG = "[Space]: Pause, [Esc]: Exit, [Enter]: Config selection."
 PAUSED_STATE_MAIN_OPTIONS_MSG = "[Space]: Resume, [Esc]: Exit, [Enter]: Config selection."
@@ -117,6 +119,8 @@ class TibiaTerminator:
         self.app_state = None
         self.selected_config_name = char_configs[0]["name"]
         self.view = None
+        self.loop_times = deque([0], AVG_LOOP_TIME_SAMPLE_SIZE)
+        self.loop_times_sum = 0
 
     def monitor_char(self):
         # TODO: Rather than hardcoding these values, implement the init_*
@@ -251,6 +255,7 @@ class TibiaTerminator:
             ))
 
     def handle_running_state(self):
+        start = time.time()
         char_status = self.gen_char_status()
         self.char_keeper.handle_char_status(char_status)
         self.equipment_reader.cancel_pending_futures()
@@ -261,10 +266,17 @@ class TibiaTerminator:
             self.view.emergency_status = 'ON'
         else:
             self.view.emergency_status = 'OFF'
+        end = time.time()
+        self.add_elapsed_loop_time((end - start) * 1000)
+
+    def add_elapsed_loop_time(self, elapsed_ms: int):
+        self.loop_times_sum += elapsed_ms - self.loop_times[0]
+        self.loop_times.append(elapsed_ms)
+        self.avg_loop_time_ms = self.loop_times_sum / len(self.loop_times)
+        self.view.set_debug_line(f"Avg loop time: {int(self.avg_loop_time_ms)} ms")
 
     def exit_running_state(self):
         self.stats_logger.run_view = None
-        pass
 
     def enter_paused_state(self):
         self.loot_macro.unhook_hotkey()

@@ -235,6 +235,7 @@ class RunView(View):
         self.equipped_ring = 'N/A'
         self.magic_shield_status = 'N/A'
         self.emergency_status = 'N/A'
+        self.debug_line = ''
         self.action_log_queue = Queue()
         self.log_entries = []
         self.lock = Lock()
@@ -242,6 +243,9 @@ class RunView(View):
     def add_log(self, log, debug_level=0):
         if debug_level <= get_debug_level():
             self.action_log_queue.put_nowait(log)
+
+    def set_debug_line(self, debug_line: str = ''):
+        self.debug_line = debug_line
 
     def set_char_stats(self, char_status: CharStatus):
         self.mana = char_status.mana
@@ -267,6 +271,7 @@ class RunView(View):
     def render(self, cli_screen: CliScreen):
         self.render_header(cli_screen)
         self.render_stats(cli_screen)
+        self.render_debug_line(cli_screen)
         self.render_logs(cli_screen)
         cli_screen.refresh()
 
@@ -315,6 +320,9 @@ class RunView(View):
                          RunView.MAGIC_SHIELD_STATUS_ROW)
         cli_screen.print(f"Emergency Status: {self.emergency_status}",
                          RunView.EMERGENCY_STATUS_ROW)
+
+    def render_debug_line(self, cli_screen: CliScreen):
+        cli_screen.print(self.debug_line, RunView.DEBUG_ROW)
 
 
 def stress_run_view(cliwin):

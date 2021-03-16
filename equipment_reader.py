@@ -199,31 +199,31 @@ class EquipmentReader(ScreenReader):
         magic_shield_status_cb: Callable[[str], None] = NOOP
     ) -> EquipmentStatus:
         return FutureEquipmentStatus({
-            'emergency_action_amulet': self.task_loop.add_future(
-                    self.get_emergency_action_bar_amulet_name,
-                    emergency_action_amulet_cb,
-                    lambda e: emergency_action_amulet_cb('ERROR, check logs')
-                ),
             'equipped_amulet': self.task_loop.add_future(
-                    self.get_equipped_amulet_name,
-                    equipped_amulet_cb,
-                    lambda e: equipped_amulet_cb('ERROR, check logs')
-                ),
-            'emergency_action_ring': self.task_loop.add_future(
-                    self.get_emergency_action_bar_ring_name,
-                    emergency_action_ring_cb,
-                    lambda e: emergency_action_ring_cb('ERROR, check logs')
-                ),
+                self.get_equipped_amulet_name,
+                equipped_amulet_cb,
+                lambda e: equipped_amulet_cb('ERROR, check logs')
+            ),
             'equipped_ring': self.task_loop.add_future(
-                    self.get_equipped_ring_name,
-                    equipped_ring_cb,
-                    lambda e: equipped_ring_cb('ERROR, check logs')
-                ),
+                self.get_equipped_ring_name,
+                equipped_ring_cb,
+                lambda e: equipped_ring_cb('ERROR, check logs')
+            ),
             'magic_shield_status': self.task_loop.add_future(
                 self.get_magic_shield_status,
                 magic_shield_status_cb,
                 lambda e: magic_shield_status_cb('ERROR, check logs')
-            )
+            ),
+            'emergency_action_amulet': self.task_loop.add_future(
+                self.get_emergency_action_bar_amulet_name,
+                emergency_action_amulet_cb,
+                lambda e: emergency_action_amulet_cb('ERROR, check logs')
+            ),
+            'emergency_action_ring': self.task_loop.add_future(
+                self.get_emergency_action_bar_ring_name,
+                emergency_action_ring_cb,
+                lambda e: emergency_action_ring_cb('ERROR, check logs')
+            ),
         })
 
     def get_emergency_action_bar_amulet_name(self) -> AmuletName:
