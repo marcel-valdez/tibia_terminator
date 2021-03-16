@@ -34,6 +34,7 @@ class Command():
     def _send(self, tibia_wid):
         raise Exception("Needs to be implemented by subclass")
 
+
 class KeeperHotkeyCommand(Command):
     """Hotkey command issued by one of Terminator's keepers."""
 

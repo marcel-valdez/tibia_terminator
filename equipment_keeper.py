@@ -55,8 +55,6 @@ class EquipmentKeeper:
         # stay emergency mode until emergency equipment is off
         if self.is_emergency_ring_on(char_status):
             if self.secs_since_toggle_emergency_ring() >= DEFAULT_EQUIP_EMERGENCY_FREQ:
-                # this may be a problem if we run out of 'normal' rings, since
-                # we won't be able to get rid of the emergency ring.
                 self.toggle_emergency_ring()
             elif self.secs_since_equip_ring() >= DEFAULT_EQUIP_FREQ:
                 self.equip_ring()

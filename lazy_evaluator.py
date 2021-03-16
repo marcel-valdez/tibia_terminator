@@ -143,6 +143,15 @@ class TaskLoop(Thread):
         # when this is executed under concurrent/parallel execution.
         old_task_queue = self.task_queue
         self.task_queue = Queue()
+        # NOTE: If threads were waiting on cancelled tasks, they will be stuck
+        # forever consider adding a mechanism to throw an forcefully throw an
+        # exception in order to signal to those threads that their task got
+        # cancelled.
+        # At the moment task loop does not care if the implementation of the
+        # task is actually a future or just a plain old function. We should do
+        # the opposite, always use a future value, and wrap plain old functions
+        # in future values; then execute:
+        #     task.set_result(None, TaskCancelledException(...))
         old_task_queue.put_nowait(TaskLoop.NOOP)
 
     def stop(self):
