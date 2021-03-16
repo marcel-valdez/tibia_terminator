@@ -472,7 +472,6 @@ function wait_for_mana() {
 }
 
 function is_logged_out {
-  echo is logged out?
   ! python_bin "${RECONNECTOR_BIN}" --check_if_ingame "${tibia_pid}"
 }
 
