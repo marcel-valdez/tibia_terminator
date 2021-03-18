@@ -7,8 +7,8 @@ from interface.macro.cancel_emergency_macro import CancelEmergencyMacro
 from interface.macro.item_crosshair_macro import ItemCrosshairMacro
 from interface.macro.macro import Macro
 from interface.macro.start_emergency_macro import StartEmergencyMacro
-from keeper.emergency_magic_shield_keeper import (EmergencyMagicShieldKeeper,
-                                                  MagicShieldStatus)
+from keeper.emergency_magic_shield_keeper import EmergencyMagicShieldKeeper
+from reader.equipment_reader import MagicShieldStatus
 from keeper.emergency_reporter import EmergencyReporter
 from keeper.equipment_keeper import EquipmentKeeper
 from keeper.hp_keeper import HpKeeper
