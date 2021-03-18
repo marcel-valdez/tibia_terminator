@@ -4,9 +4,9 @@ from keeper.emergency_reporter import EmergencyReporter
 
 
 class HpKeeper:
-    def __init__(self, client, emergency_reporter: EmergencyReporter,
-                 total_hp, heal_at_missing, exura_heal,
-                 exura_gran_heal, downtime_heal_at_missing):
+    def __init__(self, client, emergency_reporter: EmergencyReporter, total_hp,
+                 heal_at_missing, exura_heal, exura_gran_heal,
+                 downtime_heal_at_missing):
         self.client = client
         self.emergency_reporter = emergency_reporter
         self.total_hp = total_hp

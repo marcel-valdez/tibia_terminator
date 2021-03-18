@@ -1,15 +1,14 @@
 """Keeps the character healthy in every way."""
 
-from typing import List, Dict, Any
+from typing import List, Dict
 
 from common.char_status import CharStatus
 from interface.macro.cancel_emergency_macro import CancelEmergencyMacro
 from interface.macro.item_crosshair_macro import ItemCrosshairMacro
 from interface.macro.macro import Macro
 from interface.macro.start_emergency_macro import StartEmergencyMacro
-from keeper.emergency_magic_shield_keeper import (
-    EmergencyMagicShieldKeeper, MagicShieldStatus
-)
+from keeper.emergency_magic_shield_keeper import (EmergencyMagicShieldKeeper,
+                                                  MagicShieldStatus)
 from keeper.emergency_reporter import EmergencyReporter
 from keeper.equipment_keeper import EquipmentKeeper
 from keeper.hp_keeper import HpKeeper
@@ -19,10 +18,15 @@ from keeper.speed_keeper import SpeedKeeper
 
 
 class CharKeeper:
-    def __init__(self, client, char_configs, hotkeys: Dict[str, str],
+    def __init__(self,
+                 client,
+                 char_configs,
+                 hotkeys: Dict[str, str],
                  emergency_reporter=None,
-                 mana_keeper=None, hp_keeper=None,
-                 speed_keeper=None, equipment_keeper=None,
+                 mana_keeper=None,
+                 hp_keeper=None,
+                 speed_keeper=None,
+                 equipment_keeper=None,
                  magic_shield_keeper=None,
                  item_crosshair_macros=None,
                  core_macros=None):
@@ -40,7 +44,8 @@ class CharKeeper:
         self.init_equipment_keeper(client, char_config, equipment_keeper)
         self.init_magic_shield_keeper(client, char_config, magic_shield_keeper)
         self.init_item_crosshair_macros(
-            char_config.get('item_crosshair_macros', []), item_crosshair_macros)
+            char_config.get('item_crosshair_macros', []),
+            item_crosshair_macros)
         self.init_core_macros(self.hotkeys, core_macros)
 
     def change_char_config(self, index):
@@ -67,38 +72,39 @@ class CharKeeper:
 
     def init_mana_keeper(self, client, char_config, mana_keeper=None):
         if mana_keeper is None:
-            self.mana_keeper = ManaKeeper(
-                client, char_config['mana_hi'],
-                char_config['mana_lo'], char_config['critical_mana'],
-                char_config['downtime_mana'], char_config['total_mana'])
+            self.mana_keeper = ManaKeeper(client, char_config['mana_hi'],
+                                          char_config['mana_lo'],
+                                          char_config['critical_mana'],
+                                          char_config['downtime_mana'],
+                                          char_config['total_mana'])
         else:
             self.mana_keeper = mana_keeper
 
     def init_hp_keeper(self, client, char_config, hp_keeper=None):
         if hp_keeper is None:
-            self.hp_keeper = HpKeeper(
-                client, self.emergency_reporter, char_config['total_hp'],
-                char_config['heal_at_missing'], char_config['exura_heal'],
-                char_config['exura_gran_heal'],
-                char_config['downtime_heal_at_missing'])
+            self.hp_keeper = HpKeeper(client, self.emergency_reporter,
+                                      char_config['total_hp'],
+                                      char_config['heal_at_missing'],
+                                      char_config['exura_heal'],
+                                      char_config['exura_gran_heal'],
+                                      char_config['downtime_heal_at_missing'])
         else:
             self.hp_keeper = hp_keeper
 
     def init_speed_keeper(self, client, char_config, speed_keeper=None):
         if speed_keeper is None:
-            self.speed_keeper = SpeedKeeper(
-                client,
-                char_config['base_speed'],
-                char_config['hasted_speed'])
+            self.speed_keeper = SpeedKeeper(client, char_config['base_speed'],
+                                            char_config['hasted_speed'])
         else:
             self.speed_keeper = speed_keeper
 
-    def init_equipment_keeper(self, client, char_config,
+    def init_equipment_keeper(self,
+                              client,
+                              char_config,
                               equipment_keeper=None):
         if equipment_keeper is None:
             self.equipment_keeper = EquipmentKeeper(
-                client,
-                self.emergency_reporter,
+                client, self.emergency_reporter,
                 char_config['should_equip_amulet'],
                 char_config['should_equip_ring'],
                 char_config['should_eat_food'],
@@ -107,7 +113,9 @@ class CharKeeper:
         else:
             self.equipment_keeper = equipment_keeper
 
-    def init_magic_shield_keeper(self, client, char_config,
+    def init_magic_shield_keeper(self,
+                                 client,
+                                 char_config,
                                  magic_shield_keeper=None):
         magic_shield_type = char_config.get('magic_shield_type', None)
         if magic_shield_keeper is not None:
@@ -119,9 +127,8 @@ class CharKeeper:
                 char_config['magic_shield_treshold'])
         elif magic_shield_type == "emergency":
             self.magic_shield_keeper = EmergencyMagicShieldKeeper(
-                client, self.emergency_reporter,
-                char_config['total_hp'], char_config['mana_lo'],
-                char_config['magic_shield_treshold'])
+                client, self.emergency_reporter, char_config['total_hp'],
+                char_config['mana_lo'], char_config['magic_shield_treshold'])
         elif magic_shield_type is None:
             self.magic_shield_keeper = NoopKeeper()
         elif magic_shield_type is not None:
@@ -142,7 +149,8 @@ class CharKeeper:
         self.__unhook_macros(self.item_crosshair_macros)
         self.item_crosshair_macros = []
 
-    def init_core_macros(self, hotkeys_configs: Dict[str, str],
+    def init_core_macros(self,
+                         hotkeys_configs: Dict[str, str],
                          core_macros: List[Macro] = None):
         self.unload_core_macros()
         if core_macros is not None:
@@ -151,14 +159,14 @@ class CharKeeper:
             cancel_emergency_key = hotkeys_configs.get('cancel_emergency')
             if cancel_emergency_key is not None:
                 self.core_macros.append(
-                    CancelEmergencyMacro(
-                        self.emergency_reporter, cancel_emergency_key))
+                    CancelEmergencyMacro(self.emergency_reporter,
+                                         cancel_emergency_key))
 
             start_emergency_key = hotkeys_configs.get('start_emergency')
             if start_emergency_key is not None:
                 self.core_macros.append(
-                    StartEmergencyMacro(
-                        self.emergency_reporter, start_emergency_key))
+                    StartEmergencyMacro(self.emergency_reporter,
+                                        start_emergency_key))
 
     def unload_core_macros(self):
         self.__unhook_macros(self.core_macros)
@@ -249,8 +257,8 @@ class CharKeeper:
 
         # Do not issue haste, if we should be casting magic shield next, since
         # haste and magic shield share cooldowns.
-        if char_status.magic_shield_status == MagicShieldStatus.OFF_COOLDOWN and \
-            self.magic_shield_keeper.should_cast(char_status):
+        if (char_status.magic_shield_status == MagicShieldStatus.OFF_COOLDOWN
+                and self.magic_shield_keeper.should_cast(char_status)):
             return True
 
         return False

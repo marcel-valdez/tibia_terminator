@@ -26,15 +26,17 @@ class MagicShieldKeeper:
             self.total_hp = char_status.hp
 
         if (self.last_attempted_cast_ts is not None and
-            self.prev_magic_shield_status is MagicShieldStatus.OFF_COOLDOWN and
-            (char_status.magic_shield_status is MagicShieldStatus.RECENTLY_CAST or
-             char_status.magic_shield_status is MagicShieldStatus.ON_COOLDOWN)):
+                self.prev_magic_shield_status is MagicShieldStatus.OFF_COOLDOWN
+                and
+            (char_status.magic_shield_status is MagicShieldStatus.RECENTLY_CAST
+             or char_status.magic_shield_status is
+             MagicShieldStatus.ON_COOLDOWN)):
             self.last_cast_ts = self.last_attempted_cast_ts
             self.last_attempted_cast_ts = None
 
         self.prev_magic_shield_status = char_status.magic_shield_status
-        if (self.should_cast(char_status) and
-            char_status.magic_shield_status is MagicShieldStatus.OFF_COOLDOWN):
+        if (self.should_cast(char_status) and char_status.magic_shield_status
+                is MagicShieldStatus.OFF_COOLDOWN):
             self.last_attempted_cast_ts = self.timestamp_secs()
             self.cast()
         elif self.should_cast_cancel(char_status):
@@ -46,10 +48,9 @@ class MagicShieldKeeper:
         if char_status.mana <= self.total_hp * 1.5:
             return False
 
-        return (
-            char_status.magic_shield_level <= self.magic_shield_treshold or
-            self.secs_since_cast() >= MAGIC_SHIELD_DURATION_SECS - 10
-        ) and char_status.mana >= self.total_hp
+        return (char_status.magic_shield_level <= self.magic_shield_treshold
+                or self.secs_since_cast() >= MAGIC_SHIELD_DURATION_SECS - 10
+                ) and char_status.mana >= self.total_hp
 
     def should_cast_cancel(self, char_status):
         # cancel magic shield if we have less mana than 125% total HP

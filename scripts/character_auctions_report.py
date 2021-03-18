@@ -1,4 +1,4 @@
-#!/usr/bin/env python38
+#!/usr/bin/env python3.8
 """Script to produce character auction reports in .csv format."""
 
 import os
@@ -10,18 +10,20 @@ import requests
 import tibiapy
 from tibiapy import Client
 
-
 MELEE_SKILLS = ['sword', 'axe', 'club']
 USEFUL_SKILLS = ['magic', 'distance', 'sword', 'axe', 'club']
 
 parser = argparse.ArgumentParser(
     description='Tibia auction history report generator.')
-parser.add_argument('output_file', help='File onto which to print the report',
+parser.add_argument('output_file',
+                    help='File onto which to print the report',
                     default='auctions.csv')
-parser.add_argument('--page_start', help='Page number at which to start processing',
+parser.add_argument('--page_start',
+                    help='Page number at which to start processing',
                     type=int,
                     default=1)
-parser.add_argument('--page_count', help='Number of character pages to process',
+parser.add_argument('--page_count',
+                    help='Number of character pages to process',
                     type=int,
                     default=10000)
 
@@ -29,6 +31,7 @@ parser.add_argument('--page_count', help='Number of character pages to process',
 def debug(msg):
     if os.environ.get('DEBUG') is not None:
         print(msg)
+
 
 def get_character(name):
     """Fetch a character using requests instead of aiohttp."""
@@ -70,7 +73,6 @@ async def get_character_auction_history(page_start=1, total_pages=10000):
                     'status': auction_entry.status,
                     'char_url': auction_entry.character_url,
                     'auction_url': auction_entry.url,
-                    'level': auction_entry.level,
                     'start': auction_entry.auction_start,
                     'end': auction_entry.auction_end
                 }
@@ -93,11 +95,7 @@ async def get_character_auction_history(page_start=1, total_pages=10000):
 
 
 def extract_skills_from_sales_argument(sales_arguments):
-    skills = {
-        'magic': 1,
-        'distance': 13,
-        'melee': 13
-    }
+    skills = {'magic': 1, 'distance': 13, 'melee': 13}
     updated = False
     melee = 0
     for sales_argument in sales_arguments:
@@ -152,7 +150,8 @@ def auctions_to_csv(auctions, filename, write_header=True):
         if write_header:
             file.write(','.join(keys) + '\n')
         for auction in auctions:
-            file.write(','.join(map(lambda key: str(auction[key]), keys)) + '\n')
+            file.write(','.join(map(lambda key: str(auction[key]), keys)) +
+                       '\n')
 
 
 async def main(output_file, page_start, page_count):

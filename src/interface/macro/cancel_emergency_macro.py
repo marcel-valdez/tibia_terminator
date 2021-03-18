@@ -1,8 +1,8 @@
 #!/usr/bin/env python3.8
 
-
 from interface.macro.macro import Macro
 from keeper.emergency_reporter import EmergencyReporter
+
 
 class CancelEmergencyMacro(Macro):
     def __init__(self, emergency_reporter: EmergencyReporter, hotkey: str):

@@ -16,8 +16,12 @@ class EquipmentMode:
 
 
 class EquipmentKeeper:
-    def __init__(self, client, emergency_reporter,
-                 should_equip_amulet, should_equip_ring, should_eat_food,
+    def __init__(self,
+                 client,
+                 emergency_reporter,
+                 should_equip_amulet,
+                 should_equip_ring,
+                 should_eat_food,
                  equip_amulet_secs=DEFAULT_EQUIP_FREQ,
                  equip_ring_secs=DEFAULT_EQUIP_FREQ):
         self.client = client
@@ -42,10 +46,10 @@ class EquipmentKeeper:
         if next_mode == EquipmentMode.EMERGENCY:
             self.handle_emergency_status_change(char_status)
             self.prev_mode = next_mode
-        elif (next_mode == EquipmentMode.NORMAL and
-              self.prev_mode == EquipmentMode.EMERGENCY and
-              (self.is_emergency_ring_on(char_status) or
-               self.is_emergency_amulet_on(char_status))):
+        elif (next_mode == EquipmentMode.NORMAL
+              and self.prev_mode == EquipmentMode.EMERGENCY
+              and (self.is_emergency_ring_on(char_status)
+                   or self.is_emergency_amulet_on(char_status))):
             self.handle_emergency_transition_change(char_status)
         else:
             self.handle_normal_status_change(char_status)
@@ -54,13 +58,15 @@ class EquipmentKeeper:
     def handle_emergency_transition_change(self, char_status):
         # stay emergency mode until emergency equipment is off
         if self.is_emergency_ring_on(char_status):
-            if self.secs_since_toggle_emergency_ring() >= DEFAULT_EQUIP_EMERGENCY_FREQ:
+            if self.secs_since_toggle_emergency_ring(
+            ) >= DEFAULT_EQUIP_EMERGENCY_FREQ:
                 self.toggle_emergency_ring()
             elif self.secs_since_equip_ring() >= DEFAULT_EQUIP_FREQ:
                 self.equip_ring()
 
         if self.is_emergency_amulet_on(char_status):
-            if self.secs_since_toggle_emergency_amulet() >= DEFAULT_EQUIP_EMERGENCY_FREQ:
+            if self.secs_since_toggle_emergency_amulet(
+            ) >= DEFAULT_EQUIP_EMERGENCY_FREQ:
                 self.toggle_emergency_amulet()
             elif self.secs_since_equip_amulet() >= DEFAULT_EQUIP_FREQ:
                 self.equip_amulet()
@@ -69,28 +75,27 @@ class EquipmentKeeper:
         if char_status.emergency_action_amulet == AmuletName.UNKNOWN:
             # Use normal amulets when we don't have emergency amulets
             self.handle_equip_amulet_normal(char_status)
-        elif (not self.is_emergency_amulet_on(char_status) and
-            self.secs_since_toggle_emergency_amulet() >=
-                DEFAULT_EQUIP_EMERGENCY_FREQ):
+        elif (not self.is_emergency_amulet_on(char_status)
+              and self.secs_since_toggle_emergency_amulet() >=
+              DEFAULT_EQUIP_EMERGENCY_FREQ):
             self.toggle_emergency_amulet()
 
         if char_status.emergency_action_ring == RingName.UNKNOWN:
             # Use normal rings when we don't have emergency rings
             self.handle_equip_ring_normal(char_status)
-        elif (not self.is_emergency_ring_on(char_status) and
-            self.secs_since_toggle_emergency_ring() >=
-                DEFAULT_EQUIP_EMERGENCY_FREQ):
+        elif (not self.is_emergency_ring_on(char_status)
+              and self.secs_since_toggle_emergency_ring() >=
+              DEFAULT_EQUIP_EMERGENCY_FREQ):
             self.toggle_emergency_ring()
 
     def is_emergency_ring_on(self, char_status):
-        return (char_status.equipped_ring ==
-            char_status.emergency_action_ring and
-            char_status.emergency_action_ring != RingName.UNKNOWN)
+        return (char_status.equipped_ring == char_status.emergency_action_ring
+                and char_status.emergency_action_ring != RingName.UNKNOWN)
 
     def is_emergency_amulet_on(self, char_status):
-        return (char_status.equipped_amulet ==
-            char_status.emergency_action_amulet and
-            char_status.emergency_action_amulet != AmuletName.UNKNOWN)
+        return (char_status.equipped_amulet
+                == char_status.emergency_action_amulet
+                and char_status.emergency_action_amulet != AmuletName.UNKNOWN)
 
     def handle_normal_status_change(self, char_status):
         self.handle_equip_amulet_normal(char_status)
@@ -98,13 +103,13 @@ class EquipmentKeeper:
         self.handle_eat_food(char_status)
 
     def handle_equip_amulet_normal(self, char_status):
-        if (self.should_equip_amulet and char_status.is_amulet_slot_empty and
-           self.secs_since_equip_amulet() >= self.equip_amulet_secs):
+        if (self.should_equip_amulet and char_status.is_amulet_slot_empty
+                and self.secs_since_equip_amulet() >= self.equip_amulet_secs):
             self.equip_amulet()
 
     def handle_equip_ring_normal(self, char_status):
-        if (self.should_equip_ring and char_status.is_ring_slot_empty and
-           self.secs_since_equip_ring() >= self.equip_ring_secs):
+        if (self.should_equip_ring and char_status.is_ring_slot_empty
+                and self.secs_since_equip_ring() >= self.equip_ring_secs):
             self.equip_ring()
 
     def handle_eat_food(self, char_status):

@@ -9,11 +9,9 @@ import PIL.Image  # python-imaging
 import PIL.ImageStat  # python-imaging
 import os
 
-from pprint import pprint
-
 
 def get_debug_level():
-    level = os.environ.get('DEBUG_LEVEL')
+    level = os.environ.get('DEBUG')
     if level is not None and isinstance(level, str) and level.isdigit():
         return int(level)
     else:
@@ -21,7 +19,7 @@ def get_debug_level():
 
 
 def debug(msg, debug_level=0):
-    if get_debug_level() >= debug_level:
+    if get_debug_level() <= debug_level:
         print(msg)
 
 
@@ -48,7 +46,8 @@ def focus_tibia(wid):
     """Bring the tibia window to the front by focusing it."""
     debug("/usr/bin/xdotool windowactivate --sync %s" % (wid))
     wid = subprocess.check_output(
-        ["/usr/bin/xdotool", "windowactivate", "--sync", str(wid)],
+        ["/usr/bin/xdotool", "windowactivate", "--sync",
+         str(wid)],
         stderr=subprocess.STDOUT)
     debug(wid)
     return wid
@@ -62,16 +61,17 @@ def rgb_color_to_hex_str(rgb_color):
 def get_pixel_rgb_bytes_imagemagick(wid, x, y):
     cmd = [
         "/usr/bin/import",
-        "-window", str(wid),
-        "-crop", "1x1+%s+%s" % (x, y),
-        "-depth", "8",
+        "-window",
+        str(wid),
+        "-crop",
+        "1x1+%s+%s" % (x, y),
+        "-depth",
+        "8",
         "rgba:-",
     ]
-    pixel_snapshot_proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
+    pixel_snapshot_proc = subprocess.Popen(cmd,
+                                           stdout=subprocess.PIPE,
+                                           stderr=subprocess.PIPE)
     pixel_rgb_bytes, stderr = pixel_snapshot_proc.communicate()
     if pixel_snapshot_proc.returncode != 0:
         print(str(stderr) + "\nUnable to fetch window snapshot.")
@@ -91,8 +91,11 @@ def get_pixel_color_slow(wid, x, y):
     finally:
         pixel_rgb_image.close()
 
+
 def matches_screen_slow(wid, coords, color_spec):
-    get_pixel_fn = lambda coords: get_pixel_color_slow(wid, *coords)
+    def get_pixel_fn(coords):
+        return get_pixel_color_slow(wid, *coords)
+
     pixels = list(map(get_pixel_fn, coords))
     match = True
     for i in range(0, len(pixels)):
@@ -104,13 +107,8 @@ def send_key(wid, key):
     # synchronously send the keystroke
     debug("/usr/bin/xdotool key --window %s %s" % (wid, key))
     output = subprocess.check_output(
-        [
-            "/usr/bin/xdotool", "key", "--window",
-            str(wid),
-            str(key)
-        ],
-        stderr=subprocess.STDOUT
-    )
+        ["/usr/bin/xdotool", "key", "--window", str(wid), str(key)],
+        stderr=subprocess.STDOUT)
 
     if output is not None and output != '':
         print(output)
@@ -121,13 +119,9 @@ def send_text(wid, text):
     output = subprocess.check_output(
         [
             '/usr/bin/xdotool', 'type', '--window',
-            str(wid),
-            '--delay',
-            '50',
-            text
+            str(wid), '--delay', '50', text
         ],
-        stderr=subprocess.STDOUT
-    )
+        stderr=subprocess.STDOUT)
 
     if output is not None and output != '':
         print(output)
@@ -135,35 +129,28 @@ def send_text(wid, text):
 
 def left_click(wid, x, y):
     debug("/usr/bin/xdotool mousemove --window %s --sync %s %s" % (wid, x, y))
-    output = subprocess.check_output(
-        [
-            '/usr/bin/xdotool', 'mousemove', '--window',
-            str(wid),
-            '--sync',
-            str(x), str(y)
-        ],
-        stderr=subprocess.STDOUT
-    )
+    output = subprocess.check_output([
+        '/usr/bin/xdotool', 'mousemove', '--window',
+        str(wid), '--sync',
+        str(x),
+        str(y)
+    ],
+                                     stderr=subprocess.STDOUT)
     if output is not None and output != '':
         print(output)
     debug("/usr/bin/xdotool click --window %s --delay 50 1" % (wid))
     output = subprocess.check_output(
         [
             '/usr/bin/xdotool', 'click', '--window',
-            str(wid),
-            '--delay',
-            '50',
-            '1'
+            str(wid), '--delay', '50', '1'
         ],
-        stderr=subprocess.STDOUT
-    )
+        stderr=subprocess.STDOUT)
     if output is not None and output != '':
         print(output)
 
 
 class ScreenReader():
     """Reads pixels in the screen."""
-
     def __init__(self, x_offset=0):
         """TODO."""
         self.screen = None
@@ -174,9 +161,6 @@ class ScreenReader():
         """TODO."""
         self.display = Xlib.display.Display()
         self.screen = self.display.screen()
-        # pprint(vars(self.screen))
-        # pprint(vars(self.screen.root))
-        # pprint(dir(self.screen.root))
 
     def close(self):
         """TODO."""
@@ -185,8 +169,8 @@ class ScreenReader():
         self.display = None
 
     def get_pixel_rgb_bytes_xlib(self, x, y):
-        return self.screen.root.get_image(
-            x + self.x_offset, y, 1, 1, Xlib.X.ZPixmap, 0xffffffff)
+        return self.screen.root.get_image(x + self.x_offset, y, 1, 1,
+                                          Xlib.X.ZPixmap, 0xffffffff)
 
     def get_pixel_color(self, x, y):
         """TODO."""
@@ -199,8 +183,8 @@ class ScreenReader():
         else:
             pixel_rgb_bytes = pixel_rgb_res.data
 
-        pixel_rgb_image = PIL.Image.frombytes(
-            "RGB", (1, 1), pixel_rgb_bytes, "raw", "BGRX")
+        pixel_rgb_image = PIL.Image.frombytes("RGB", (1, 1), pixel_rgb_bytes,
+                                              "raw", "BGRX")
         pixel_rgb_color = PIL.ImageStat.Stat(pixel_rgb_image).mean
         return rgb_color_to_hex_str(pixel_rgb_color).lower()
 

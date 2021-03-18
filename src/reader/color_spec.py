@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.8
 
-from typing import (List, Union)
+from typing import List
 
 
 class ItemName():
@@ -9,7 +9,6 @@ class ItemName():
     def __init__(self, name: str):
         self.name = name
         self.__class__.register(self.__class__, self)
-
 
     def __hash__(self):
         return hash(self.name)
@@ -31,7 +30,6 @@ class ItemName():
     @staticmethod
     def items(cls):
         return cls.__items
-
 
 
 class AmuletName(ItemName):
@@ -80,7 +78,6 @@ class RingName(ItemName):
 
 class PixelColor():
     """Represents a pixel color from the screen."""
-
     def __init__(self, color: str):
         self.color = color
 
@@ -106,7 +103,8 @@ class ColorSpec():
 
 
 class ItemSpec():
-    def __init__(self, name: ItemName, action_color_specs: List[ColorSpec], eq_color_specs: List[ColorSpec]):
+    def __init__(self, name: ItemName, action_color_specs: List[ColorSpec],
+                 eq_color_specs: List[ColorSpec]):
         self.action_color_specs = tuple(action_color_specs)
         self.eq_color_specs = tuple(eq_color_specs)
         self.name = name
@@ -117,16 +115,19 @@ class ItemSpec():
         return hash(self.__hashable)
 
     def __eq__(self, other):
-        return isinstance(other, ItemSpec) and self.__hashable == other.__hashable
+        return isinstance(other,
+                          ItemSpec) and self.__hashable == other.__hashable
 
 
 class AmuletSpec(ItemSpec):
-    def __init__(self, name: ItemName, action_color_specs: List[ColorSpec], eq_color_specs: List[ColorSpec]):
+    def __init__(self, name: ItemName, action_color_specs: List[ColorSpec],
+                 eq_color_specs: List[ColorSpec]):
         super().__init__(name, action_color_specs, eq_color_specs)
 
 
 class RingSpec(ItemSpec):
-    def __init__(self, name: ItemName, action_color_specs: List[ColorSpec], eq_color_specs: List[ColorSpec]):
+    def __init__(self, name: ItemName, action_color_specs: List[ColorSpec],
+                 eq_color_specs: List[ColorSpec]):
         super().__init__(name, action_color_specs, eq_color_specs)
 
 
@@ -168,12 +169,14 @@ def spec(*colors):
     return ColorSpec(_colors)
 
 
-def item(name: ItemName, action_specs: List[ColorSpec], equip_specs: List[ColorSpec]):
+def item(name: ItemName, action_specs: List[ColorSpec],
+         equip_specs: List[ColorSpec]):
     return ItemSpec(name, action_specs, equip_specs)
 
 
 SSA = item(
-    AmuletName.SSA, [
+    AmuletName.SSA,
+    [
         spec(
             # upper pixel
             "b9935f",
@@ -182,61 +185,46 @@ SSA = item(
             # left pixel
             "444444",
             # right pixel
-            "454545"
-        )
+            "454545")
     ],
-    [
-        spec("252626", "b8b8b8", "252626", "232424")
-    ]
-)
+    [spec("252626", "b8b8b8", "252626", "232424")])
 
-STA = item(
-    AmuletName.STA,
-    [spec("4d170", "1ad552", "d421d", "93215")],
-    [spec("252626", "1b42c", "252626", "a3f19")]
-)
+STA = item(AmuletName.STA, [spec("4d170", "1ad552", "d421d", "93215")],
+           [spec("252626", "1b42c", "252626", "a3f19")])
 
-LEVIATHAN = item(
-    AmuletName.LEVIATHAN,
-    [spec("b4e2f0", "032c1", "444444", "454545")],
-    [spec("252626", "262627", "252626", "232424")]
-)
+LEVIATHAN = item(AmuletName.LEVIATHAN,
+                 [spec("b4e2f0", "032c1", "444444", "454545")],
+                 [spec("252626", "262627", "252626", "232424")])
 
-SHOCK = item(
-    AmuletName.SHOCK,
-    [
-        spec("61719", "404040", "89d27", "54312"),
-        spec("59515", "404040", "6f519", "5d616"),
-        spec("68a1f", "404040", "7da24", "5e719"),
-        spec("57311", "404040", "7b81c", "5c514")
-    ],
-    [
-        spec("252626", "60719", "91d28", "232424"),
-        spec("252626", "6891a", "7e61b", "232424"),
-        spec("252626", "5a517", "87b26", "232424"),
-        spec("252626", "60719", "91d28", "232424"),
-    ]
-)
+SHOCK = item(AmuletName.SHOCK, [
+    spec("61719", "404040", "89d27", "54312"),
+    spec("59515", "404040", "6f519", "5d616"),
+    spec("68a1f", "404040", "7da24", "5e719"),
+    spec("57311", "404040", "7b81c", "5c514")
+], [
+    spec("252626", "60719", "91d28", "232424"),
+    spec("252626", "6891a", "7e61b", "232424"),
+    spec("252626", "5a517", "87b26", "232424"),
+    spec("252626", "60719", "91d28", "232424"),
+])
 
-EMPTY_AMULET = item(
-    AmuletName.EMPTY,
-    [spec("1111111", "222222", "333333", "444444")],
-    [spec("3d3f42", "434648", "252626", "232424",)]
-)
+EMPTY_AMULET = item(AmuletName.EMPTY,
+                    [spec("1111111", "222222", "333333", "444444")],
+                    [spec(
+                        "3d3f42",
+                        "434648",
+                        "252626",
+                        "232424",
+                    )])
 
 AMULET_REPOSITORY = ItemRepository([SSA, STA, SHOCK, LEVIATHAN, EMPTY_AMULET])
 
-MIGHT = item(
-    RingName.MIGHT,
-    [spec("9b8132", "d1af44", "faed75", "d5b246")],
-    [spec("252625", "272728", "d1ae43", "927b34")]
-)
+MIGHT = item(RingName.MIGHT, [spec("9b8132", "d1af44", "faed75", "d5b246")],
+             [spec("252625", "272728", "d1ae43", "927b34")])
 
-EMPTY_RING = item(
-    RingName.EMPTY,
-    [spec("1111111", "222222", "333333", "444444")],
-    [spec("252625", "36393c", "2e2e2f", "3d4042")]
-)
+EMPTY_RING = item(RingName.EMPTY,
+                  [spec("1111111", "222222", "333333", "444444")],
+                  [spec("252625", "36393c", "2e2e2f", "3d4042")])
 
 RING_REPOSITORY = ItemRepository([MIGHT, EMPTY_RING])
 

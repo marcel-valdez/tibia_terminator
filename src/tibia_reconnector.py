@@ -6,65 +6,39 @@ import argparse
 import time
 
 from credentials import CREDENTIALS
-from reader.window_utils import (
-    get_tibia_wid, focus_tibia, ScreenReader, send_key, send_text, left_click,
-    get_pixel_color_slow, Key
-)
+from reader.window_utils import (get_tibia_wid, focus_tibia, send_key,
+                                 send_text, left_click, get_pixel_color_slow,
+                                 Key)
 
-parser = argparse.ArgumentParser(
-    description='Tibia reconnector'
-)
-parser.add_argument(
-    'pid', help='The PID of Tibia.'
-)
-parser.add_argument(
-    '--credentials_profile', help='Name of the credentials profile to use.',
-    type=str
-)
-parser.add_argument(
-    '--check_if_ingame',
-    help='Exits with code 0 if the charcacter is in-game',
-    action='store_true'
-)
-parser.add_argument(
-    '--login',
-    help='Logs in the first character in the list.',
-    action='store_true'
-)
-parser.add_argument(
-  '--debug_level',
-  help='Verbosity level of debug message. (Default: 0)',
-  type=int,
-  default=0
-)
-parser.add_argument(
-  '--max_wait',
-  help='Maximum amount of time to keep retrying in minutes',
-  type=int,
-  default=120
-)
+parser = argparse.ArgumentParser(description='Tibia reconnector')
+parser.add_argument('pid', help='The PID of Tibia.')
+parser.add_argument('--credentials_profile',
+                    help='Name of the credentials profile to use.',
+                    type=str)
+parser.add_argument('--check_if_ingame',
+                    help='Exits with code 0 if the charcacter is in-game',
+                    action='store_true')
+parser.add_argument('--login',
+                    help='Logs in the first character in the list.',
+                    action='store_true')
+parser.add_argument('--debug_level',
+                    help='Verbosity level of debug message. (Default: 0)',
+                    type=int,
+                    default=0)
+parser.add_argument('--max_wait',
+                    help='Maximum amount of time to keep retrying in minutes',
+                    type=int,
+                    default=120)
 
-DEBUG_LEVEL=0
+DEBUG_LEVEL = 0
 
-SCREEN_SPECS = {
-    "logged_out": [
-        "6b5e6f",
-        "59343c",
-        "57453b",
-        "41e8fb"
-    ]
-}
+SCREEN_SPECS = {"logged_out": ["6b5e6f", "59343c", "57453b", "41e8fb"]}
 
-SCREEN_COORDS = [
-    (1132, 316),
-    (1531, 713),
-    (480, 310),
-    (482, 546)
-]
+SCREEN_COORDS = [(1132, 316), (1531, 713), (480, 310), (482, 546)]
 
 
 def debug(msg, debug_level=0):
-    if DEBUG_LEVEL >= debug_level:
+    if DEBUG_LEVEL <= debug_level:
         print(msg)
 
 
@@ -76,8 +50,9 @@ class IntroScreenReader():
         pixels = list(map(fn, SCREEN_COORDS))
         for i in range(0, 3):
             if pixels[i] != SCREEN_SPECS[name][i]:
-                debug('%s (%s) is not equal to %s' %
-                      (pixels[i], i, SCREEN_SPECS[name][i]), 1)
+                debug(
+                    '%s (%s) is not equal to %s' %
+                    (pixels[i], i, SCREEN_SPECS[name][i]), 1)
                 return False
         return True
 
@@ -89,24 +64,34 @@ def check_ingame(tibia_wid):
     reader = IntroScreenReader()
     return not reader.is_logged_out_screen(tibia_wid)
 
+
 def close_dialogs(tibia_wid):
     # Menus are closed by either of these 2 keys.
+    print('send_key(tibia_wid, Key.ESCAPE)')
     send_key(tibia_wid, Key.ESCAPE)
-    time.sleep(2)
+    time.sleep(1)
     send_key(tibia_wid, Key.ENTER)
-    time.sleep(2)
+    time.sleep(1)
+    send_key(tibia_wid, Key.SPACE)
+    time.sleep(1)
     send_key(tibia_wid, Key.ENTER)
-    time.sleep(2)
+    time.sleep(1)
+    send_key(tibia_wid, Key.SPACE)
+    time.sleep(1)
     send_key(tibia_wid, Key.ENTER)
-    time.sleep(2)
+    time.sleep(1)
     send_key(tibia_wid, Key.ESCAPE)
-    time.sleep(2)
+    time.sleep(1)
     send_key(tibia_wid, Key.ENTER)
-    time.sleep(2)
+    time.sleep(1)
+    send_key(tibia_wid, Key.SPACE)
+    time.sleep(1)
     send_key(tibia_wid, Key.ENTER)
-    time.sleep(2)
+    time.sleep(1)
+    send_key(tibia_wid, Key.SPACE)
+    time.sleep(1)
     send_key(tibia_wid, Key.ENTER)
-    time.sleep(2)
+    time.sleep(1)
 
 
 def login(tibia_wid, credentials):
@@ -201,7 +186,11 @@ def handle_check(tibia_wid):
         exit(1)
 
 
-def main(tibia_pid, credentials_profile, only_check=False, login=False, max_wait=120):
+def main(tibia_pid,
+         credentials_profile,
+         only_check=False,
+         login=False,
+         max_wait=120):
     """Main entry point of the program."""
     tibia_wid = get_tibia_wid(tibia_pid)
     if only_check:
@@ -219,5 +208,6 @@ def main(tibia_pid, credentials_profile, only_check=False, login=False, max_wait
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    DEBUG_LEVEL=args.debug_level
-    main(args.pid, args.credentials_profile, args.check_if_ingame, args.login, args.max_wait)
+    DEBUG_LEVEL = args.debug_level
+    main(args.pid, args.credentials_profile, args.check_if_ingame, args.login,
+         args.max_wait)

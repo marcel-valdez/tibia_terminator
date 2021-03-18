@@ -52,6 +52,5 @@ class EmergencyReporter():
         self.in_emergency_override = False
         self.emergency_start_timestamp_sec = None
 
-
     def secs_since_start(self):
         return time() - self.emergency_start_timestamp_sec

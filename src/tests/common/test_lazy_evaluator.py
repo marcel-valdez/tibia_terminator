@@ -34,7 +34,7 @@ class TestLazyEvaluator(TestCase):
 
     def test_get_error(self):
         # given
-        target = LazyValue(lambda: 1/0)
+        target = LazyValue(lambda: 1 / 0)
         # when
         self.assertRaises(ZeroDivisionError, target.get)
 
@@ -62,16 +62,18 @@ class TestFutureValueAsync(TestCase):
 
     def test_get_error(self):
         # given
-        target = FutureValueAsync(lambda: 1/0)
+        target = FutureValueAsync(lambda: 1 / 0)
         target.start()
         # when
         self.assertRaises(ZeroDivisionError, target.get)
+
 
 class TestTaskLoop(TestCase):
     def test_add_task(self):
         # given
         ready_event = Event()
         task_time = None
+
         def task():
             nonlocal task_time
             task_time = time.time()
@@ -124,6 +126,7 @@ class TestTaskLoop(TestCase):
         task_done = Event()
         task_wait = Event()
         task_exec = False
+
         def task():
             nonlocal task_exec
             task_exec = True
@@ -131,7 +134,9 @@ class TestTaskLoop(TestCase):
             # the test will cancel tasks right before allowing
             # execution.
             task_wait.wait()
+
         cancelled_task_exec = False
+
         def cancelled_task():
             # this should not execute, due to cancel_pending_tasks
             nonlocal cancelled_task_exec
@@ -155,6 +160,7 @@ class TestTaskLoop(TestCase):
             self.assertFalse(cancelled_task_exec)
         finally:
             target.stop()
+
 
 if __name__ == '__main__':
     unittest.main()

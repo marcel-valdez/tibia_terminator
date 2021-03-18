@@ -10,8 +10,8 @@ T = TypeVar("T")
 
 
 class LazyEvaluator(Generic[T], Thread):
-    def __init__(self, fn: Callable[[], T],
-                 cb: Callable[[T, Exception], None]):
+    def __init__(self, fn: Callable[[], T], cb: Callable[[T, Exception],
+                                                         None]):
         super().__init__(daemon=False)
         self.fn = fn
         self.cb = cb
@@ -32,6 +32,7 @@ class LazyValueNotReadyError(Exception):
 
 
 M = TypeVar("M")
+
 
 class FutureValue(Generic[M]):
     _result_ready_event: Event = None
@@ -56,7 +57,8 @@ class FutureValue(Generic[M]):
             for failure_cb in self.__failure_cbs:
                 failure_cb(error)
 
-    def add_callback(success_cb: Callable[[M], None],
+    def add_callback(self,
+                     success_cb: Callable[[M], None],
                      failure_cb: Callable[[Exception], None] = None):
         if success_cb is not None:
             self.__success_cbs.append(success_cb)
@@ -76,6 +78,7 @@ class FutureValue(Generic[M]):
 
         return self.__get()
 
+
 class FutureValueAsync(FutureValue[M]):
     def __init__(self, getter: Callable[[], M]):
         super().__init__()
@@ -83,7 +86,8 @@ class FutureValueAsync(FutureValue[M]):
 
     def start(self):
         """Starts fetching the value asynchronously."""
-        if not self._result_ready_event.is_set() and not self.lazy_evaluator.is_alive():
+        if not self._result_ready_event.is_set(
+        ) and not self.lazy_evaluator.is_alive():
             self.lazy_evaluator.start()
         return self
 
@@ -175,17 +179,20 @@ class TaskLoop(Thread):
     def add_task(self, task: Callable[[], None]):
         self.task_queue.put_nowait(task)
 
-    def add_future(self,
-                   getter: Callable[[], M],
-                   success_cb: Callable[[M], None] = None,
-                   failure_cb: Callable[[Exception], None] = None) -> FutureValue[M]:
+    def add_future(
+            self,
+            getter: Callable[[], M],
+            success_cb: Callable[[M], None] = None,
+            failure_cb: Callable[[Exception], None] = None) -> FutureValue[M]:
         """Creates a future value that will be set by this task loop."""
         future_value = FutureValue(success_cb, failure_cb)
+
         def task():
             try:
                 future_value.set_result(getter())
             except Exception as e:
                 future_value.set_result(None, e)
+
         self.add_task(task)
         return future_value
 

@@ -2,7 +2,6 @@
 
 import keyboard
 import pyautogui
-import sys
 
 from typing import List, Set, Dict
 from keyboard import KeyboardEvent
@@ -42,7 +41,7 @@ class Macro:
         while "+" in hotkey:
             modifier_idx = hotkey.index("+")
             modifiers.append(hotkey[:modifier_idx])
-            hotkey = hotkey[modifier_idx + 1 :]
+            hotkey = hotkey[modifier_idx + 1:]
 
         return (set(modifiers), hotkey)
 
@@ -55,8 +54,10 @@ class Macro:
 
         # Do nothing if we're already hooked
         if self.hotkey_hook is None:
-            Macro.key_macro_count[hotkey] = Macro.key_macro_count.get(hotkey, 0) + 1
-            self.hotkey_hook = keyboard.hook_key(hotkey, self.__action, self.suppress)
+            Macro.key_macro_count[hotkey] = Macro.key_macro_count.get(
+                hotkey, 0) + 1
+            self.hotkey_hook = keyboard.hook_key(hotkey, self.__action,
+                                                 self.suppress)
 
     def unhook_hotkey(self):
         if self.hotkey_hook is not None:
@@ -72,8 +73,8 @@ class Macro:
                 del keyboard._hooks[self.key]
             # Remove self from scancode listener
             scan_codes = keyboard.key_to_scan_codes(self.key)
-            # Important: If we ever supress keys, we need to use _listener.blocking_keys
-            # instead.
+            # Important: If we ever supress keys, we need to use
+            #  _listener.blocking_keys instead.
             store = keyboard._listener.nonblocking_keys
             for scan_code in scan_codes:
                 store[scan_code].remove(self.__action)
@@ -86,15 +87,8 @@ class ClientMacro(Macro):
     command_type: str = None
     throttle_ms: int = None
 
-    def __init__(
-        self,
-        client: ClientInterface,
-        hotkey: str,
-        command_type: str,
-        throttle_ms: int,
-        *args,
-        **kwargs
-    ):
+    def __init__(self, client: ClientInterface, hotkey: str, command_type: str,
+                 throttle_ms: int, *args, **kwargs):
         super().__init__(hotkey, *args, **kwargs)
         self.client = client
         self.hotkey = hotkey
@@ -108,6 +102,6 @@ class ClientMacro(Macro):
         # Tibia will detect the key to trigger the action and this macro
         # will actually trigger the mouse click, so it is all done in a
         # single action.
-        self.client.execute_macro(
-            self._client_action, self.command_type, throttle_ms=self.throttle_ms
-        )
+        self.client.execute_macro(self._client_action,
+                                  self.command_type,
+                                  throttle_ms=self.throttle_ms)

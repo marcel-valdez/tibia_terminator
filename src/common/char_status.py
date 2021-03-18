@@ -3,7 +3,7 @@
 from typing import Dict, Any, TypeVar
 
 from reader.color_spec import (AmuletName, RingName)
-from common.lazy_evaluator import FutureValue, future, immediate
+from common.lazy_evaluator import FutureValue, immediate
 
 
 class CharStatus:
@@ -26,8 +26,7 @@ class CharStatus:
 
 
 class CharStatusAsync(CharStatus):
-    def __init__(self,
-                 future_stats: FutureValue[Dict[str, int]],
+    def __init__(self, future_stats: FutureValue[Dict[str, int]],
                  future_eq_status: Dict[str, FutureValue[Any]]):
         self.__future_stats = future_stats
         self.__future_eq_status = future_eq_status
@@ -39,7 +38,8 @@ class CharStatusAsync(CharStatus):
     K = TypeVar('K')
 
     def __get_eq_status(self, name: str, default_value: K) -> K:
-        return self.__future_eq_status.get(name, immediate(default_value)).get()
+        return self.__future_eq_status.get(name,
+                                           immediate(default_value)).get()
 
     @property
     def hp(self) -> int:
@@ -84,7 +84,3 @@ class CharStatusAsync(CharStatus):
     @property
     def is_ring_slot_empty(self):
         return self.equipped_ring == RingName.EMPTY
-
-T = TypeVar('T')
-def immediate(value: T) -> FutureValue[T]:
-    return future(lambda: value)

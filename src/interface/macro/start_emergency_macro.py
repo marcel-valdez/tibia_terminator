@@ -1,6 +1,5 @@
 #!/usr/bin/env python3.8
 
-
 from interface.macro.macro import Macro
 from keeper.emergency_reporter import EmergencyReporter
 

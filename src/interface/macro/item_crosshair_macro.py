@@ -3,20 +3,17 @@
 import argparse
 import keyboard
 import pyautogui
-import time
-import sys
-import threading
-
-from typing import Any, Callable, Dict
 
 from interface.macro.macro import ClientMacro
-from interface.client_interface import (
-    ClientInterface, CommandType, CommandProcessor
-)
+from interface.client_interface import (ClientInterface, CommandType,
+                                        CommandProcessor)
 
 parser = argparse.ArgumentParser(description='Test item cross hair macro.')
-parser.add_argument("keys", nargs='+', type=str,
+parser.add_argument("keys",
+                    nargs='+',
+                    type=str,
                     help="Keys to hook for crosshair macro.")
+
 
 class ItemCrosshairMacro(ClientMacro):
     hotkey: str = None
@@ -36,6 +33,7 @@ class MockLogger():
     def log_action(self, level, msg):
         print(str(level), msg)
 
+
 def main(args):
     macros = []
     logger = MockLogger()
@@ -43,7 +41,9 @@ def main(args):
     client = ClientInterface({}, logger, cmd_processor)
     cmd_processor.start()
     for key in args.keys:
-        print(f'Listening on key {key}, a click will be issued when it is pressed.')
+        print(
+            f'Listening on key {key}, a click will be issued when it is pressed.'
+        )
         macro = ItemCrosshairMacro(client, key)
         macro.hook_hotkey()
         macros.append(macro)

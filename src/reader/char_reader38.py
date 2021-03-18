@@ -5,7 +5,6 @@ import argparse
 from typing import Dict
 
 from app_config import MEM_CONFIG
-from common.logger import debug
 from common.lazy_evaluator import future, FutureValue
 from reader.memory_reader38 import MemoryReader38 as MemoryReader
 
@@ -29,11 +28,12 @@ parser.add_argument('--mana_address',
                     help='Memory address for the mana value.',
                     type=str,
                     default=None)
-parser.add_argument('--hp_address',
-                    help=('Memory address for the HP value. This value '
-                          'can be calculated based on the mana memory address.'),
-                    type=str,
-                    default=None)
+parser.add_argument(
+    '--hp_address',
+    help=('Memory address for the HP value. This value '
+          'can be calculated based on the mana memory address.'),
+    type=str,
+    default=None)
 parser.add_argument('--speed_address',
                     help='Memory address for the speed value.',
                     type=str,
@@ -55,8 +55,10 @@ parser.add_argument('--max_mana_address',
                     type=str,
                     default=None)
 parser.add_argument('--pid', help='The PID of Tibia', type=int, default=None)
-parser.add_argument('--verbose', help='Show verbose output.',
-                    action='store_true', default=False)
+parser.add_argument('--verbose',
+                    help='Show verbose output.',
+                    action='store_true',
+                    default=False)
 
 
 class CharReader38():
@@ -72,8 +74,13 @@ class CharReader38():
         self.verbose = verbose
 
     def __fetch_stats(self):
-        stats = {'mana': 99999, 'hp': 99999,
-                 'speed': 999, 'soul_points': 0, 'magic_shield': 9999}
+        stats = {
+            'mana': 99999,
+            'hp': 99999,
+            'speed': 999,
+            'soul_points': 0,
+            'magic_shield': 9999
+        }
         self.memory_reader.open()
         try:
             if self.mana_address is not None:
@@ -123,7 +130,8 @@ class CharReader38():
             if self.verbose:
                 print("Searching mana value address...")
             # TODO: This is wrong, we shouldn't need the previous mana
-            # memory address, scanmem is able to tell what the memory ranges are.
+            # memory address, scanmem is able to tell what the memory ranges
+            # are.
             mana_range = self.memory_reader.get_range(PREV_MANA_MEMORY_ADDRESS)
             self.mana_address = self.memory_reader.find_value_address(
                 mana_range, MANA_OFFSET_AMOUNT, MANA_HARDCODED_OFFSET_VALUE,
@@ -134,7 +142,7 @@ class CharReader38():
 
         if self.verbose:
             print("Mana memory address is - {} ({})".format(
-                  str(self.mana_address), hex(self.mana_address)))
+                str(self.mana_address), hex(self.mana_address)))
 
     def init_max_mana_address(self, override_value=None):
         if override_value is not None:
@@ -149,8 +157,7 @@ class CharReader38():
 
         if self.verbose:
             print("Max mana address is - {} ({})".format(
-                  str(self.max_mana_address),
-                  hex(self.max_mana_address)))
+                str(self.max_mana_address), hex(self.max_mana_address)))
 
     def init_hp_address(self, override_value=None):
         if override_value is not None:
@@ -162,7 +169,7 @@ class CharReader38():
 
         if self.verbose:
             print("HP memory address is - {} ({})".format(
-                  str(self.hp_address), hex(self.hp_address)))
+                str(self.hp_address), hex(self.hp_address)))
 
     def init_max_hp_address(self, override_value=None):
         if override_value is not None:
@@ -177,8 +184,7 @@ class CharReader38():
 
         if self.verbose:
             print("Max HP address is - {} ({})".format(
-                  str(self.max_hp_address),
-                  hex(self.max_hp_address)))
+                str(self.max_hp_address), hex(self.max_hp_address)))
 
     def init_speed_address(self, override_value=None):
         if override_value is not None:
@@ -190,13 +196,13 @@ class CharReader38():
 
         if self.verbose:
             print("Speed memory address is - {} ({})".format(
-                  str(self.speed_address), hex(self.speed_address)))
+                str(self.speed_address), hex(self.speed_address)))
 
     def init_magic_shield_address(self, override_value=None):
         if override_value is not None:
             self.magic_shield_address = override_value
-        elif self.magic_shield_address is None and \
-            self.speed_address is not None:
+        elif (self.magic_shield_address is None
+              and self.speed_address is not None):
             self.magic_shield_address = self.speed_address + 196
         else:
             # TODO: Implement automated mechanism
@@ -204,8 +210,8 @@ class CharReader38():
 
         if self.verbose:
             print("Magic shield memory address is - {} ({})".format(
-                  str(self.magic_shield_address),
-                  hex(self.magic_shield_address)))
+                str(self.magic_shield_address),
+                hex(self.magic_shield_address)))
 
     def init_soul_points_address(self, override_value=None):
         if override_value is not None:
@@ -217,9 +223,7 @@ class CharReader38():
 
         if self.verbose:
             print("Soul points memory address is - {} ({})".format(
-                  str(self.soul_points_address),
-                  hex(self.soul_points_address)))
-
+                str(self.soul_points_address), hex(self.soul_points_address)))
 
 
 def main(pid,
@@ -263,12 +267,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     pid = args.pid or MEM_CONFIG['default_pid']
     config = MEM_CONFIG[str(pid)]
-    main(pid,
-         args.mana_address or config['mana_memory_address'],
+    main(pid, args.mana_address or config['mana_memory_address'],
          args.hp_address or config['hp_memory_address'],
          args.magic_shield_address or config['magic_shield_memory_address'],
          args.speed_address or config['speed_memory_address'],
          args.soul_points_address or config['soul_points_memory_address'],
-         args.max_hp_address or config['max_hp_address'],
-         args.max_mana_address or config['max_mana_address'],
-         args.verbose)
+         args.max_hp_address or config['max_hp_address'], args.max_mana_address
+         or config['max_mana_address'], args.verbose)

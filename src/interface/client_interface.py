@@ -23,8 +23,10 @@ class CommandType():
 
     @staticmethod
     def types() -> List[str]:
-        return [CommandType.HEAL_SPELL, CommandType.EQUIP_ITEM,
-                CommandType.USE_ITEM, CommandType.UTILITY_SPELL]
+        return [
+            CommandType.HEAL_SPELL, CommandType.EQUIP_ITEM,
+            CommandType.USE_ITEM, CommandType.UTILITY_SPELL
+        ]
 
 
 class Command():
@@ -38,7 +40,6 @@ class Command():
 
 class KeeperHotkeyCommand(Command):
     """Hotkey command issued by one of Terminator's keepers."""
-
     def __init__(self, cmd_type: str, throttle_ms: int, hotkey: str):
         super().__init__(cmd_type, throttle_ms)
         self.hotkey = hotkey
@@ -46,8 +47,7 @@ class KeeperHotkeyCommand(Command):
     def _send(self, tibia_wid):
         subprocess.Popen([
             "/usr/bin/xdotool", "key", "--window",
-            str(tibia_wid),
-            self.hotkey
+            str(tibia_wid), self.hotkey
         ])
 
     def __str__(self):
@@ -55,7 +55,8 @@ class KeeperHotkeyCommand(Command):
 
 
 class MacroCommand(Command):
-    def __init__(self, cmd_type: str, throttle_ms: int, macro_fn: Callable[[str], None]):
+    def __init__(self, cmd_type: str, throttle_ms: int,
+                 macro_fn: Callable[[str], None]):
         super().__init__(cmd_type, throttle_ms)
         self.macro_fn = macro_fn
 
@@ -87,7 +88,7 @@ class CommandSender(threading.Thread):
     def __log_cmd(self, cmd: Command):
         self.logger.log_action(0, str(cmd))
 
-    def __throttle(self, throttle_ms: int=250):
+    def __throttle(self, throttle_ms: int = 250):
         """Throttles an action.
         Returns:
 
@@ -109,7 +110,10 @@ class CommandSender(threading.Thread):
 
 
 class CommandProcessor():
-    def __init__(self, tibia_wid: str, logger: StatsLogger, only_monitor: bool,
+    def __init__(self,
+                 tibia_wid: str,
+                 logger: StatsLogger,
+                 only_monitor: bool,
                  cmd_senders: Dict[str, CommandSender] = None):
         self.cmd_senders = cmd_senders or CommandProcessor.gen_cmd_senders(
             tibia_wid, logger, only_monitor)
@@ -139,23 +143,27 @@ class CommandProcessor():
         self.cmd_senders[cmd.cmd_type].send(cmd)
 
     @staticmethod
-    def gen_cmd_senders(tibia_wid: str, logger: StatsLogger, only_monitor: bool) -> Dict[str, CommandSender]:
+    def gen_cmd_senders(tibia_wid: str, logger: StatsLogger,
+                        only_monitor: bool) -> Dict[str, CommandSender]:
         cmd_senders = {}
         for cmd_type in CommandType.types():
-            cmd_senders[cmd_type] = CommandSender(
-                tibia_wid, logger, only_monitor)
+            cmd_senders[cmd_type] = CommandSender(tibia_wid, logger,
+                                                  only_monitor)
 
         return cmd_senders
 
 
 class ClientInterface:
-    def __init__(self, hotkeys_config, logger: StatsLogger=None,
+    def __init__(self,
+                 hotkeys_config,
+                 logger: StatsLogger = None,
                  cmd_processor: CommandProcessor = None):
         self.hotkeys_config = hotkeys_config
         self.logger = logger
         self.cmd_processor = cmd_processor
 
-    def send_keystroke_async(self, cmd_type: str, throttle_ms: int, hotkey: str):
+    def send_keystroke_async(self, cmd_type: str, throttle_ms: int,
+                             hotkey: str):
         self.cmd_processor.send(
             KeeperHotkeyCommand(cmd_type, throttle_ms, hotkey))
 
@@ -201,9 +209,9 @@ class ClientInterface:
 
     def toggle_emergency_amulet(self, throttle_ms: int = 250):
         self.logger.log_action(2, f'toggle_emergency_amulet {throttle_ms} ms')
-        self.send_keystroke_async(CommandType.EQUIP_ITEM, throttle_ms,
-                                  self.hotkeys_config[
-                                      'toggle_emergency_amulet'])
+        self.send_keystroke_async(
+            CommandType.EQUIP_ITEM, throttle_ms,
+            self.hotkeys_config['toggle_emergency_amulet'])
 
     def eat_food(self, throttle_ms: int = 250):
         self.logger.log_action(2, f'eat_food {throttle_ms} ms')
@@ -220,7 +228,10 @@ class ClientInterface:
         self.send_keystroke_async(CommandType.UTILITY_SPELL, throttle_ms,
                                   self.hotkeys_config['cancel_magic_shield'])
 
-    def execute_macro(self, macro_fn: Callable[[str], None], cmd_type: str, throttle_ms: int = 125):
+    def execute_macro(self,
+                      macro_fn: Callable[[str], None],
+                      cmd_type: str,
+                      throttle_ms: int = 125):
         self.logger.log_action(2, f'execute_macro {throttle_ms} ms')
         self.cmd_processor.send(MacroCommand(cmd_type, throttle_ms, macro_fn))
 
@@ -260,34 +271,21 @@ def main():
         logger=fake_logger,
         only_monitor=False,
         cmd_senders={
-            CommandType.EQUIP_ITEM: FakeCommandSender(
-                "fake_tibia_wid", fake_logger, False
-            ),
-            CommandType.HEAL_SPELL: FakeCommandSender(
-                "fake_tibia_wid", fake_logger, False
-            ),
-            CommandType.USE_ITEM: FakeCommandSender(
-                "fake_tibia_wid", fake_logger, False
-            ),
-            CommandType.UTILITY_SPELL: FakeCommandSender(
-                "fake_tibia_wid", fake_logger, False
-            )
-        }
-    )
+            CommandType.EQUIP_ITEM:
+            FakeCommandSender("fake_tibia_wid", fake_logger, False),
+            CommandType.HEAL_SPELL:
+            FakeCommandSender("fake_tibia_wid", fake_logger, False),
+            CommandType.USE_ITEM:
+            FakeCommandSender("fake_tibia_wid", fake_logger, False),
+            CommandType.UTILITY_SPELL:
+            FakeCommandSender("fake_tibia_wid", fake_logger, False)
+        })
     client_interface = ClientInterface(hotkeys, fake_logger, cmd_processor)
     cmd_processor.start()
     method_names = [
-        'cast_exura',
-        'cast_exura_gran',
-        'cast_exura_sio',
-        'drink_mana',
-        'cast_haste',
-        'equip_ring',
-        'toggle_emergency_ring',
-        'equip_amulet',
-        'toggle_emergency_amulet',
-        'eat_food',
-        'cast_magic_shield',
+        'cast_exura', 'cast_exura_gran', 'cast_exura_sio', 'drink_mana',
+        'cast_haste', 'equip_ring', 'toggle_emergency_ring', 'equip_amulet',
+        'toggle_emergency_amulet', 'eat_food', 'cast_magic_shield',
         'cancel_magic_shield'
     ]
 

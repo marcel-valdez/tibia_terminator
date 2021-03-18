@@ -2,6 +2,7 @@
 
 from common.logger import debug
 
+
 class ManaKeeper():
     def __init__(self, client, mana_hi, mana_lo, critical_mana, downtime_mana,
                  total_mana):
@@ -49,8 +50,8 @@ class ManaKeeper():
     # with an interval of 2.5 seconds so it does not affect gameplay
     def should_drink_mana_low_priority(self, char_status, is_downtime):
         debug(
-            '[should_drink_mana_low_priority] mana: ' +
-            str(char_status.mana), 3)
+            '[should_drink_mana_low_priority] mana: ' + str(char_status.mana),
+            3)
 
         if is_downtime and char_status.mana <= self.downtime_mana:
             return True

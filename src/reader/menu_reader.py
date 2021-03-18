@@ -6,7 +6,6 @@ import sys
 
 from reader.window_utils import ScreenReader
 
-
 parser = argparse.ArgumentParser(
     description='Reads equipment status for the Tibia window')
 parser.add_argument('--check_specs',
@@ -17,8 +16,7 @@ parser.add_argument('--check_menu',
                           'Options: empty, depot_box_open'),
                     type=str,
                     default=None)
-parser.add_argument('tibia_wid',
-                    help='Window id of the tibia client.')
+parser.add_argument('tibia_wid', help='Window id of the tibia client.')
 
 
 def get_debug_level():
@@ -67,12 +65,12 @@ MENU_SPECS = {
         xy(1782, 503): "313131",
     },
     "empty": {
-        xy(1752,501): "444445",
-        xy(1882,503): "474847",
-        xy(1767,503): "464647",
-        xy(1772,503): "464647",
-        xy(1777,503): "4a4a4b",
-        xy(1782,503): "4c4b4b",
+        xy(1752, 501): "444445",
+        xy(1882, 503): "474847",
+        xy(1767, 503): "464647",
+        xy(1772, 503): "464647",
+        xy(1777, 503): "4a4a4b",
+        xy(1782, 503): "4c4b4b",
     }
 }
 
@@ -81,16 +79,16 @@ class MenuReader(ScreenReader):
     def is_menu(self, tibia_wid, name):
         color_spec = MENU_SPECS[name]
         actual_pixel_colors = map(
-            lambda coord: self.get_pixel_color_slow(
-                tibia_wid, coord.x, coord.y),
-            color_spec.keys()
-        )
+            lambda coord: self.get_pixel_color_slow(tibia_wid, coord.x, coord.y
+                                                    ), color_spec.keys())
 
         expected_pixel_colors = color_spec.values()
         for i in range(len(actual_pixel_colors)):
-            if actual_pixel_colors[i].lower() != expected_pixel_colors[i].lower():
-                debug('%s (%s) is not equal to %s' %
-                      (actual_pixel_colors[i], i, expected_pixel_colors[i]), 1)
+            if actual_pixel_colors[i].lower(
+            ) != expected_pixel_colors[i].lower():
+                debug(
+                    '%s (%s) is not equal to %s' %
+                    (actual_pixel_colors[i], i, expected_pixel_colors[i]), 1)
                 return False
         return True
 
@@ -104,9 +102,10 @@ def check_specs(wid):
     for name in MENU_SPECS.keys():
         print(name + " spec.")
         for coords in MENU_SPECS[name].keys():
-            print("(%s,%s): %s (%s)" % (coords.x, coords.y,
-                                   reader.get_pixel_color_slow(wid, coords.x, coords.y),
-                                   MENU_SPECS[name][coords]))
+            print("(%s,%s): %s (%s)" %
+                  (coords.x, coords.y,
+                   reader.get_pixel_color_slow(
+                       wid, coords.x, coords.y), MENU_SPECS[name][coords]))
 
 
 def check_menu(wid, name):

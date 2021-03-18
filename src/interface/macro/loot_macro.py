@@ -6,7 +6,9 @@ import pyautogui
 
 from typing import Dict
 from interface.macro.macro import ClientMacro
-from interface.client_interface import ClientInterface, CommandType, CommandProcessor
+from interface.client_interface import (
+    ClientInterface, CommandType, CommandProcessor
+)
 
 parser = argparse.ArgumentParser(description="Loots all 9 SQMs around a char.")
 
@@ -36,9 +38,11 @@ LOOT_SQMS = [
 
 
 class LootMacro(ClientMacro):
-    def __init__(
-        self, client: ClientInterface, hotkeys: Dict[str, str] = {}, *args, **kwargs
-    ):
+    def __init__(self,
+                 client: ClientInterface,
+                 hotkeys: Dict[str, str] = {},
+                 *args,
+                 **kwargs):
         super().__init__(
             client,
             hotkey=hotkeys.get("loot"),
@@ -68,7 +72,7 @@ def main(args):
     client = ClientInterface({}, logger, cmd_processor)
     macro = LootMacro(client, {"loot": "v"})
     cmd_processor.start()
-    print(f"Listening on key v, 9 SQMs will be alt+clicked when pressed.")
+    print("Listening on key v, 9 SQMs will be alt+clicked when pressed.")
     macro.hook_hotkey()
     try:
         print("Press [Enter] to exit.")

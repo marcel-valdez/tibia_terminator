@@ -2,14 +2,12 @@
 
 import unittest
 
-import reader.color_spec
+import reader.color_spec as color_spec
 
 from unittest import TestCase
-from unittest.mock import Mock
 
 
 class TestColorSpec(TestCase):
-
     def test_can_get_equipped_amulet_by_spec(self):
         # given
         eq_spec = color_spec.SSA.eq_color_specs[0]

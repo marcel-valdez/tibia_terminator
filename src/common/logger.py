@@ -1,10 +1,6 @@
 #!/usr/bin/env python3.8
 
 import os
-import threading
-import queue
-import time
-
 
 global DEBUG_LEVEL
 DEBUG_LEVEL = None
@@ -52,6 +48,7 @@ class LogEntry():
         self.row = row
         self.col = col
         self.end = end
+
 
 class StatsLogger():
     def __init__(self):

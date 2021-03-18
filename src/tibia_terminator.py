@@ -3,24 +3,22 @@
 import argparse
 import time
 import curses
-import sys
 
 from collections import deque
-from typing import Dict, Any
 
 from app_config import MEM_CONFIG
 from char_config import CHAR_CONFIGS, HOTKEYS_CONFIG
 from common.char_status import CharStatus, CharStatusAsync
-from common.lazy_evaluator import FutureValue
-from common.logger import (set_debug_level, StatsLogger, StatsEntry, LogEntry)
+from common.logger import (set_debug_level, StatsLogger)
 from interface.client_interface import (ClientInterface, CommandProcessor)
 from interface.macro.loot_macro import LootMacro
 from keeper.char_keeper import CharKeeper
 from reader.char_reader38 import CharReader38 as CharReader
-from reader.equipment_reader import (EquipmentReader, AmuletName, RingName, MagicShieldStatus)
+from reader.equipment_reader import EquipmentReader
 from reader.memory_reader38 import MemoryReader38 as MemoryReader
 from reader.window_utils import get_tibia_wid
-from view.view_renderer import (ViewRenderer, PausedView, RunView, ConfigSelectionView)
+from view.view_renderer import (ViewRenderer, PausedView, RunView,
+                                ConfigSelectionView)
 
 # - If you get the error:
 #     Xlib.error.DisplayConnectionError: Can't connect to display ":0": b'No protocol specified\n'
@@ -249,8 +247,7 @@ class TibiaTerminator:
                 emergency_action_ring_cb=self.view.set_emergency_action_ring,
                 equipped_amulet_cb=self.view.set_equipped_amulet,
                 equipped_ring_cb=self.view.set_equipped_ring,
-                magic_shield_status_cb=self.view.set_magic_shield_status
-            ))
+                magic_shield_status_cb=self.view.set_magic_shield_status))
 
     def handle_running_state(self):
         start = time.time()
@@ -271,7 +268,8 @@ class TibiaTerminator:
         self.loop_times_sum += elapsed_ms - self.loop_times[0]
         self.loop_times.append(elapsed_ms)
         self.avg_loop_time_ms = self.loop_times_sum / len(self.loop_times)
-        self.view.set_debug_line(f"Avg loop time: {int(self.avg_loop_time_ms)} ms")
+        self.view.set_debug_line(
+            f"Avg loop time: {int(self.avg_loop_time_ms)} ms")
 
     def exit_running_state(self):
         self.stats_logger.run_view = None
@@ -305,7 +303,8 @@ class TibiaTerminator:
                     view.signal_error()
                     view.user_input = ''
                 else:
-                    self.selected_config_name = self.char_configs[selection]["name"]
+                    self.selected_config_name = self.char_configs[selection][
+                        "name"]
                     self.char_keeper.change_char_config(selection)
                     self.exit_config_selection_state()
                     self.enter_paused_state()
@@ -334,11 +333,12 @@ class TibiaTerminator:
             time.sleep(0.01)
 
     def gen_title(self):
-        return "Tibia Terminator. WID: " + str(self.tibia_wid) + " Active config: " + self.selected_config_name
+        return "Tibia Terminator. WID: " + str(
+            self.tibia_wid) + " Active config: " + self.selected_config_name
 
 
-def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
-         only_monitor):
+def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield,
+         enable_speed, only_monitor):
     if pid is None or pid == "":
         raise Exception("PID is required, you may use psgrep -a -l bin/Tibia "
                         "to find the process id")
@@ -348,6 +348,7 @@ def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield, enable_speed,
 
     def print_async(msg):
         stats_logger.log_action(2, msg)
+
     view_renderer = ViewRenderer(cliwin)
     cmd_processor = CommandProcessor(tibia_wid, stats_logger, only_monitor)
     client = ClientInterface(HOTKEYS_CONFIG,

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3.8
 
 import binascii
-import struct
 
 
 class MemoryReader38:
@@ -30,17 +29,13 @@ class MemoryReader38:
                         "region_high": region_high
                     }
 
-    def find_value_address(
-            self,
-            heap_regions,
-            offset_amount,
-            hardcoded_value,
-            hardcoded_value_size
-    ):
+    def find_value_address(self, heap_regions, offset_amount, hardcoded_value,
+                           hardcoded_value_size):
         self.print_async("Scanning memory, this could take a few seconds....")
         region_low = heap_regions["region_low"]
         region_high = heap_regions["region_high"]
-        # TODO: Make it possible to read a memory dump file instead of /proc/xxx/mem
+        # TODO: Make it possible to read a memory dump file instead of
+        # /proc/xxx/mem
         with open("/proc/{}/mem".format(self.proc_id), 'rb') as mem_file:
             # Goto the start address of our heap
             mem_file.seek(region_low)
@@ -64,10 +59,9 @@ class MemoryReader38:
                 if word.upper() == upper_hardcoded_value:
                     signature_addr_start = search_signature_addr \
                         - hardcoded_value_size
-                    self.print_async(
-                        "Signature found at - " + str(signature_addr_start)
-                        + " (" + hex(signature_addr_start) + ")"
-                    )
+                    self.print_async("Signature found at - " +
+                                     str(signature_addr_start) + " (" +
+                                     hex(signature_addr_start) + ")")
                     return signature_addr_start + offset_amount
 
     def open(self):
@@ -85,21 +79,19 @@ class MemoryReader38:
         chunks = data.hex()
         # Split each byte and then reverse its order (but dont reverse the
         # actual byte)
-        shifted_bytes = ("".join(map(
-            str.__add__,
-            chunks[-2::-2],
-            chunks[-1::-2])))
+        shifted_bytes = ("".join(
+            map(str.__add__, chunks[-2::-2], chunks[-1::-2])))
         return int(shifted_bytes, 16)
 
     def get_range(self, address):
         range = self.find_target_range(address)
         if range is None:
             raise Exception(
-                "Did not find the memory range for address {}.".format(address)
-            )
+                "Did not find the memory range for address {}.".format(
+                    address))
         else:
-            self.print_async("low region: {} ({}), high region: {} ({})".format(
-                range['region_low'], hex(range['region_low']),
-                range['region_high'], hex(range['region_high']))
-            )
+            self.print_async(
+                "low region: {} ({}), high region: {} ({})".format(
+                    range['region_low'], hex(range['region_low']),
+                    range['region_high'], hex(range['region_high'])))
         return range
