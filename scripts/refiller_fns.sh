@@ -1,5 +1,5 @@
 SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-ROOT_PATH="$(dirname ${SCRIPTPATH})/src"
+ROOT_PATH="$(dirname ${SCRIPTPATH})/tibia_terminator"
 PYTHONPATH="${PYTHONPATH}:${ROOT_PATH}"
 MENU_READER_BIN="${ROOT_PATH}/reader/menu_reader.py"
 

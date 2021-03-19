@@ -6,9 +6,10 @@ import argparse
 import time
 
 from credentials import CREDENTIALS
-from tibia_terminator.reader.window_utils import (get_tibia_wid, focus_tibia, send_key,
-                                 send_text, left_click, get_pixel_color_slow,
-                                 Key)
+from tibia_terminator.reader.window_utils import (get_tibia_wid, focus_tibia,
+                                                  send_key, send_text,
+                                                  left_click,
+                                                  get_pixel_color_slow, Key)
 
 parser = argparse.ArgumentParser(description='Tibia reconnector')
 parser.add_argument('pid', help='The PID of Tibia.')
