@@ -6,8 +6,7 @@ import argparse
 import time
 import sys
 
-from schemas.credentials_schema import (CredentialsSchema, Credentials,
-                                        Credential)
+from schemas.credentials_schema import (CredentialsSchema, Credential)
 from tibia_terminator.reader.window_utils import (get_tibia_wid, focus_tibia,
                                                   send_key, send_text,
                                                   left_click,
@@ -40,6 +39,9 @@ DEBUG_LEVEL = 0
 SCREEN_SPECS = {"logged_out": ["6b5e6f", "59343c", "57453b", "41e8fb"]}
 SCREEN_COORDS = [(1132, 316), (1531, 713), (480, 310), (482, 546)]
 CREDENTIALS_SCHEMA = CredentialsSchema()
+LOGGED_IN_EXIT_STATUS = 0
+LOGGED_OUT_EXIT_STATUS = 2
+FAILURE_EXIT_STATUS = 1
 
 
 def debug(msg, debug_level=0):
@@ -153,15 +155,14 @@ def wait_for_lock():
 
 def handle_login(tibia_wid, credentials, max_wait):
     if not wait_for_lock():
-        print('Unable to acquire reconnector lock, quitting.')
-        exit(1)
+        raise Exception('Unable to acquire reconnector lock, quitting.')
     else:
         open('.tibia_reconnector.lock', 'a').close()
 
     try:
         if check_ingame(tibia_wid):
-            print('The character is already in-game.')
-            exit(0)
+            print('The character is already in-game.', file=sys.stderr)
+            sys.exit(LOGGED_IN_EXIT_STATUS)
 
         max_wait_secs = max_wait * 60
         wait_retry_secs = 60
@@ -170,14 +171,14 @@ def handle_login(tibia_wid, credentials, max_wait):
             success = login(tibia_wid, credentials)
             if success:
                 print('Login succeeded.')
-                exit(0)
+                sys.exit(LOGGED_IN_EXIT_STATUS)
             else:
                 print('Login failed.')
                 print('Waiting %s seconds before retrying.' % wait_retry_secs)
                 time.sleep(wait_retry_secs)
                 total_wait_secs += wait_retry_secs
             wait_retry_secs *= 2
-        exit(1)
+        sys.exit(LOGGED_OUT_EXIT_STATUS)
     finally:
         os.remove('./.tibia_reconnector.lock')
 
@@ -186,12 +187,12 @@ def handle_check(tibia_wid):
     """Handles the case where the user only wants to check if the character is
     in-game."""
     if check_ingame(tibia_wid):
-        exit(0)
+        sys.exit(LOGGED_IN_EXIT_STATUS)
     else:
-        exit(1)
+        sys.exit(LOGGED_OUT_EXIT_STATUS)
 
 
-def get_credential(user: str, credentials_path: str) -> Credential:
+def load_credential(user: str, credentials_path: str) -> Credential:
     credentials = CREDENTIALS_SCHEMA.loadf(credentials_path)
     credential = credentials.get(user)
     if credential is None:
@@ -211,20 +212,23 @@ def main(tibia_pid,
         handle_check(tibia_wid)
     if login:
         if credentials_path is None:
-            print(("A path to a credentials json file is required.\n"
-                   "See example: example.credentials.json"),
-                  file=sys.stderr)
-            exit(1)
+            raise Exception(("A path to a credentials json file is required.\n"
+                             "See example: example.credentials.json"))
         if credentials_user is None:
-            print("We require a user profile to login.", file=sys.stderr)
-            exit(1)
+            raise Exception("We require a user profile to login.")
 
-        credential = get_credential(credentials_user, credentials_path)
+        credential = load_credential(credentials_user, credentials_path)
         handle_login(tibia_wid, credential, max_wait)
 
 
 if __name__ == '__main__':
     args = parser.parse_args()
     DEBUG_LEVEL = args.debug_level
-    main(args.pid, args.credentials_user, args.credentials_path,
-         args.check_if_ingame, args.login, args.max_wait)
+    try:
+        main(args.pid, args.credentials_user, args.credentials_path,
+             args.check_if_ingame, args.login, args.max_wait)
+    except SystemExit:
+        pass
+    except Exception as e:
+        print(f"Unexpected error: {e}", file=sys.stderr)
+        exit(FAILURE_EXIT_STATUS)

@@ -472,7 +472,13 @@ function wait_for_mana() {
 }
 
 function is_logged_out {
-  ! python_bin "${RECONNECTOR_BIN}" --check_if_ingame "${tibia_pid}"
+  python_bin "${RECONNECTOR_BIN}" --check_if_ingame "${tibia_pid}" >&2
+  exit_status=$?
+  if [[ ${exit_status} -ne 0 ]] && [[ ${exit_status} -ne 2 ]]; then
+    echo "Tibia reconnector failed with exit status ${exit_status}, unable to continue." >&2
+    exit 1
+  fi
+  [[ ${exit_status} -eq 2 ]]
 }
 
 function login {
