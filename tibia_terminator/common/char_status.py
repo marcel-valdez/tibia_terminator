@@ -8,7 +8,7 @@ from tibia_terminator.common.lazy_evaluator import FutureValue, immediate
 
 class CharStatus:
     def __init__(self, hp: int, speed: int, mana: int, magic_shield_level: int,
-                 equipment_status: Dict):
+                 equipment_status: Dict[str, Any]):
         self.hp = hp
         self.speed = speed
         self.mana = mana
@@ -23,6 +23,22 @@ class CharStatus:
         self.is_ring_slot_empty = self.equipped_ring == RingName.EMPTY
         self.magic_shield_status = \
             equipment_status.get('magic_shield_status', 'ERROR')
+
+    def copy(self,
+             hp: int = None,
+             speed: int = None,
+             mana: int = None,
+             magic_shield_level: int = None,
+             equipment_status: Dict[str, any] = None):
+        return CharStatus(
+            hp or self.hp, speed or self.speed, mana or self.mana,
+            magic_shield_level or self.magic_shield_level, equipment_status
+            or {
+                'emergency_action_amulet': self.emergency_action_amulet,
+                'emergency_action_ring': self.emergency_action_ring,
+                'equipped_ring': self.equipped_ring,
+                'magic_shield_status': self.magic_shield_status
+            })
 
 
 class CharStatusAsync(CharStatus):
