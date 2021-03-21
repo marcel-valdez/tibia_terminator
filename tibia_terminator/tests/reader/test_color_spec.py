@@ -2,7 +2,7 @@
 
 import unittest
 
-import tibia_terminator.keeper.color_spec as color_spec
+import tibia_terminator.reader.color_spec as color_spec
 
 from unittest import TestCase
 
