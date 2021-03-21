@@ -49,8 +49,7 @@ class MagicShieldKeeper:
             return False
 
         return (char_status.magic_shield_level <= self.magic_shield_treshold
-                or self.secs_since_cast() >= MAGIC_SHIELD_DURATION_SECS - 10
-                ) and char_status.mana >= self.total_hp
+                or self.secs_since_cast() >= MAGIC_SHIELD_DURATION_SECS - 10)
 
     def should_cast_cancel(self, char_status):
         # cancel magic shield if we have less mana than 125% total HP

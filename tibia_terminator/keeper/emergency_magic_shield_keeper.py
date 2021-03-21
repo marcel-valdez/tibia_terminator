@@ -1,17 +1,20 @@
 """Keeps the magic shield (utamo vita) up."""
 
-from tibia_terminator.keeper.magic_shield_keeper import (MagicShieldKeeper,
-                                        MAGIC_SHIELD_DURATION_SECS)
+from typing import Callable
+from tibia_terminator.keeper.emergency_reporter import EmergencyReporter
+from tibia_terminator.interface.client_interface import ClientInterface
+from tibia_terminator.keeper.magic_shield_keeper import (
+    MagicShieldKeeper, MAGIC_SHIELD_DURATION_SECS)
 
 
 class EmergencyMagicShieldKeeper(MagicShieldKeeper):
     def __init__(self,
-                 client,
-                 emergency_reporter,
-                 total_hp,
-                 mana_lo,
-                 magic_shield_treshold,
-                 time_fn=None):
+                 client: ClientInterface,
+                 emergency_reporter: EmergencyReporter,
+                 total_hp: int,
+                 mana_lo: int,
+                 magic_shield_treshold: int,
+                 time_fn: Callable[[], int] = None):
         super().__init__(client, total_hp, magic_shield_treshold, time_fn)
         self.emergency_reporter = emergency_reporter
 
