@@ -10,15 +10,17 @@ from tibia_terminator.app_config import MEM_CONFIG
 from tibia_terminator.char_config import CHAR_CONFIGS, HOTKEYS_CONFIG
 from tibia_terminator.common.char_status import CharStatus, CharStatusAsync
 from tibia_terminator.common.logger import (set_debug_level, StatsLogger)
-from tibia_terminator.interface.client_interface import (ClientInterface, CommandProcessor)
+from tibia_terminator.interface.client_interface import (ClientInterface,
+                                                         CommandProcessor)
 from tibia_terminator.interface.macro.loot_macro import LootMacro
 from tibia_terminator.keeper.char_keeper import CharKeeper
 from tibia_terminator.reader.char_reader38 import CharReader38 as CharReader
 from tibia_terminator.reader.equipment_reader import EquipmentReader
-from tibia_terminator.reader.memory_reader38 import MemoryReader38 as MemoryReader
+from tibia_terminator.reader.memory_reader38 import (MemoryReader38 as
+                                                     MemoryReader)
 from tibia_terminator.reader.window_utils import get_tibia_wid
-from tibia_terminator.view.view_renderer import (ViewRenderer, PausedView, RunView,
-                                ConfigSelectionView)
+from tibia_terminator.view.view_renderer import (ViewRenderer, PausedView,
+                                                 RunView, ConfigSelectionView)
 
 # - If you get the error:
 #     Xlib.error.DisplayConnectionError: Can't connect to display ":0": b'No protocol specified\n'
@@ -243,7 +245,8 @@ class TibiaTerminator:
         return CharStatusAsync(
             self.char_reader.get_stats(),
             self.equipment_reader.get_equipment_status(
-                emergency_action_amulet_cb=self.view.set_emergency_action_amulet,
+                emergency_action_amulet_cb=self.view.
+                set_emergency_action_amulet,
                 emergency_action_ring_cb=self.view.set_emergency_action_ring,
                 equipped_amulet_cb=self.view.set_equipped_amulet,
                 equipped_ring_cb=self.view.set_equipped_ring,
