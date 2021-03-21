@@ -4,8 +4,10 @@
 import os
 import argparse
 import time
+import sys
 
-from credentials import CREDENTIALS
+from schemas.credentials_schema import (CredentialsSchema, Credentials,
+                                        Credential)
 from tibia_terminator.reader.window_utils import (get_tibia_wid, focus_tibia,
                                                   send_key, send_text,
                                                   left_click,
@@ -13,8 +15,11 @@ from tibia_terminator.reader.window_utils import (get_tibia_wid, focus_tibia,
 
 parser = argparse.ArgumentParser(description='Tibia reconnector')
 parser.add_argument('pid', help='The PID of Tibia.')
-parser.add_argument('--credentials_profile',
-                    help='Name of the credentials profile to use.',
+parser.add_argument('--credentials_user',
+                    help='User to login from list of credentials.',
+                    type=str)
+parser.add_argument('--credentials_path',
+                    help='Path to credentials configuration file.',
                     type=str)
 parser.add_argument('--check_if_ingame',
                     help='Exits with code 0 if the charcacter is in-game',
@@ -32,10 +37,9 @@ parser.add_argument('--max_wait',
                     default=120)
 
 DEBUG_LEVEL = 0
-
 SCREEN_SPECS = {"logged_out": ["6b5e6f", "59343c", "57453b", "41e8fb"]}
-
 SCREEN_COORDS = [(1132, 316), (1531, 713), (480, 310), (482, 546)]
+CREDENTIALS_SCHEMA = CredentialsSchema()
 
 
 def debug(msg, debug_level=0):
@@ -95,7 +99,7 @@ def close_dialogs(tibia_wid):
     time.sleep(1)
 
 
-def login(tibia_wid, credentials):
+def login(tibia_wid, credential: Credential):
     # Focus tibia window
     focus_tibia(tibia_wid)
     time.sleep(0.5)
@@ -110,13 +114,13 @@ def login(tibia_wid, credentials):
     send_key(tibia_wid, Key.CTRL + '+' + Key.BACKSPACE)
     time.sleep(0.1)
     # Type in password with 250ms between keypress
-    send_text(tibia_wid, credentials['password'])
+    send_text(tibia_wid, credential.password)
     time.sleep(0.1)
     # Click [Login] button
     left_click(tibia_wid, 1040, 610)
     time.sleep(5)
     #   - Focus should be on the 1st char on the list.
-    # Click [OK] in char menu
+    # Click [OK] in char menup
     left_click(tibia_wid, 1226, 725)
     #   - Spin-wait for 30 seconds waiting for character to be in-game
     for _ in range(1, 30):
@@ -187,8 +191,17 @@ def handle_check(tibia_wid):
         exit(1)
 
 
+def get_credential(user: str, credentials_path: str) -> Credential:
+    credentials = CREDENTIALS_SCHEMA.loadf(credentials_path)
+    credential = credentials.get(user)
+    if credential is None:
+        raise Exception(f"Unknown credential user profile {user}")
+    return credential
+
+
 def main(tibia_pid,
-         credentials_profile,
+         credentials_user,
+         credentials_path,
          only_check=False,
          login=False,
          max_wait=120):
@@ -197,18 +210,21 @@ def main(tibia_pid,
     if only_check:
         handle_check(tibia_wid)
     if login:
-        if credentials_profile is None:
-            print("We require a profile to login. See credentials.py")
+        if credentials_path is None:
+            print(("A path to a credentials json file is required.\n"
+                   "See example: example.credentials.json"),
+                  file=sys.stderr)
             exit(1)
-        credentials = CREDENTIALS.get(credentials_profile, None)
-        if credentials is None:
-            print("Unknown credentials profile " + credentials_profile)
+        if credentials_user is None:
+            print("We require a user profile to login.", file=sys.stderr)
             exit(1)
-        handle_login(tibia_wid, credentials, max_wait)
+
+        credential = get_credential(credentials_user, credentials_path)
+        handle_login(tibia_wid, credential, max_wait)
 
 
 if __name__ == '__main__':
     args = parser.parse_args()
     DEBUG_LEVEL = args.debug_level
-    main(args.pid, args.credentials_profile, args.check_if_ingame, args.login,
-         args.max_wait)
+    main(args.pid, args.credentials_user, args.credentials_path,
+         args.check_if_ingame, args.login, args.max_wait)

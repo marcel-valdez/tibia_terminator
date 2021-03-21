@@ -8,7 +8,9 @@ PYTHONPATH="${PYTHONPATH}:${ROOT_PATH}"
 CHAR_READER_BIN="${ROOT_PATH}/reader/char_reader38.py"
 EQUIPMENT_READER_BIN="${ROOT_PATH}/reader/equipment_reader.py"
 RECONNECTOR_BIN="${ROOT_PATH}/tibia_reconnector.py"
+CREDENTIALS_PATH="${ROOT_PATH}/credentials.json"
 
+# Interface interaction cofiguration values
 EQUIP_RING_ROH_KEY='n'
 EQUIP_RING_LR_KEY='u'
 EAT_FOOD_KEY='h'
@@ -328,8 +330,9 @@ function is_logged_out {
 
 function login {
   python_bin "${RECONNECTOR_BIN}" --login \
-    --credentials_profile "${credentials_profile}" \
-    "${tibia_pid}"
+             --credentials_user "${credentials_profile}" \
+             --credentials_path "${CREDENTIALS_PATH}" \
+             "${tibia_pid}"
 
   if [[ $? -ne 0 ]]; then
     echo "Failed log back into the game." >&2

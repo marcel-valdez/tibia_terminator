@@ -1,8 +1,8 @@
 *.pyc
 *.bak
 \#*\#
-credentials.py
-src/credentials.py
+credentials.json
+tibia_terminator/credentials.json
 src/app_config.py
 src/char_config.py
 scripts/user/*
