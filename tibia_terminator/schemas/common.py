@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.8
 
-import json
+import commentjson as json
 import os
 
 from marshmallow import Schema
