@@ -6,7 +6,8 @@ import curses
 
 from collections import deque
 
-from tibia_terminator.app_config import MEM_CONFIG
+from tibia_terminator.schemas.app_config_schema import (AppConfigsSchema,
+                                                        AppConfig)
 from tibia_terminator.char_config import CHAR_CONFIGS, HOTKEYS_CONFIG
 from tibia_terminator.common.char_status import CharStatus, CharStatusAsync
 from tibia_terminator.common.logger import (set_debug_level, StatsLogger)
@@ -48,6 +49,9 @@ parser.add_argument('--no_speed',
 parser.add_argument('--only_monitor',
                     help='Only print stat changes, no action taken',
                     action='store_true')
+parser.add_argument('--app_config_path',
+                    help='Path to memory configuration values',
+                    required=True)
 parser.add_argument('--debug_level',
                     help=('Set the debug level for debug log messages, '
                           'higher values result in more verbose output.'),
@@ -86,7 +90,7 @@ class TibiaTerminator:
                  char_keeper: CharKeeper,
                  char_reader: CharReader,
                  equipment_reader: EquipmentReader,
-                 mem_config,
+                 app_config: AppConfig,
                  char_configs,
                  cliwin,
                  loot_macro: LootMacro,
@@ -101,7 +105,7 @@ class TibiaTerminator:
         self.tibia_wid = tibia_wid
         self.char_keeper = char_keeper
         self.char_reader = char_reader
-        self.mem_config = mem_config
+        self.app_config = app_config
         self.char_configs = char_configs
         self.cliwin = cliwin
         self.equipment_reader = equipment_reader
@@ -128,23 +132,23 @@ class TibiaTerminator:
         # We should consider using OCR instead of reading the mana address.
 
         if self.enable_mana:
-            mana_address = int(self.mem_config['mana_memory_address'], 16)
+            mana_address = int(self.app_config.mana_memory_address, 16)
         else:
             mana_address = None
 
-        if self.enable_hp and self.mem_config['hp_memory_address'] is not None:
-            hp_address = int(self.mem_config['hp_memory_address'], 16)
+        if self.enable_hp and self.app_config.hp_memory_address is not None:
+            hp_address = int(self.app_config.hp_memory_address, 16)
         else:
             hp_address = None
 
         if self.enable_speed:
-            speed_address = int(self.mem_config['speed_memory_address'], 16)
+            speed_address = int(self.app_config.speed_memory_address, 16)
         else:
             speed_address = None
 
-        if self.mem_config['magic_shield_memory_address'] is not None:
+        if self.app_config.magic_shield_memory_address is not None:
             magic_shield_address = int(
-                self.mem_config['magic_shield_memory_address'], 16)
+                self.app_config.magic_shield_memory_address, 16)
         else:
             magic_shield_address = None
 
@@ -340,12 +344,14 @@ class TibiaTerminator:
             self.tibia_wid) + " Active config: " + self.selected_config_name
 
 
-def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield,
-         enable_speed, only_monitor):
+def main(cliwin, pid, app_config_path: str, enable_mana: bool, enable_hp: bool,
+         enable_magic_shield: bool, enable_speed: bool, only_monitor: bool):
     if pid is None or pid == "":
         raise Exception("PID is required, you may use psgrep -a -l bin/Tibia "
                         "to find the process id")
-    mem_config = MEM_CONFIG[str(pid)]
+    app_configs_schema = AppConfigsSchema()
+    app_configs = app_configs_schema.loadf(app_config_path)
+    app_config = app_configs[str(pid)]
     tibia_wid = get_tibia_wid(pid)
     stats_logger = StatsLogger()
 
@@ -365,7 +371,7 @@ def main(cliwin, pid, enable_mana, enable_hp, enable_magic_shield,
                                        char_keeper,
                                        char_reader,
                                        eq_reader,
-                                       mem_config,
+                                       app_config,
                                        CHAR_CONFIGS,
                                        cliwin,
                                        loot_macro,
@@ -385,6 +391,7 @@ if __name__ == "__main__":
     set_debug_level(args.debug_level)
     curses.wrapper(main,
                    args.pid,
+                   args.app_config_path,
                    enable_mana=not args.no_mana,
                    enable_hp=not args.no_hp,
                    enable_magic_shield=not args.no_magic_shield,

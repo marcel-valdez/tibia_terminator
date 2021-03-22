@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # requirements: xdotool
 
-SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-ROOT_PATH="$(dirname ${SCRIPTPATH})/tibia_terminator"
-PYTHONPATH="${PYTHONPATH}:${ROOT_PATH}"
+SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+TERMINATOR_PATH="$(dirname ${SCRIPT_PATH})/tibia_terminator"
+PYTHONPATH="${PYTHONPATH}:${TERMINATOR_PATH}"
 
-CHAR_READER_BIN="${ROOT_PATH}/reader/char_reader38.py"
-EQUIPMENT_READER_BIN="${ROOT_PATH}/reader/equipment_reader.py"
-RECONNECTOR_BIN="${ROOT_PATH}/tibia_reconnector.py"
-CREDENTIALS_PATH="${ROOT_PATH}/credentials.json"
+CHAR_READER_BIN="${SCRIPT_PATH}/char_reader.sh"
+EQUIPMENT_READER_BIN="${SCRIPT_PATH}/equipment_reader.sh"
+RECONNECTOR_BIN="${SCRIPT_PATH}/reconnector.sh"
+APP_CONFIG_PATH="${TERMINATOR_PATH}/app_config.json"
+CREDENTIALS_PATH="${TERMINATOR_PATH}/credentials.json"
 
 # Interface interaction cofiguration values
 EQUIP_RING_ROH_KEY='n'
@@ -28,14 +29,6 @@ REGEN_RING_CENTER_Y=498
 RING_SLOT_CENTER_X=1768
 RING_SLOT_CENTER_Y=336
 
-
-function python_bin {
-  PYTHONPATH=${PYTHONPATH} python3.8 "$@"
-}
-
-function sudo_python_bin {
-  sudo PYTHONPATH=${PYTHONPATH} python3.8 "$@"
-}
 
 function debug() {
   [[ "${DEBUG}" ]] && echo "$@" >&2
@@ -189,9 +182,9 @@ function fetch_char_stats() {
   if [[ ${use_char_reader} -eq 1 ]]; then
     pushd "${ROOT_PATH}/src" &>/dev/null
     if [[ "${tibia_pid}" ]]; then
-      eval "$(sudo_python_bin ${CHAR_READER_BIN} --pid ${tibia_pid})"
+      eval "$(${CHAR_READER_BIN} --pid ${tibia_pid} --app_config_path ${APP_CONFIG_PATH})"
     else
-      eval "$(sudo_python_bin ${CHAR_READER_BIN})"
+      eval "$(${CHAR_READER_BIN} --app_config_path ${APP_CONFIG_PATH})"
     fi
     popd &>/dev/null
 
@@ -216,7 +209,7 @@ function is_out_of_souls_or_mana() {
 
 function is_ring_slot_empty() {
   local tibia_wid="$1"
-  python_bin "${EQUIPMENT_READER_BIN}" --check_slot_empty 'ring' "${tibia_wid}"
+  "${EQUIPMENT_READER_BIN}" --check_slot_empty 'ring' "${tibia_wid}"
 }
 
 potions_seq_counter=0
@@ -472,7 +465,7 @@ function wait_for_mana() {
 }
 
 function is_logged_out {
-  python_bin "${RECONNECTOR_BIN}" --check_if_ingame "${tibia_pid}" >&2
+  "${RECONNECTOR_BIN}" --check_if_ingame "${tibia_pid}" >&2
   exit_status=$?
   if [[ ${exit_status} -ne 0 ]] && [[ ${exit_status} -ne 2 ]]; then
     echo "Tibia reconnector failed with exit status ${exit_status}, unable to continue." >&2
@@ -482,10 +475,10 @@ function is_logged_out {
 }
 
 function login {
-  python_bin "${RECONNECTOR_BIN}" --login \
-             --credentials_user "${credentials_profile}" \
-             --credentials_path "${CREDENTIALS_PATH}" \
-             "${tibia_pid}"
+  "${RECONNECTOR_BIN}" --login \
+                       --credentials_user "${credentials_profile}" \
+                       --credentials_path "${CREDENTIALS_PATH}" \
+                       "${tibia_pid}"
 
   if [[ $? -ne 0 ]]; then
     echo "Failed log back into the game." >&2

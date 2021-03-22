@@ -1,0 +1,34 @@
+{
+  // Default process identifier to run against
+  "default_pid": 15174,
+  "configs": [
+    {
+      // PID of Tibia process
+      "pid": 15174,
+      // These values are obtained by running scanmem on the tibia process.
+      "mana_memory_address": "5f22f90", // # [I32 I16 ]
+      "speed_memory_address": "df6bbf0",  // # [I16 ]
+      "soul_points_memory_address": "53ef508",
+      // The HP memory address can be reliably calculated based on the
+      // mana memory address.
+      // Not required, since it can be calculated.
+      "hp_memory_address": null, // (unnecessary) [I32 I16 ]
+      // from the addresses that match max to min values of magic shield, the
+      // one that keeps track of current shield points is the one in the middle
+      // that has another address matching +2 positions ahead of it.
+      "magic_shield_memory_address": null, // (unnecessary) [I16 ]
+      "max_mana_address": null, // (unnecessary)
+      "max_hp_address": null // (unnecessary)
+    },
+    {
+      "pid": 17985,
+      "mana_memory_address": "54fbd80",
+      "speed_memory_address": null,
+      "soul_points_memory_address": "46e6768",
+      "hp_memory_address": null,
+      "magic_shield_memory_address": null,
+      "max_mana_address": null,
+      "max_hp_address": null
+    }
+  ]
+}

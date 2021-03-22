@@ -4,7 +4,7 @@ import argparse
 
 from typing import Dict
 
-from tibia_terminator.app_config import MEM_CONFIG
+from tibia_terminator.schemas.app_config_schema import AppConfigsSchema
 from tibia_terminator.common.lazy_evaluator import future, FutureValue
 from tibia_terminator.reader.memory_reader38 import MemoryReader38 as MemoryReader
 
@@ -55,6 +55,10 @@ parser.add_argument('--max_mana_address',
                     type=str,
                     default=None)
 parser.add_argument('--pid', help='The PID of Tibia', type=int, default=None)
+parser.add_argument('--app_config_path',
+                    help='Path to memory addresses',
+                    type=str,
+                    required=True)
 parser.add_argument('--verbose',
                     help='Show verbose output.',
                     action='store_true',
@@ -266,11 +270,14 @@ def main(pid,
 if __name__ == "__main__":
     args = parser.parse_args()
     pid = args.pid or MEM_CONFIG['default_pid']
-    config = MEM_CONFIG[str(pid)]
-    main(pid, args.mana_address or config['mana_memory_address'],
-         args.hp_address or config['hp_memory_address'],
-         args.magic_shield_address or config['magic_shield_memory_address'],
-         args.speed_address or config['speed_memory_address'],
-         args.soul_points_address or config['soul_points_memory_address'],
-         args.max_hp_address or config['max_hp_address'], args.max_mana_address
-         or config['max_mana_address'], args.verbose)
+    app_config_schema = AppConfigsSchema()
+    configs = app_config_schema.loadf(args.app_config_path)
+    config = configs[pid]
+    main(pid, args.mana_address
+         or config.mana_memory_address, args.hp_address
+         or config.hp_memory_address, args.magic_shield_address
+         or config.magic_shield_memory_address, args.speed_address
+         or config.speed_memory_address, args.soul_points_address
+         or config.soul_points_memory_address, args.max_hp_address
+         or config.max_hp_address, args.max_mana_address
+         or config.max_mana_address, args.verbose)
