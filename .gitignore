@@ -1,6 +1,7 @@
 *.pyc
 *.bak
 \#*\#
+.\#*
 credentials.json
 tibia_terminator/credentials.json
 src/app_config.py
