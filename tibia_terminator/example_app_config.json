@@ -1,33 +1,44 @@
 {
   // Default process identifier to run against
-  "default_pid": 15174,
+  "default_pid": 8802,
   "configs": [
+    // These values are obtained by running scanmem on the tibia process.
     {
       // PID of Tibia process
-      "pid": 15174,
-      // These values are obtained by running scanmem on the tibia process.
-      "mana_memory_address": "5f22f90", // # [I32 I16 ]
-      "speed_memory_address": "df6bbf0",  // # [I16 ]
-      "soul_points_memory_address": "53ef508",
-      // The HP memory address can be reliably calculated based on the
-      // mana memory address.
+      "pid": 8802, // Update this!
+      // [I32 I16 ]
+      "mana_memory_address": "0x5672cf0", // Update this!
+      // [I16 ]
+      "speed_memory_address": "0x953f2f0", // Update this!
+      // [I32 I16 I8 ]
+      "soul_points_memory_address": "0x4bc2778", // Update this!
       // Not required, since it can be calculated.
-      "hp_memory_address": null, // (unnecessary) [I32 I16 ]
-      // from the addresses that match max to min values of magic shield, the
-      // one that keeps track of current shield points is the one in the middle
-      // that has another address matching +2 positions ahead of it.
-      "magic_shield_memory_address": null, // (unnecessary) [I16 ]
-      "max_mana_address": null, // (unnecessary)
-      "max_hp_address": null // (unnecessary)
+      "hp_memory_address": null,
+      // Not required, since it can be calculated.
+      "magic_shield_memory_address": null,
+      // Not required, since it can be calculated.
+      "max_mana_address": null,
+      // Not required, since it can be calculated.
+      "max_hp_address": null
     },
     {
-      "pid": 17985,
-      "mana_memory_address": "54fbd80",
+      // In Linux you can have multiple Tibia clients open and use a different
+      // configuration for each one.
+      // PID of Tibia process
+      "pid": 8724,
+      // [I32 I16 ]
+      "mana_memory_address": "0x4b58eb0",
+      // [I16 ]
       "speed_memory_address": null,
-      "soul_points_memory_address": "46e6768",
+      // [I32 I16 I8 ]
+      "soul_points_memory_address": "0x30abd6c",
+      // Not required, since it can be calculated.
       "hp_memory_address": null,
+      // Not required, since it can be calculated.
       "magic_shield_memory_address": null,
+      // Not required, since it can be calculated.
       "max_mana_address": null,
+      // Not required, since it can be calculated.
       "max_hp_address": null
     }
   ]
