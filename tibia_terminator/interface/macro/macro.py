@@ -3,12 +3,41 @@
 import keyboard
 import pyautogui
 
-from typing import List, Set, Dict
+from typing import List, Set, Dict, NamedTuple
 from keyboard import KeyboardEvent
 
 from tibia_terminator.interface.client_interface import ClientInterface
 
 pyautogui.PAUSE = 0.02
+
+
+class Hotkey(NamedTuple):
+    key: str
+    modifiers: List[str] = []
+
+    def __str__(self):
+        return "+".join(self.modifiers + [self.key])
+
+    def to_list(self):
+        return self.modifiers + [self.key]
+
+
+def parse_hotkey(hotkey: str) -> Hotkey:
+    modifiers = []
+    while "+" in hotkey:
+        modifier_idx = hotkey.index("+")
+        modifiers.append(hotkey[:modifier_idx])
+        hotkey = hotkey[modifier_idx + 1:]
+    return Hotkey(hotkey, modifiers)
+
+
+def to_issuable(hotkey: Hotkey) -> Hotkey:
+    issuable_modifiers = []
+    for modifier in hotkey.modifiers:
+        if modifier in ('ctrl', 'shift', 'alt'):
+            modifier = f'{modifier}left'
+        issuable_modifiers.append(modifier)
+    return Hotkey(hotkey.key, issuable_modifiers)
 
 
 class Macro:
@@ -77,7 +106,8 @@ class Macro:
             #  _listener.blocking_keys instead.
             store = keyboard._listener.nonblocking_keys
             for scan_code in scan_codes:
-                store[scan_code].remove(self.__action)
+                if self.__action in store[scan_code]:
+                    store[scan_code].remove(self.__action)
             self.hotkey_hook = None
 
 

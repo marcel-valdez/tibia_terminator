@@ -1,0 +1,15 @@
+{
+  // actual hotkey in Tibia is ctrl+9, but since ctrl is part of the direction
+  // there is no need to repeat the key here, since it will actually release it
+  // after press.
+  "spell_key_rotation": ["9"],
+  "rotation_threshold_secs": 4,
+  "direction_pairs": [
+    // ctrl is actually actually changes direction, no need to map to another
+    // direction key (recommended setup)
+    ["alt+f", null],
+    ["alt+e", null],
+    ["alt+s", null],
+    ["alt+d", null],
+  ]
+}
