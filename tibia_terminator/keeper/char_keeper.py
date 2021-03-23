@@ -3,11 +3,16 @@
 from typing import List, Dict
 
 from tibia_terminator.common.char_status import CharStatus
-from tibia_terminator.interface.macro.cancel_emergency_macro import CancelEmergencyMacro
-from tibia_terminator.interface.macro.item_crosshair_macro import ItemCrosshairMacro
+from tibia_terminator.interface.macro.cancel_emergency_macro import (
+    CancelEmergencyMacro)
+from tibia_terminator.interface.macro.item_crosshair_macro import (
+    ItemCrosshairMacro)
+from tibia_terminator.interface.macro.directional_macro import DirectionalMacro
 from tibia_terminator.interface.macro.macro import Macro
-from tibia_terminator.interface.macro.start_emergency_macro import StartEmergencyMacro
-from tibia_terminator.keeper.emergency_magic_shield_keeper import EmergencyMagicShieldKeeper
+from tibia_terminator.interface.macro.start_emergency_macro import (
+    StartEmergencyMacro)
+from tibia_terminator.keeper.emergency_magic_shield_keeper import (
+    EmergencyMagicShieldKeeper)
 from tibia_terminator.reader.equipment_reader import MagicShieldStatus
 from tibia_terminator.keeper.emergency_reporter import EmergencyReporter
 from tibia_terminator.keeper.equipment_keeper import EquipmentKeeper
@@ -31,6 +36,7 @@ class CharKeeper:
                  item_crosshair_macros=None,
                  core_macros=None):
         self.item_crosshair_macros = []
+        self.directional_macros = []
         self.core_macros = []
         self.client = client
         self.char_configs = char_configs
@@ -47,6 +53,7 @@ class CharKeeper:
             char_config.get('item_crosshair_macros', []),
             item_crosshair_macros)
         self.init_core_macros(self.hotkeys, core_macros)
+        self.init_directional_macros(char_config.get('directional_macros', []))
 
     def change_char_config(self, index):
         self.load_char_config(self.char_configs[index]["config"])
@@ -61,6 +68,7 @@ class CharKeeper:
         self.init_item_crosshair_macros(
             char_config.get('item_crosshair_macros', []))
         self.init_core_macros(self.hotkeys)
+        self.init_directional_macros(char_config.get('directional_macros', []))
 
     def init_emergency_reporter(self, char_config, emergency_reporter=None):
         if emergency_reporter is None:
@@ -149,6 +157,21 @@ class CharKeeper:
         self.__unhook_macros(self.item_crosshair_macros)
         self.item_crosshair_macros = []
 
+    def init_directional_macros(
+            self,
+            macro_configs: List[Dict[str, str]],
+            directional_macros: List[DirectionalMacro] = None):
+        self.unload_directional_macros()
+        if directional_macros is not None:
+            self.directional_macros = directional_macros
+        else:
+            for macro_config in macro_configs:
+                self.directional_macros.append(DirectionalMacro(macro_config))
+
+    def unload_directional_macros(self):
+        self.__unhook_macros(self.directional_macros)
+        self.directional_macros = []
+
     def init_core_macros(self,
                          hotkeys_configs: Dict[str, str],
                          core_macros: List[Macro] = None):
@@ -175,6 +198,7 @@ class CharKeeper:
     def unhook_macros(self):
         self.__unhook_macros(self.item_crosshair_macros)
         self.__unhook_macros(self.core_macros)
+        self.__unhook_macros(self.directional_macros)
 
     def __unhook_macros(self, macros: List[Macro] = None):
         for macro in (macros or []):
@@ -183,6 +207,7 @@ class CharKeeper:
     def hook_macros(self):
         self.__hook_macros(self.item_crosshair_macros)
         self.__hook_macros(self.core_macros)
+        self.__hook_macros(self.directional_macros)
 
     def __hook_macros(self, macros: List[Macro] = None):
         for macro in (macros or []):
@@ -212,7 +237,6 @@ class CharKeeper:
     def handle_hp_change(self, char_status: CharStatus):
         is_downtime = self.speed_keeper.is_hasted(char_status.speed) and \
             self.mana_keeper.is_healthy_mana(char_status.mana)
-
         self.hp_keeper.handle_status_change(char_status, is_downtime)
 
     def handle_mana_change(self, char_status: CharStatus):
