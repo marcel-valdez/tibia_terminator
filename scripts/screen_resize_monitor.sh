@@ -1,14 +1,5 @@
 #!/usr/bin/env bash
 
-SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-ROOT_PATH="$(dirname ${SCRIPTPATH})/tibia_terminator"
-PYTHONPATH="${PYTHONPATH}:${ROOT_PATH}"
-EQUIPMENT_READER_BIN="${ROOT_PATH}/reader/equipment_reader.py"
-
-function python_bin {
-  PYTHONPATH=${PYTHONPATH} python3.8 "$@"
-}
-
 # Run this script while resizing the Tibia playable area until the
 # equipment status read by Tibia terminator matches what you see
 # on screen.
@@ -30,8 +21,14 @@ function python_bin {
 #      to adjust the size accordingly.
 
 function __screen_resize_monitor {
+  SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+  ROOT_PATH="${SCRIPT_PATH}/tibia_terminator"
+  PYTHONPATH="${PYTHONPATH}:${ROOT_PATH}"
+  EQUIPMENT_READER_BIN="${ROOT_PATH}/reader/equipment_reader.py"
+
   echo "mouse location: $(xdotool getmouselocation)"
-  python_bin "${EQUIPMENT_READER_BIN}" --equipment_status dummy_wid
+  PYTHONPATH=${PYTHONPATH} python3.8 "${EQUIPMENT_READER_BIN}" \
+            --equipment_status dummy_wid
 }
 
 export -f __screen_resize_monitor

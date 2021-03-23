@@ -5,6 +5,7 @@ SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 TERMINATOR_PATH="$(dirname ${SCRIPT_PATH})/tibia_terminator"
 PYTHONPATH="${PYTHONPATH}:${TERMINATOR_PATH}"
 
+REFILLER_FNS="${SCRIPT_PATH}/refiller_fns.sh"
 CHAR_READER_BIN="${SCRIPT_PATH}/char_reader.sh"
 EQUIPMENT_READER_BIN="${SCRIPT_PATH}/equipment_reader.sh"
 RECONNECTOR_BIN="${SCRIPT_PATH}/reconnector.sh"
@@ -651,7 +652,7 @@ function parse_args() {
       credentials_profile=$2
       shift
       ;;
-    --check_empty_slots)
+    --check-empty-slots)
       check_empty_slots=1
       ;;
     --refill-char)
@@ -789,5 +790,5 @@ function main() {
   manasit
 }
 
-source "${SCRIPTPATH}/refiller_fns.sh"
+source "${REFILLER_FNS}"
 main "$@"
