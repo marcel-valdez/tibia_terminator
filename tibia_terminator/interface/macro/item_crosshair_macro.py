@@ -5,8 +5,9 @@ import keyboard
 import pyautogui
 
 from tibia_terminator.interface.macro.macro import ClientMacro
-from tibia_terminator.interface.client_interface import (ClientInterface, CommandType,
-                                        CommandProcessor)
+from tibia_terminator.interface.client_interface import (ClientInterface,
+                                                         CommandType,
+                                                         CommandProcessor)
 
 parser = argparse.ArgumentParser(description='Test item cross hair macro.')
 parser.add_argument("keys",

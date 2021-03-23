@@ -227,8 +227,8 @@ if __name__ == '__main__':
     try:
         main(args.pid, args.credentials_user, args.credentials_path,
              args.check_if_ingame, args.login, args.max_wait)
-    except SystemExit:
-        pass
+    except SystemExit as e:
+        raise e
     except Exception as e:
         print(f"Unexpected error: {e}", file=sys.stderr)
         exit(FAILURE_EXIT_STATUS)
