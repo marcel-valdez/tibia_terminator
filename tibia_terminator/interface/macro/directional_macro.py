@@ -48,7 +48,7 @@ class PairMacro(Macro):
                 pyautogui.hotkey(*self.to_key_params)
             # TODO: sometimes (10%~) it triggers before the char rotates in
             #       Concorda when doing heavy movement.
-            time.sleep(0.04)
+            time.sleep(0.045)
             pyautogui.hotkey(*rotation_key_params)
 
 
@@ -65,7 +65,7 @@ class DirectionalMacro():
     def __init__(self, config: Dict[str, Any]):
         _config = DirectionalMacroConfigSchema().load(config)
         self.__macros = []
-        self.__rotation_parfams = self.gen_rotation_params(_config)
+        self.__rotation_params = self.gen_rotation_params(_config)
         self.__macros = self.gen_pair_macros(_config)
         self.__rotation_threshold_sec = _config.rotation_threshold_secs
         self.__last_timestamp_sec = 0
