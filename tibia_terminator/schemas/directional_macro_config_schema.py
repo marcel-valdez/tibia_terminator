@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.8
 
-from marshmallow import fields, post_load
+from marshmallow import fields
 from typing import NamedTuple, List, Tuple
 from tibia_terminator.schemas.common import FactorySchema
 
@@ -11,7 +11,8 @@ class DirectionalMacroConfig(NamedTuple):
     direction_pairs: List[Tuple[str, str]]
 
 
-class DirectionalMacroConfigSchema(FactorySchema):
+class DirectionalMacroConfigSchema(FactorySchema[DirectionalMacroConfig]):
+    ctor = DirectionalMacroConfig
     spell_key_rotation = fields.List(fields.Str(), required=True)
     rotation_threshold_secs = fields.Int(default=3600)
     direction_pairs = fields.List(fields.Tuple((fields.Str(required=True),
@@ -19,7 +20,3 @@ class DirectionalMacroConfigSchema(FactorySchema):
                                                            allow_none=True,
                                                            default=None))),
                                   required=True)
-
-    @post_load
-    def make(self, data, **kwargs) -> DirectionalMacroConfig:
-        return DirectionalMacroConfig(**data)

@@ -3,9 +3,9 @@
 import unittest
 
 from unittest import TestCase
-from typing import NamedTuple, Optional
-from marshmallow import Schema, fields, post_load, ValidationError
-from tibia_terminator.schemas.common import (ResolvableField)
+from typing import NamedTuple, Optional, List
+from marshmallow import fields, ValidationError
+from tibia_terminator.schemas.common import (ResolvableField, FactorySchema)
 
 
 class TestResult(NamedTuple):
@@ -15,15 +15,12 @@ class TestResult(NamedTuple):
     optional_test_field: Optional[int] = None
 
 
-class TestSchema(Schema):
+class TestSchema(FactorySchema[TestResult]):
+    ctor = TestResult
     ref_field = fields.Int()
     test_field = ResolvableField(int, required=True, allow_none=False)
     optional_ref_field = ResolvableField(int, required=False, allow_none=True)
     optional_test_field = ResolvableField(int, required=False, allow_none=True)
-
-    @post_load
-    def make(self, data, **kwargs) -> TestResult:
-        return TestResult(**data)
 
 
 class NestedTestResult(NamedTuple):
@@ -31,13 +28,21 @@ class NestedTestResult(NamedTuple):
     nested: TestResult
 
 
-class NestedTestSchema(Schema):
+class NestedTestSchema(FactorySchema[NestedTestResult]):
+    ctor = NestedTestResult
     root_field = fields.Int()
     nested = fields.Nested(TestSchema)
 
-    @post_load
-    def make(self, data, **kwargs) -> NestedTestResult:
-        return NestedTestResult(**data)
+
+class NestedListTestResult(NamedTuple):
+    root_field: int
+    nested_list: List[TestResult]
+
+
+class NestedListTestSchema(FactorySchema[NestedListTestResult]):
+    ctor = NestedListTestResult
+    root_field = fields.Int()
+    nested_list = fields.List(fields.Nested(TestSchema))
 
 
 class TestCommon(TestCase):
@@ -144,7 +149,6 @@ class TestCommon(TestCase):
             }
         }
         target = NestedTestSchema()
-        target.context = input
         # given
         result = target.load(input)
         # when
@@ -162,13 +166,44 @@ class TestCommon(TestCase):
             }
         }
         target = NestedTestSchema()
-        target.context = input
         # given
         result = target.load(input)
         # when
         self.assertEqual(result.nested.test_field, 42)
         self.assertEqual(result.nested.optional_test_field, 42)
         self.assertEqual(result.nested.optional_ref_field, 42)
+
+    def test_nested_list_resolvable_schema_ref_ref_ref(self):
+        # given
+        input = {
+            "root_field": 42,
+            "nested_list": [
+                {
+                    "ref_field": 43,
+                    "optional_ref_field": "{ref_field}",
+                    "test_field": "{optional_ref_field}",
+                    "optional_test_field": "{test_field}"
+                },
+                {
+                    "ref_field": 44,
+                    "optional_ref_field": "{root_field}",
+                    "test_field": "{optional_ref_field}",
+                    "optional_test_field": "{test_field}"
+                }
+            ]
+        }
+        target = NestedListTestSchema()
+        # given
+        result = target.load(input)
+        # when
+        self.assertEqual(result.nested_list[0].ref_field, 43)
+        self.assertEqual(result.nested_list[0].optional_ref_field, 43)
+        self.assertEqual(result.nested_list[0].test_field, 43)
+        self.assertEqual(result.nested_list[0].optional_test_field, 43)
+        self.assertEqual(result.nested_list[1].ref_field, 44)
+        self.assertEqual(result.nested_list[1].optional_test_field, 42)
+        self.assertEqual(result.nested_list[1].test_field, 42)
+        self.assertEqual(result.nested_list[1].optional_ref_field, 42)
 
 
 if __name__ == '__main__':

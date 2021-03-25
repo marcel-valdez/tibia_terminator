@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.8
 
-from marshmallow import fields, post_load, pre_load
+from marshmallow import fields, pre_load
 from typing import Optional, NamedTuple, List, Union, Dict, Any
 from tibia_terminator.schemas.common import FactorySchema
 
@@ -62,6 +62,7 @@ def _validate_hex(hex_number: str = None) -> bool:
 
 class AppConfigSchema(FactorySchema[AppConfig]):
     # Always required
+    ctor = AppConfig
     pid = fields.Int(required=True)
     mana_memory_address = fields.Str(allow_none=True, validate=_validate_hex)
     speed_memory_address = fields.Str(allow_none=True, validate=_validate_hex)
@@ -82,15 +83,8 @@ class AppConfigSchema(FactorySchema[AppConfig]):
                     copy[key] = value[2:]
         return copy
 
-    @post_load
-    def make_app_config(self, data, **kwargs) -> AppConfig:
-        return AppConfig(**data)
-
 
 class AppConfigsSchema(FactorySchema[AppConfigs]):
+    ctor = AppConfigs
     default_pid = fields.Int(required=False)
     configs = fields.List(fields.Nested(AppConfigSchema))
-
-    @post_load
-    def make_app_configs(self, data, **kwargs) -> AppConfigs:
-        return AppConfigs(**data)

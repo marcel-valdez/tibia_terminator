@@ -1,14 +1,12 @@
 #!/usr/bin/env python3.8
 
 import unittest
-
 from unittest import TestCase
-
 from tibia_terminator.schemas.app_config_schema import (AppConfigsSchema,
                                                         AppConfig, AppConfigs)
 
 
-class TestCredentialsSchema(TestCase):
+class TestAppCofigSchema(TestCase):
     def test_cleans_memory_address(self):
         # given
         data = {
@@ -30,8 +28,7 @@ class TestCredentialsSchema(TestCase):
         app_configs = target.load(data)
         # then
         self.assertIsInstance(app_configs.configs[0], AppConfig)
-        self.assertEqual(app_configs.configs[0].pid,
-                         data["configs"][0]["pid"])
+        self.assertEqual(app_configs.configs[0].pid, data["configs"][0]["pid"])
         self.assertEqual(app_configs.configs[0].mana_memory_address,
                          data["configs"][0]["mana_memory_address"][2:])
         self.assertEqual(app_configs.configs[0].speed_memory_address,
@@ -40,15 +37,12 @@ class TestCredentialsSchema(TestCase):
                          data["configs"][0]["soul_points_memory_address"][2:])
         self.assertEqual(app_configs.configs[0].hp_memory_address,
                          data["configs"][0]["hp_memory_address"][2:])
-        self.assertEqual(
-            app_configs.configs[0].magic_shield_memory_address,
-            data["configs"][0]["magic_shield_memory_address"][2:])
-        self.assertEqual(
-            app_configs.configs[0].max_mana_address,
-            data["configs"][0]["max_mana_address"][2:])
-        self.assertEqual(
-            app_configs.configs[0].max_hp_address,
-            data["configs"][0]["max_hp_address"][2:])
+        self.assertEqual(app_configs.configs[0].magic_shield_memory_address,
+                         data["configs"][0]["magic_shield_memory_address"][2:])
+        self.assertEqual(app_configs.configs[0].max_mana_address,
+                         data["configs"][0]["max_mana_address"][2:])
+        self.assertEqual(app_configs.configs[0].max_hp_address,
+                         data["configs"][0]["max_hp_address"][2:])
 
     def test_loads_minimal(self):
         # given
@@ -110,12 +104,10 @@ class TestCredentialsSchema(TestCase):
             self.assertEqual(
                 app_configs.configs[i].magic_shield_memory_address,
                 data["configs"][i]["magic_shield_memory_address"])
-            self.assertEqual(
-                app_configs.configs[i].max_mana_address,
-                data["configs"][i]["max_mana_address"])
-            self.assertEqual(
-                app_configs.configs[i].max_hp_address,
-                data["configs"][i]["max_hp_address"])
+            self.assertEqual(app_configs.configs[i].max_mana_address,
+                             data["configs"][i]["max_mana_address"])
+            self.assertEqual(app_configs.configs[i].max_hp_address,
+                             data["configs"][i]["max_hp_address"])
 
     def test_get_by_pid(self):
         # given

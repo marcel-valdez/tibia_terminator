@@ -3,16 +3,52 @@
 import commentjson as json
 import os
 from string import Formatter
+from uuid import uuid1
 
-from marshmallow import Schema, fields, ValidationError
+from marshmallow import Schema, fields, ValidationError, post_load, pre_load
 from typing import TypeVar, Generic, Callable, Dict, Any
 
 T = TypeVar("T")
 
 
-class FactorySchema(Generic[T], Schema):
+class ResolvableMixin():
+    __RESOLVE_CONTEXT_KEY = uuid1()
+
+    @property
+    def resolve_context(self) -> Any:
+        if self.context.get(ResolvableMixin.__RESOLVE_CONTEXT_KEY) is None:
+            self.context[ResolvableMixin.__RESOLVE_CONTEXT_KEY] = []
+        return self.context[ResolvableMixin.__RESOLVE_CONTEXT_KEY]
+
+    @pre_load
+    def push_context(self, data, **kwargs):
+        self.resolve_context.append(data)
+        return data
+
+    @post_load
+    def pop_context(self, data, **kwargs):
+        context = self.context[ResolvableMixin.__RESOLVE_CONTEXT_KEY]
+        del context[len(context) - 1]
+        return data
+
+    def gen_full_context(self):
+        # what if context is a list?
+        ctx = {}
+        for context in self.resolve_context[::-1]:
+            ctx.update(context)
+        return ctx
+
+
+class FactorySchema(Generic[T], Schema, ResolvableMixin):
+    def __init__(self,
+                 ctor: Callable[[Dict[str, Any]], T] = None,
+                 *args,
+                 **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @post_load
     def make(self, data, **kwargs) -> T:
-        raise Exception("To be implemented by subclass.")
+        return self.ctor(**data)
 
     def loadf(self, path: str) -> T:
         if not os.path.isfile(path):
@@ -25,11 +61,13 @@ class FactorySchema(Generic[T], Schema):
 
 FORMATTER = Formatter()
 
+K = TypeVar("K")
 
-class ResolvableField(Generic[T], fields.Field):
-    cast_fn: Callable[[str], T]
 
-    def __init__(self, cast_fn: Callable[[str], T], *args, **kwargs):
+class ResolvableField(Generic[K], fields.Field, ResolvableMixin):
+    cast_fn: Callable[[str], K]
+
+    def __init__(self, cast_fn: Callable[[str], K], *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.cast_fn = cast_fn
 
@@ -38,30 +76,16 @@ class ResolvableField(Generic[T], fields.Field):
             return None
         return str(value)
 
-    def gen_context(self, data: Dict[str, Any]):
-        ctx = self.context or {}
-        ctx = {**data, **ctx}
-        parent = self.parent
-        while parent is not None:
-            if parent.context is not None:
-                ctx = {**ctx, **parent.context}
-            if hasattr(parent, 'parent'):
-                parent = parent.parent
-            else:
-                parent = None
-        return {**ctx, **data}
-
-    def resolve_str(self, value: str, data: Dict[str, Any]) -> str:
-        ctx = self.gen_context(data)
-        value = value.format(**ctx)
+    def resolve_str(self, value: str, context: Dict[str, Any]) -> str:
+        value = value.format(**context)
         has_refs = any(
             [tup[1] for tup in FORMATTER.parse(value) if tup[1] is not None])
         if has_refs:
-            return self.resolve_str(value, data)
+            return self.resolve_str(value, context)
         else:
             return value
 
-    def resolve_t(self, value_str: str, ref_str: str, field_name: str) -> T:
+    def resolve_t(self, value_str: str, ref_str: str, field_name: str) -> K:
         value_str = value_str.strip()
         if self.cast_fn is not str and value_str == "None":
             if not self.allow_none:
@@ -73,16 +97,20 @@ class ResolvableField(Generic[T], fields.Field):
             return self.cast_fn(value_str)
 
     def _deserialize(self, value, attr, data, **kwargs):
-        if value is None:
-            if not self.allow_none:
-                raise ValidationError("Field {attr} cannot be null.")
-            else:
-                return value
+        self.push_context(data)
+        try:
+            if value is None:
+                if not self.allow_none:
+                    raise ValidationError("Field {attr} cannot be null.")
+                else:
+                    return value
 
-        if not isinstance(value, str):
-            return value
-        else:
-            value_str = self.resolve_str(value, data)
-            resolved_value = self.resolve_t(value_str, value, attr)
-            data[attr] = resolved_value
-            return resolved_value
+            if not isinstance(value, str):
+                return value
+            else:
+                value_str = self.resolve_str(value, self.gen_full_context())
+                resolved_value = self.resolve_t(value_str, value, attr)
+                data[attr] = resolved_value
+                return resolved_value
+        finally:
+            self.pop_context(data)
