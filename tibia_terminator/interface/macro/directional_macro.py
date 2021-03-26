@@ -17,7 +17,7 @@ parser = argparse.ArgumentParser(description='Test a directional macro.')
 parser.add_argument("json_config_file",
                     type=str,
                     help=("Path to JSON config for a directional macro, "
-                          "see tibia_terminator/tests/interface/macros/"
+                          "see tibia_terminator/tests/interface/macro/"
                           "test_directional_macro_config.json"))
 
 
