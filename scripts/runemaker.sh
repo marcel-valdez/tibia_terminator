@@ -163,8 +163,8 @@ function wait_timer() {
       # only enable this if you're not playing the game, because each check
       # freezes BOTH client's rendering.
       if [[ ${check_empty_slots} ]] && \
-        [[ $((elapsed_time_s%5)) -eq 0 ]] && \
-        is_ring_slot_empty "${tibia_wid}"; then
+           [[ $((elapsed_time_s%5)) -eq 0 ]] && \
+           is_ring_slot_empty "${tibia_wid}"; then
         equip_regen_ring "${tibia_wid}"
       fi
       if [[ ${use_char_reader} -eq 1 ]]; then
@@ -205,7 +205,7 @@ function is_out_of_souls_or_mana() {
   local _soul_pts="$2"
   # do not drink mana if we're at /maximum char mana
   # do not drink mana if we're running out of soul points.
-  [[ ${_mana} -gt ${max_mana_threshold} ]] || [[ ${_soul_pts} -lt 6 ]]
+  [[ "${_mana}" -gt "${max_mana_threshold}" ]] || [[ "${_soul_pts}" -lt 6 ]]
 }
 
 function is_ring_slot_empty() {
@@ -332,11 +332,23 @@ function drop_regen_ring() {
   # xdotool mouseup --window "${tibia_wid}" 1
 }
 
+function unequip_ring_of_healing() {
+  local tibia_wid="$1"
+  echo '-------------------------'
+  echo 'Unequipping ring of healing'
+  echo '-------------------------'
+  sleep "0.$(random 250 390)s"
+  send_keystroke "${tibia_wid}" "${UNEQUIP_RING_ROH_KEY}" 1
+}
+
 function smart_equip_regen_ring() {
   local tibia_wid="$1"
   fetch_char_stats 1
-  if is_out_of_souls_or_mana ${MANA} ${SOUL_POINTS} || \
-      [[ ${MANA} -ge ${max_char_mana} ]]; then
+  if is_out_of_souls_or_mana "${MANA}" "${SOUL_POINTS}" || \
+      [[ "${MANA}" -ge "${max_char_mana}" ]]; then
+    if ! is_ring_slot_empty "${tibia_wid}"; then
+      unequip_ring_of_healing "${tibia_wid}"
+    fi
     return 1
   fi
   echo '-------------------'
@@ -345,21 +357,14 @@ function smart_equip_regen_ring() {
   send_keystroke "${tibia_wid}}" "${EQUIP_RING_LR_KEY}" 1
   fetch_char_stats 1
 
-  if [[ ${SOUL_POINTS} -gt 10 ]]; then
+  if [[ "${SOUL_POINTS}" -gt 10 ]]; then
     echo '-------------------------'
     echo 'Equipping ring of healing'
+    echo "because soul points (${SOUL_POINTS}) < 10"
     echo '-------------------------'
     wait_time="0.$(random 250 390)s"
     sleep "${wait_time}"
     send_keystroke "${tibia_wid}}" "${EQUIP_RING_ROH_KEY}" 1
-  elif [[ "${SOUL_POINTS}" -eq 0 ]] && \
-       [[ "${check_empty_slots}" ]] && \
-       ! is_ring_slot_empty "${tibia_wid}"; then
-    echo '-------------------------'
-    echo 'Unequipping ring of healing'
-    echo '-------------------------'
-    sleep "0.$(random 250 390)s"
-    send_keystroke "${tibia_wid}" "${UNEQUIP_RING_ROH_KEY}" 1
   fi
 }
 
@@ -382,7 +387,7 @@ function equip_regen_ring() {
   if [[ "${use_mouse_for_regen_ring}" ]]; then
     #hold_regen_ring "${tibia_wid}"
     #drop_regen_ring "${tibia_wid}"
-    drag_drop_ring ${tibia_wid}
+    drag_drop_ring "${tibia_wid}"
   else
     if [[ ${use_char_reader} -eq 1 ]]; then
       smart_equip_regen_ring "${tibia_wid}"
