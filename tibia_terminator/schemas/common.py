@@ -45,6 +45,8 @@ class FactorySchema(Generic[T], Schema, ResolvableMixin):
                  *args,
                  **kwargs):
         super().__init__(*args, **kwargs)
+        if ctor is not None:
+            self.ctor = ctor
 
     @post_load
     def make(self, data, **kwargs) -> T:
@@ -77,7 +79,7 @@ class ResolvableField(Generic[K], fields.Field, ResolvableMixin):
         return str(value)
 
     def resolve_str(self, value: str, context: Dict[str, Any]) -> str:
-        value = value.format(**context)
+        value = eval(f'f"{value}"', {}, context)
         has_refs = any(
             [tup[1] for tup in FORMATTER.parse(value) if tup[1] is not None])
         if has_refs:
