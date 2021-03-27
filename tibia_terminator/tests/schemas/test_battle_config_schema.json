@@ -1,0 +1,67 @@
+{
+  "config_name": "default",
+  // hide this from menu options
+  "hidden": true,
+  // will use utani hur whenever speed is below this
+  "hasted_speed": "{hasted_speed}",
+  // will heal whenever there is this much hp missing (min exura heal)
+  "heal_at_missing": "{total_hp * 0.1}",
+  "downtime_heal_at_missing": "{total_hp * 0.025}",
+  // whenever mana levels drop to "mana_hi" it will use mana
+  // potions until "mana_lo"
+  "mana_hi": "{total_mana * 0.33}",
+  "mana_lo": "{total_mana * 0.66}",
+  // critical mana at which we have to use a mana potion, no matter what
+  // this will make it so that drinking mana potion competes with healing
+  "critical_mana": 1000,
+  // use a mana potion until this much is missing and only do it when we"re
+  // nearly full hp and hasted
+  // tip: make it 2.5x mana potion regen
+  "downtime_mana": "{total_mana - 1000}",
+  // average heal of exura
+  "minor_heal": "{(218 + 242) / 2}",
+  // average heal of exura
+  "medium_heal": "{(428 + 559) / 2}",
+  // average heal of exura sio
+  "greater_heal": "{(846 + 1206) / 2}",
+  "should_equip_amulet": false,
+  "should_equip_ring": false,
+  "should_eat_food": true,
+  "magic_shield_type": "emergency",
+  "magic_shield_treshold": 2000,
+  "emergency_hp_treshold": "{total_hp * 0.33}",
+  // when solo hunting f key is used to fire avalanche runes
+  // without clicking, only mouse pointing.
+  "item_crosshair_macros": [
+    {
+      // backspace, delete
+      "hotkey": "delete"
+    },
+    {
+      // wild growth/wall/bomb rune
+      "hotkey": "x"
+    },
+  ],
+  'directional_macros': [
+    {
+      'spell_key_rotation': ['9'],
+      'rotation_threshold_secs': 4,
+      'direction_pairs': [
+        ['alt+f', null],
+        ['alt+e', null],
+        ['alt+s', null],
+        ['alt+d', null],
+      ]
+    },
+    {
+      'spell_key_rotation': ['8'],
+      'rotation_threshold_secs': 4,
+      'direction_pairs': [
+        ['ctrl+f', null],
+        ['ctrl+e', null],
+        ['ctrl+s', null],
+        ['ctrl+d', null],
+      ]
+    }
+  ]
+}
