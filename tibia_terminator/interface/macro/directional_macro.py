@@ -52,7 +52,7 @@ class PairMacro(Macro):
             pyautogui.hotkey(*rotation_key_params)
 
 
-DIRECTIONAL_MACRO_THROTTLE_SEC = 0.0625
+DIRECTIONAL_MACRO_THROTTLE_SEC = 0.0937  # prev: 0.0625
 
 
 class DirectionalMacro():
