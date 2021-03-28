@@ -7,7 +7,7 @@ import commentjson
 import time
 
 
-from typing import Dict, Any, Callable, List
+from typing import Callable, List
 from tibia_terminator.schemas.directional_macro_config_schema import (
     DirectionalMacroConfigSchema, DirectionalMacroConfig)
 from tibia_terminator.interface.macro.macro import (Macro, parse_hotkey,
@@ -120,8 +120,9 @@ def main(args):
     if not isinstance(json_config, list):
         json_config = [json_config]
 
+    schema = DirectionalMacroConfigSchema()
     for directional_config in json_config:
-        macro = DirectionalMacro(directional_config)
+        macro = DirectionalMacro(schema.load(directional_config))
         print("Mapping pairs:")
         for from_key, to_key in directional_config["direction_pairs"]:
             print(f"  {from_key} => {to_key}")
