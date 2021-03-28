@@ -8,6 +8,7 @@ from unittest.mock import Mock
 from tibia_terminator.schemas.char_config_schema import (
     CharConfig, BattleConfig, ItemCrosshairMacroConfig
 )
+from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfig
 from tibia_terminator.common.char_status import CharStatus
 from tibia_terminator.keeper.char_keeper import CharKeeper
 from tibia_terminator.reader.equipment_reader import MagicShieldStatus
@@ -23,9 +24,9 @@ BASE_SPEED = 100
 HASTED_SPEED = 110
 HEAL_AT_MISSING = 5
 DOWNTIME_HEAL_AT_MISING = 2
-EXURA_HEAL = 10
-EXURA_GRAN_HEAL = 20
-EXURA_SIO_HEAL = 40
+MINOR_HEAL = 10
+MEDIUM_HEAL = 20
+GREATER_HEAL = 40
 CRITICAL_MANA = 10
 MANA_HI = TOTAL_MANA - 50
 MANA_LO = TOTAL_MANA - 25
@@ -52,73 +53,73 @@ def status(hp=TOTAL_HP,
 
 
 class TestCharKeeper(TestCase):
-    def test_should_cast_exura(self):
+    def test_should_cast_minor_heal(self):
         # given
         speed = HASTED_SPEED
         mana = TOTAL_MANA
-        hp = TOTAL_HP - EXURA_HEAL
+        hp = TOTAL_HP - MINOR_HEAL
         target = self.make_target()
         # when
         target.handle_hp_change(status(hp, mana, speed))
         # then
-        target.client.cast_exura.assert_called_once_with(throttle_ms=500)
+        target.client.cast_minor_heal.assert_called_once_with(throttle_ms=500)
 
-    def test_should_cast_exura_even_if_paralyzed_or_missing_mana(self):
+    def test_should_cast_minor_heal_even_if_paralyzed_or_missing_mana(self):
         # given
         speed = BASE_SPEED - 10
         mana = MANA_LO
-        hp = TOTAL_HP - EXURA_HEAL
+        hp = TOTAL_HP - MINOR_HEAL
         target = self.make_target()
         # when
         target.handle_hp_change(status(hp, mana, speed))
         # then
-        target.client.cast_exura.assert_called_once_with(throttle_ms=500)
+        target.client.cast_minor_heal.assert_called_once_with(throttle_ms=500)
 
-    def test_should_spam_exura_gran(self):
+    def test_should_spam_medium_heal(self):
         # given
         speed = HASTED_SPEED
         mana = TOTAL_MANA
-        hp = TOTAL_HP - EXURA_GRAN_HEAL
+        hp = TOTAL_HP - MEDIUM_HEAL
         target = self.make_target()
         # when
         target.handle_hp_change(status(hp, mana, speed))
         # then
-        target.client.cast_exura_gran.assert_called_once_with(throttle_ms=250)
+        target.client.cast_medium_heal.assert_called_once_with(throttle_ms=250)
 
-    def test_should_spam_exura_gran_even_if_paralyzed_or_missing_mana(self):
+    def test_should_spam_medium_heal_even_if_paralyzed_or_missing_mana(self):
         # given
         speed = BASE_SPEED - 10
         mana = CRITICAL_MANA
-        hp = TOTAL_HP - EXURA_GRAN_HEAL
+        hp = TOTAL_HP - MEDIUM_HEAL
         target = self.make_target()
         # when
         target.handle_hp_change(status(hp, mana, speed))
         # then
-        target.client.cast_exura_gran.assert_called_once_with(throttle_ms=250)
+        target.client.cast_medium_heal.assert_called_once_with(throttle_ms=250)
 
     def test_should_spam_exura_sio(self):
         # given
         speed = HASTED_SPEED
         mana = TOTAL_MANA
-        hp = TOTAL_HP - EXURA_SIO_HEAL
+        hp = TOTAL_HP - GREATER_HEAL
         target = self.make_target()
         # when
         target.handle_hp_change(status(hp, mana, speed))
         # then
-        target.client.cast_exura_sio.assert_called_once_with(throttle_ms=250)
+        target.client.cast_greater_heal.assert_called_once_with(throttle_ms=250)
 
     def test_should_spam_exura_sio_even_if_paralyzed_or_missing_mana(self):
         # given
         speed = BASE_SPEED - 10
         mana = MANA_HI
-        hp = TOTAL_HP - EXURA_SIO_HEAL
+        hp = TOTAL_HP - GREATER_HEAL
         target = self.make_target()
         # when
         target.handle_hp_change(status(hp, mana, speed))
         # then
-        target.client.cast_exura_sio.assert_called_once_with(throttle_ms=250)
+        target.client.cast_greater_heal.assert_called_once_with(throttle_ms=250)
 
-    def test_should_cast_exura_downtime(self):
+    def test_should_cast_minor_heal_downtime(self):
         # given
         speed = HASTED_SPEED
         mana = TOTAL_MANA
@@ -127,9 +128,9 @@ class TestCharKeeper(TestCase):
         # when
         target.handle_hp_change(status(hp, mana, speed))
         # then
-        target.client.cast_exura.assert_called_once_with(throttle_ms=2500)
+        target.client.cast_minor_heal.assert_called_once_with(throttle_ms=2500)
 
-    def test_should_not_cast_exura_downtime_if_not_hasted(self):
+    def test_should_not_cast_minor_heal_downtime_if_not_hasted(self):
         # given
         speed = BASE_SPEED
         mana = TOTAL_MANA
@@ -138,11 +139,11 @@ class TestCharKeeper(TestCase):
         # when
         target.handle_hp_change(status(hp, mana, speed))
         # then
-        target.client.cast_exura.assert_not_called()
-        target.client.cast_exura_gran.assert_not_called()
-        target.client.cast_exura_sio.assert_not_called()
+        target.client.cast_minor_heal.assert_not_called()
+        target.client.cast_medium_heal.assert_not_called()
+        target.client.cast_greater_heal.assert_not_called()
 
-    def test_should_not_cast_exura_downtime_if_unhealthy_mana(self):
+    def test_should_not_cast_minor_heal_downtime_if_unhealthy_mana(self):
         # given
         speed = HASTED_SPEED
         mana = MANA_LO
@@ -151,15 +152,15 @@ class TestCharKeeper(TestCase):
         # when
         target.handle_hp_change(status(hp, mana, speed))
         # then
-        target.client.cast_exura.assert_not_called()
-        target.client.cast_exura_gran.assert_not_called()
-        target.client.cast_exura_sio.assert_not_called()
+        target.client.cast_minor_heal.assert_not_called()
+        target.client.cast_medium_heal.assert_not_called()
+        target.client.cast_greater_heal.assert_not_called()
 
     def test_should_drink_mana_at_mana_missing_hi(self):
         # given
         speed = BASE_SPEED
         mana = MANA_HI
-        hp = TOTAL_HP - EXURA_HEAL
+        hp = TOTAL_HP - MINOR_HEAL
         target = self.make_target()
         # when
         target.handle_mana_change(status(hp, mana, speed))
@@ -216,7 +217,7 @@ class TestCharKeeper(TestCase):
         # given
         speed = HASTED_SPEED
         mana = MANA_HI
-        hp = TOTAL_HP - EXURA_GRAN_HEAL
+        hp = TOTAL_HP - MEDIUM_HEAL
         target = self.make_target()
         # when
         target.handle_mana_change(status(hp, mana, speed))
@@ -249,7 +250,7 @@ class TestCharKeeper(TestCase):
         # given
         speed = BASE_SPEED - 10
         mana = CRITICAL_MANA
-        hp = TOTAL_HP - EXURA_SIO_HEAL
+        hp = TOTAL_HP - GREATER_HEAL
         target = self.make_target()
         # when
         target.handle_mana_change(status(hp, mana, speed))
@@ -299,7 +300,7 @@ class TestCharKeeper(TestCase):
         # given
         speed = BASE_SPEED - 10
         mana = TOTAL_MANA
-        hp = TOTAL_HP - EXURA_GRAN_HEAL
+        hp = TOTAL_HP - MEDIUM_HEAL
         target = self.make_target()
         # when
         target.handle_speed_change(status(hp, mana, speed))
@@ -400,10 +401,23 @@ class TestCharKeeper(TestCase):
             Mock(),
             config,
             config.battle_configs[0],
-            {
-                'cancel_emergency': 'a',
-                'start_emergency': 'b'
-            }
+            HotkeysConfig(**{
+                "minor_heal": "F3",
+                "medium_heal": "F4",
+                "greater_heal": "F5",
+                "haste": "6",
+                "equip_ring": "F6",
+                "equip_amulet": "F7",
+                "eat_food": "F8",
+                "magic_shield": "F9",
+                "cancel_magic_shield": "F10",
+                "mana_potion": "F11",
+                "toggle_emergency_amulet": "F2",
+                "toggle_emergency_ring": "F1",
+                "loot": "z",
+                "cancel_emergency": "end",
+                "start_emergency": "home"
+            })
         )
 
     def make_char_config(self,
@@ -413,9 +427,9 @@ class TestCharKeeper(TestCase):
                          hasted_speed=HASTED_SPEED,
                          heal_at_missing=HEAL_AT_MISSING,
                          downtime_heal_at_missing=DOWNTIME_HEAL_AT_MISING,
-                         exura_heal=EXURA_HEAL,
-                         exura_gran_heal=EXURA_GRAN_HEAL,
-                         exura_sio_heal=EXURA_SIO_HEAL,
+                         minor_heal=MINOR_HEAL,
+                         medium_heal=MEDIUM_HEAL,
+                         greater_heal=GREATER_HEAL,
                          critical_mana=CRITICAL_MANA,
                          mana_hi=MANA_HI,
                          mana_lo=MANA_LO,
@@ -437,9 +451,9 @@ class TestCharKeeper(TestCase):
                     'hasted_speed': hasted_speed,
                     'heal_at_missing': heal_at_missing,
                     'downtime_heal_at_missing': downtime_heal_at_missing,
-                    'minor_heal': exura_heal,
-                    'medium_heal': exura_gran_heal,
-                    'greater_heal': exura_sio_heal,
+                    'minor_heal': minor_heal,
+                    'medium_heal': medium_heal,
+                    'greater_heal': greater_heal,
                     'critical_mana': critical_mana,
                     'mana_hi': mana_hi,
                     'mana_lo': mana_lo,

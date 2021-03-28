@@ -1,5 +1,6 @@
 #!/usr/bin/env python3.8
 
+import os
 import argparse
 import time
 import curses
@@ -9,6 +10,9 @@ from collections import deque
 from typing import List, Iterable, NamedTuple
 
 from tibia_terminator.char_configs.char_config_loader import load_configs
+from tibia_terminator.schemas.hotkeys_config_schema import (
+    HotkeysConfig, HotkeysConfigSchema
+)
 from tibia_terminator.schemas.char_config_schema import (BattleConfig,
                                                          CharConfig)
 from tibia_terminator.schemas.app_config_schema import (AppConfigsSchema,
@@ -390,19 +394,21 @@ def main(cliwin, pid, app_config_path: str, char_configs_path: str,
 
     view_renderer = ViewRenderer(cliwin)
     cmd_processor = CommandProcessor(tibia_wid, stats_logger, only_monitor)
+    hotkeys_config = HotkeysConfigSchema().loadf(
+        os.path.join(char_configs_path, 'hotkeys_config.json'))
     char_configs = list(load_configs(char_configs_path))
     if len(char_configs) == 0:
         print(f"No .charconfig files found in {char_configs_path}",
               file=sys.stderr)
         sys.exit(1)
-    client = ClientInterface(HOTKEYS_CONFIG,
+    client = ClientInterface(hotkeys_config,
                              logger=stats_logger,
                              cmd_processor=cmd_processor)
     char_keeper = CharKeeper(client, char_configs[0],
-                             char_configs[0].battle_configs[0], HOTKEYS_CONFIG)
+                             char_configs[0].battle_configs[0], hotkeys_config)
     char_reader = CharReader(MemoryReader(pid, print_async))
     eq_reader = EquipmentReader()
-    loot_macro = LootMacro(client, HOTKEYS_CONFIG)
+    loot_macro = LootMacro(client, hotkeys_config)
     tibia_terminator = TibiaTerminator(tibia_wid,
                                        char_keeper,
                                        char_reader,

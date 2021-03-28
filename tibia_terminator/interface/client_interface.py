@@ -8,7 +8,8 @@ import time
 from typing import Dict, List, Callable
 from random import randint
 
-from tibia_terminator.common.logger import (ActionLogEntry, StatsLogger, debug, get_debug_level)
+from tibia_terminator.common.logger import StatsLogger
+from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfig
 
 
 def timestamp_ms():
@@ -155,7 +156,7 @@ class CommandProcessor():
 
 class ClientInterface:
     def __init__(self,
-                 hotkeys_config,
+                 hotkeys_config: HotkeysConfig,
                  logger: StatsLogger = None,
                  cmd_processor: CommandProcessor = None):
         self.hotkeys_config = hotkeys_config
@@ -167,66 +168,65 @@ class ClientInterface:
         self.cmd_processor.send(
             KeeperHotkeyCommand(cmd_type, throttle_ms, hotkey))
 
-    def cast_exura(self, throttle_ms: int):
-        self.logger.log_action(2, f'cast_exura {throttle_ms} ms')
+    def cast_minor_heal(self, throttle_ms: int):
+        self.logger.log_action(2, f'cast_minor_heal {throttle_ms} ms')
         self.send_keystroke_async(CommandType.HEAL_SPELL, throttle_ms,
-                                  self.hotkeys_config['exura'])
+                                  self.hotkeys_config.minor_heal)
 
-    def cast_exura_gran(self, throttle_ms: int):
-        self.logger.log_action(2, f'cast_exura_gran {throttle_ms} ms')
+    def cast_medium_heal(self, throttle_ms: int):
+        self.logger.log_action(2, f'cast_medium_heal {throttle_ms} ms')
         self.send_keystroke_async(CommandType.HEAL_SPELL, throttle_ms,
-                                  self.hotkeys_config['exura_gran'])
+                                  self.hotkeys_config.medium_heal)
 
-    def cast_exura_sio(self, throttle_ms: int):
-        self.logger.log_action(2, f'cast_exura_sio {throttle_ms} ms')
+    def cast_greater_heal(self, throttle_ms: int):
+        self.logger.log_action(2, f'cast_greater_heal {throttle_ms} ms')
         self.send_keystroke_async(CommandType.HEAL_SPELL, throttle_ms,
-                                  self.hotkeys_config['exura_sio'])
+                                  self.hotkeys_config.greater_heal)
 
     def drink_mana(self, throttle_ms: int):
         self.logger.log_action(2, f'drink_mana {throttle_ms} ms')
         self.send_keystroke_async(CommandType.USE_ITEM, throttle_ms,
-                                  self.hotkeys_config['mana_potion'])
+                                  self.hotkeys_config.mana_potion)
 
     def cast_haste(self, throttle_ms: int):
         self.logger.log_action(2, f'cast_haste {throttle_ms} ms')
         self.send_keystroke_async(CommandType.UTILITY_SPELL, throttle_ms,
-                                  self.hotkeys_config['utani_hur'])
+                                  self.hotkeys_config.haste)
 
     def equip_ring(self, throttle_ms: int = 250):
         self.logger.log_action(2, f'equip_ring {throttle_ms} ms')
         self.send_keystroke_async(CommandType.EQUIP_ITEM, throttle_ms,
-                                  self.hotkeys_config['equip_ring'])
+                                  self.hotkeys_config.equip_ring)
 
     def toggle_emergency_ring(self, throttle_ms: int = 250):
         self.logger.log_action(2, f'toggle_emergency_ring {throttle_ms} ms')
         self.send_keystroke_async(CommandType.EQUIP_ITEM, throttle_ms,
-                                  self.hotkeys_config['toggle_emergency_ring'])
+                                  self.hotkeys_config.toggle_emergency_ring)
 
     def equip_amulet(self, throttle_ms: int = 250):
         self.logger.log_action(2, f'equip_amulet {throttle_ms} ms')
         self.send_keystroke_async(CommandType.EQUIP_ITEM, throttle_ms,
-                                  self.hotkeys_config['equip_amulet'])
+                                  self.hotkeys_config.equip_amulet)
 
     def toggle_emergency_amulet(self, throttle_ms: int = 250):
         self.logger.log_action(2, f'toggle_emergency_amulet {throttle_ms} ms')
-        self.send_keystroke_async(
-            CommandType.EQUIP_ITEM, throttle_ms,
-            self.hotkeys_config['toggle_emergency_amulet'])
+        self.send_keystroke_async(CommandType.EQUIP_ITEM, throttle_ms,
+                                  self.hotkeys_config.toggle_emergency_amulet)
 
     def eat_food(self, throttle_ms: int = 250):
         self.logger.log_action(2, f'eat_food {throttle_ms} ms')
         self.send_keystroke_async(CommandType.USE_ITEM, throttle_ms,
-                                  self.hotkeys_config['eat_food'])
+                                  self.hotkeys_config.eat_food)
 
     def cast_magic_shield(self, throttle_ms: int = 250):
         self.logger.log_action(2, f'cast_magic_shield {throttle_ms} ms')
         self.send_keystroke_async(CommandType.UTILITY_SPELL, throttle_ms,
-                                  self.hotkeys_config['magic_shield'])
+                                  self.hotkeys_config.magic_shield)
 
     def cancel_magic_shield(self, throttle_ms: int = 250):
         self.logger.log_action(2, f'cancel_magic_shield {throttle_ms} ms')
         self.send_keystroke_async(CommandType.UTILITY_SPELL, throttle_ms,
-                                  self.hotkeys_config['cancel_magic_shield'])
+                                  self.hotkeys_config.cancel_magic_shield)
 
     def execute_macro(self,
                       macro_fn: Callable[[str], None],
@@ -251,18 +251,21 @@ class FakeCommandSender(CommandSender):
 
 def main():
     hotkeys = {
-        'exura': 'exura_key',
-        'exura_gran': 'exura_gran_key',
-        'exura_sio': 'exura_sio_key',
+        'minor_heal': 'exura_key',
+        'medium_heal': 'exura_gran_key',
+        'greater_heal': 'exura_sio_key',
         'mana_potion': 'mana_key',
-        'utani_hur': 'haste_key',
+        'haste': 'haste_key',
         'equip_ring': 'ring_key',
         'equip_amulet': 'equip_amulet_key',
         'toggle_emergency_ring': 'emergency_ring_key',
         'toggle_emergency_amulet': 'emergency_amulet_key',
         'eat_food': 'eat_key',
         'magic_shield': 'shield_on_key',
-        'cancel_magic_shield': 'shield_off_key'
+        'cancel_magic_shield': 'shield_off_key',
+        'loot': 'loot_key',
+        'start_emergency': 'start_emergency_key',
+        'cancel_emergency': 'cancel_emergency_key'
     }
 
     fake_logger = FakeLogger()
@@ -280,13 +283,14 @@ def main():
             CommandType.UTILITY_SPELL:
             FakeCommandSender("fake_tibia_wid", fake_logger, False)
         })
-    client_interface = ClientInterface(hotkeys, fake_logger, cmd_processor)
+    client_interface = ClientInterface(HotkeysConfig(**hotkeys), fake_logger,
+                                       cmd_processor)
     cmd_processor.start()
     method_names = [
-        'cast_exura', 'cast_exura_gran', 'cast_exura_sio', 'drink_mana',
-        'cast_haste', 'equip_ring', 'toggle_emergency_ring', 'equip_amulet',
-        'toggle_emergency_amulet', 'eat_food', 'cast_magic_shield',
-        'cancel_magic_shield'
+        'cast_minor_heal', 'cast_medium_heal', 'cast_greater_heal',
+        'drink_mana', 'cast_haste', 'equip_ring', 'toggle_emergency_ring',
+        'equip_amulet', 'toggle_emergency_amulet', 'eat_food',
+        'cast_magic_shield', 'cancel_magic_shield'
     ]
 
     try:

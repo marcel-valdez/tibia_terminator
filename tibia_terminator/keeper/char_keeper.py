@@ -2,6 +2,7 @@
 
 from typing import List, Dict
 
+from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfig
 from tibia_terminator.schemas.char_config_schema import (CharConfig,
                                                          BattleConfig)
 from tibia_terminator.common.char_status import CharStatus
@@ -29,7 +30,7 @@ class CharKeeper:
                  client,
                  char_config: CharConfig,
                  battle_config: BattleConfig,
-                 hotkeys: Dict[str, str],
+                 hotkeys_config: HotkeysConfig,
                  emergency_reporter=None,
                  mana_keeper=None,
                  hp_keeper=None,
@@ -42,7 +43,7 @@ class CharKeeper:
         self.directional_macros = []
         self.core_macros = []
         self.client = client
-        self.hotkeys = hotkeys
+        self.hotkeys_config = hotkeys_config
         # load the first battle config from the first char config
         self.init_emergency_reporter(char_config, battle_config,
                                      emergency_reporter)
@@ -56,7 +57,7 @@ class CharKeeper:
                                       magic_shield_keeper)
         self.init_item_crosshair_macros(
             battle_config.item_crosshair_macros or [], item_crosshair_macros)
-        self.init_core_macros(self.hotkeys, core_macros)
+        self.init_core_macros(self.hotkeys_config, core_macros)
         self.init_directional_macros(battle_config.directional_macros or [])
 
     def load_char_config(self, char_config: CharConfig,
@@ -69,7 +70,7 @@ class CharKeeper:
         self.init_magic_shield_keeper(self.client, char_config, battle_config)
         self.init_item_crosshair_macros(battle_config.item_crosshair_macros
                                         or [])
-        self.init_core_macros(self.hotkeys)
+        self.init_core_macros(self.hotkeys_config)
         self.init_directional_macros(battle_config.directional_macros or [])
 
     def init_emergency_reporter(self,
@@ -191,19 +192,19 @@ class CharKeeper:
         self.directional_macros = []
 
     def init_core_macros(self,
-                         hotkeys_configs: Dict[str, str],
+                         hotkeys_config: HotkeysConfig,
                          core_macros: List[Macro] = None):
         self.unload_core_macros()
         if core_macros is not None:
             self.core_macros = core_macros
         else:
-            cancel_emergency_key = hotkeys_configs.get('cancel_emergency')
+            cancel_emergency_key = hotkeys_config.cancel_emergency
             if cancel_emergency_key is not None:
                 self.core_macros.append(
                     CancelEmergencyMacro(self.emergency_reporter,
                                          cancel_emergency_key))
 
-            start_emergency_key = hotkeys_configs.get('start_emergency')
+            start_emergency_key = hotkeys_config.start_emergency
             if start_emergency_key is not None:
                 self.core_macros.append(
                     StartEmergencyMacro(self.emergency_reporter,

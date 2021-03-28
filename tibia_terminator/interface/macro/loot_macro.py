@@ -4,11 +4,14 @@ import argparse
 import keyboard
 import pyautogui
 
-from typing import Dict
 from tibia_terminator.interface.macro.macro import ClientMacro
 from tibia_terminator.interface.client_interface import (
     ClientInterface, CommandType, CommandProcessor
 )
+from tibia_terminator.schemas.hotkeys_config_schema import (
+    HotkeysConfig
+)
+
 
 parser = argparse.ArgumentParser(description="Loots all 9 SQMs around a char.")
 
@@ -40,12 +43,12 @@ LOOT_SQMS = [
 class LootMacro(ClientMacro):
     def __init__(self,
                  client: ClientInterface,
-                 hotkeys: Dict[str, str] = {},
+                 hotkeys: HotkeysConfig,
                  *args,
                  **kwargs):
         super().__init__(
             client,
-            hotkey=hotkeys.get("loot"),
+            hotkey=hotkeys.loot,
             command_type=CommandType.USE_ITEM,
             throttle_ms=250,
             *args,
