@@ -34,7 +34,7 @@ class ResolvableMixin():
     def gen_full_context(self):
         # what if context is a list?
         ctx = {}
-        for context in self.resolve_context[::-1]:
+        for context in reversed(self.resolve_context):
             ctx.update(context)
         return ctx
 
