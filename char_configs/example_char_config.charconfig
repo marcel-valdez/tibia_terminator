@@ -1,0 +1,187 @@
+// Char configuration for Tezalor.
+// Last stats update: Level 384
+{
+  "char_name": "example_char",
+  "total_hp": 2300,
+  "total_mana": 12780,
+  // this is used to determine if the char is paralized
+  "base_speed": 514,
+  "hasted_speed": 690,
+  "strong_hasted_speed": 890,
+  "battle_configs": [
+    {
+      "config_name": "default",
+      // hide this from menu options
+      "hidden": true,
+      // will use utani hur whenever speed is below this
+      "hasted_speed": "{hasted_speed}",
+      // will heal whenever there is this much hp missing (min exura heal)
+      "heal_at_missing": "{total_hp * 0.1}",
+      "downtime_heal_at_missing": "{total_hp * 0.025}",
+      // whenever mana levels drop to mana_hi it will use mana
+      // potions until mana_lo
+      "mana_hi": "{total_mana * 0.33}",
+      "mana_lo": "{total_mana * 0.66}",
+      // critical mana at which we have to use a mana potion, no matter what
+      // this will make it so that drinking mana potion competes with healing
+      "critical_mana": 1000,
+      // use a mana potion until this much is missing and only do it when we're
+      // nearly full hp and hasted
+      // tip: make it 2.5x mana potion regen
+      "downtime_mana": "{total_mana - 1000}",
+      // average heal of exura
+      "minor_heal": "{(218 + 242) / 2}",
+      // average heal of exura
+      "medium_heal": "{(428 + 559) / 2}",
+      // average heal of exura sio
+      "greater_heal": "{(846 + 1206) / 2}",
+      "should_equip_amulet": false,
+      "should_equip_ring": false,
+      "should_eat_food": true,
+      "magic_shield_type": "emergency",
+      "magic_shield_threshold": 2000,
+      "emergency_hp_threshold": "{total_hp * 0.33}",
+      // when solo hunting f key is used to fire avalanche runes
+      // without clicking, only mouse pointing.
+      "item_crosshair_macros": [
+        {
+          // backspace, delete
+          "hotkey": "delete"
+        },
+        {
+          // wild growth/wall/bomb rune
+          "hotkey": "x"
+        },
+      ],
+      // 1. Map 4 macros, one for each direction
+      // 2. Each time a macro is triggered, it will rotate in that direction
+      //    and cast one of the spells in the rotation
+      // 3. When the macro is triggered a second time (within a threshold), it
+      //    will execute the next spell in the rotation.
+      "directional_macros": [
+          {
+              "spell_key_rotation": ["9"],
+              "rotation_threshold_secs": 4,
+              "direction_pairs": [
+                  ["alt+f", null],
+                  ["alt+e", null],
+                  ["alt+s", null],
+                  ["alt+d", null],
+              ]
+          },
+          {
+              "spell_key_rotation": ["8"],
+              "rotation_threshold_secs": 4,
+              "direction_pairs": [
+                  ["ctrl+f", null],
+                  ["ctrl+e", null],
+                  ["ctrl+s", null],
+                  ["ctrl+d", null],
+              ]
+          }
+      ]
+    },
+    {
+      "base": "default",
+      "config_name": "utamo_team",
+      // will use utani hur whenever speed is below this
+      "hasted_speed": "{hasted_speed}",
+      // critical mana at which we have to use a mana potion
+      "critical_mana": "{total_hp}",
+      // whenever mana levels drop to "mana_hi" it will use mana
+      // potions until "mana_lo"
+      "mana_hi": "{total_mana * 0.4}",
+      "mana_lo": "{total_mana * 0.6}",
+      // slowly drink mana potions until this much is missing and only do it when
+      // hp is at < heal_at_missing and the char is hasted.
+      // tip: make it 2.5x mana potion regen
+      "downtime_mana": "{total_mana * 0.9}",
+      "should_equip_ring": true,
+      "magic_shield_type": "permanent",
+      "should_equip_amulet": true,
+      "magic_shield_threshold": "{total_hp}"
+    },
+    {
+      "base": "default",
+      "config_name": "utamo_solo_run",
+      // will use utani hur whenever speed is below this
+      "hasted_speed": "{hasted_speed}",
+      // critical mana at which we have to use a mana potion
+      "critical_mana": "{total_hp}",
+      // whenever mana levels drop to "mana_hi" it will use mana
+      // potions until "mana_lo"
+      "mana_hi": "{total_mana * 0.4}",
+      "mana_lo": "{total_mana * 0.6}",
+      // slowly drink mana potions until this much is missing and only do it when
+      // hp is at < heal_at_missing and the char is hasted.
+      // tip: make it 2.5x mana potion regen
+      "downtime_mana": "{total_mana * 0.9}",
+      "should_equip_ring": true,
+      "magic_shield_type": "permanent",
+      "should_equip_amulet": true,
+      "magic_shield_threshold": "{total_hp}"
+    },
+    {
+      "base": "default",
+      "config_name": "mobs_utamo",
+      "hidden": true,
+      // will use utani hur whenever speed is below this
+      "hasted_speed": "{hasted_speed}",
+      // critical mana at which we have to use a mana potion
+      "critical_mana": "{total_hp}",
+      // whenever mana levels drop to mana_hi it will use mana
+      // potions until "mana_lo"
+      "mana_hi": "{total_mana * 0.4}",
+      "mana_lo": "{total_mana * 0.6}",
+      // slowly drink mana potions until this much is missing and only do it when
+      // hp is at < heal_at_missing and the char is hasted.
+      // tip: make it 2.5x mana potion regen
+      "downtime_mana": "{total_mana * 0.9}",
+      "should_equip_ring": true,
+      "magic_shield_type": "permanent",
+      "should_equip_amulet": true,
+      "magic_shield_threshold": "{total_hp}"
+    },
+    {
+      "base": "default",
+      "config_name": "mobs_no_utamo",
+      "hasted_speed": "{hasted_speed}",
+      "critical_mana": "{total_mana * 0.2}",
+      "mana_hi": "{total_mana * 0.4}",
+      "mana_lo": "{total_mana * 0.6}",
+      "downtime_mana": "{total_mana * 0.8}",
+      // we want to be 100% hp all the fucking time
+      "heal_at_missing": 50,
+      "downtime_heal_at_missing": 25,
+      "should_equip_ring": true,
+      "should_equip_amulet": true,
+      "magic_shield_type": "emergency"
+    },
+    {
+      "base": "mobs_no_utamo",
+      "config_name": "hardcore_mobs_no_utamo",
+      // only use exura when there is nearly no damage received
+      "minor_heal": 100,
+      "medium_heal": 350,
+      "emergency_hp_threshold": "{total_hp * 0.4}",
+    },
+    {
+      "base": "default",
+      "config_name": "teamhunt_softboots_roh",
+      "minor_heal": 218,
+      "medium_heal": 428,
+      "greater_heal": 846,
+      "downtime_heal_at_missing": "{total_hp * 0.05}",
+      "hasted_speed": "{hasted_speed}",
+      "critical_mana": 2500,
+      "mana_hi": 3400,
+      "mana_lo": 4400,
+      "downtime_mana": "{total_mana - 1000}",
+      "should_equip_ring": true,
+      "should_equip_amulet": true,
+      "should_eat_food": true,
+      "magic_shield_type": "emergency",
+      "emergency_hp_threshold": "{total_hp * 0.4}"
+    }
+  ]
+}
