@@ -11,13 +11,12 @@ from typing import List, Iterable, NamedTuple
 
 from tibia_terminator.char_configs.char_config_loader import load_configs
 from tibia_terminator.schemas.hotkeys_config_schema import (
-    HotkeysConfig, HotkeysConfigSchema
+    HotkeysConfigSchema
 )
 from tibia_terminator.schemas.char_config_schema import (BattleConfig,
                                                          CharConfig)
 from tibia_terminator.schemas.app_config_schema import (AppConfigsSchema,
                                                         AppConfig)
-from tibia_terminator.char_config import HOTKEYS_CONFIG
 from tibia_terminator.common.char_status import CharStatus, CharStatusAsync
 from tibia_terminator.common.logger import (set_debug_level, StatsLogger)
 from tibia_terminator.interface.client_interface import (ClientInterface,
