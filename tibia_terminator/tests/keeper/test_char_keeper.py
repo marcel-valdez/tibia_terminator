@@ -5,10 +5,17 @@ import unittest
 from unittest import (TestCase)
 from unittest.mock import Mock
 
+from tibia_terminator.schemas.char_config_schema import (
+    CharConfig, BattleConfig, ItemCrosshairMacroConfig
+)
 from tibia_terminator.common.char_status import CharStatus
 from tibia_terminator.keeper.char_keeper import CharKeeper
 from tibia_terminator.reader.equipment_reader import MagicShieldStatus
 from tibia_terminator.reader.color_spec import (AmuletName, RingName)
+
+from tibia_terminator.schemas.directional_macro_config_schema import (
+    DirectionalMacroConfig
+)
 
 TOTAL_HP = 100
 TOTAL_MANA = 100
@@ -23,14 +30,6 @@ CRITICAL_MANA = 10
 MANA_HI = TOTAL_MANA - 50
 MANA_LO = TOTAL_MANA - 25
 DOWNTIME_MANA = TOTAL_MANA - 10
-
-FULL_EQ = {
-    'equipped_amulet': AmuletName.UNKNOWN.name,
-    'equipped_ring': RingName.UNKNOWN.name,
-    'emergency_action_amulet': AmuletName.UNKNOWN.name,
-    'emergency_action_ring': RingName.UNKNOWN.name,
-    'magic_shield_status': MagicShieldStatus.OFF_COOLDOWN
-}
 
 
 def status(hp=TOTAL_HP,
@@ -395,14 +394,17 @@ class TestCharKeeper(TestCase):
         # then
         target.client.eat_food.assert_not_called()
 
-    def make_target(self, char_config=None):
+    def make_target(self, char_config: CharConfig = None):
         config = char_config or self.make_char_config()
-        return CharKeeper(Mock(), [{
-            'config': config
-        }], {
-            'cancel_emergency': 'a',
-            'start_emergency': 'b'
-        })
+        return CharKeeper(
+            Mock(),
+            config,
+            config.battle_configs[0],
+            {
+                'cancel_emergency': 'a',
+                'start_emergency': 'b'
+            }
+        )
 
     def make_char_config(self,
                          total_hp=TOTAL_HP,
@@ -421,26 +423,45 @@ class TestCharKeeper(TestCase):
                          should_equip_amulet=True,
                          should_equip_ring=True,
                          should_eat_food=True,
-                         emergency_shield_hp_treshold=TOTAL_HP * 0.5):
-        return {
+                         emergency_hp_threshold=TOTAL_HP * 0.5):
+        return CharConfig(**{
+            'char_name': 'test_char',
+            'strong_hasted_speed': 500,
             'total_hp': total_hp,
             'total_mana': total_mana,
             'base_speed': base_speed,
             'hasted_speed': hasted_speed,
-            'heal_at_missing': heal_at_missing,
-            'downtime_heal_at_missing': downtime_heal_at_missing,
-            'exura_heal': exura_heal,
-            'exura_gran_heal': exura_gran_heal,
-            'exura_sio_heal': exura_sio_heal,
-            'critical_mana': critical_mana,
-            'mana_hi': mana_hi,
-            'mana_lo': mana_lo,
-            'downtime_mana': downtime_mana,
-            'should_equip_amulet': should_equip_amulet,
-            'should_equip_ring': should_equip_ring,
-            'should_eat_food': should_eat_food,
-            'emergency_shield_hp_treshold': emergency_shield_hp_treshold
-        }
+            'battle_configs': [
+                BattleConfig(**{
+                    'config_name': 'test_battle_config',
+                    'hasted_speed': hasted_speed,
+                    'heal_at_missing': heal_at_missing,
+                    'downtime_heal_at_missing': downtime_heal_at_missing,
+                    'minor_heal': exura_heal,
+                    'medium_heal': exura_gran_heal,
+                    'greater_heal': exura_sio_heal,
+                    'critical_mana': critical_mana,
+                    'mana_hi': mana_hi,
+                    'mana_lo': mana_lo,
+                    'downtime_mana': downtime_mana,
+                    'should_equip_amulet': should_equip_amulet,
+                    'should_equip_ring': should_equip_ring,
+                    'should_eat_food': should_eat_food,
+                    'emergency_hp_threshold': emergency_hp_threshold,
+                    'item_crosshair_macros': [
+                        ItemCrosshairMacroConfig(**{'hotkey': 'x'})
+                    ],
+                    'directional_macros': [
+                        DirectionalMacroConfig(**{
+                            'spell_key_rotation': ['a'],
+                            'rotation_threshold_secs': 3,
+                            'direction_pairs': [
+                                ('a', 'b')
+                            ]
+                        })
+                    ]
+                })],
+        })
 
 
 if __name__ == '__main__':

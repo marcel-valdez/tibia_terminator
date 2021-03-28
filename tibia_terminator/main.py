@@ -3,12 +3,17 @@
 import argparse
 import time
 import curses
+import sys
 
 from collections import deque
+from typing import List, Iterable, NamedTuple
 
+from tibia_terminator.char_configs.char_config_loader import load_configs
+from tibia_terminator.schemas.char_config_schema import (BattleConfig,
+                                                         CharConfig)
 from tibia_terminator.schemas.app_config_schema import (AppConfigsSchema,
                                                         AppConfig)
-from tibia_terminator.char_config import CHAR_CONFIGS, HOTKEYS_CONFIG
+from tibia_terminator.char_config import HOTKEYS_CONFIG
 from tibia_terminator.common.char_status import CharStatus, CharStatusAsync
 from tibia_terminator.common.logger import (set_debug_level, StatsLogger)
 from tibia_terminator.interface.client_interface import (ClientInterface,
@@ -52,6 +57,10 @@ parser.add_argument('--only_monitor',
 parser.add_argument('--app_config_path',
                     help='Path to memory configuration values',
                     required=True)
+parser.add_argument('--char_configs_path',
+                    help=('Path to the char configs directory, where the '
+                          '.charconfig files are stored.'),
+                    required=True)
 parser.add_argument('--debug_level',
                     help=('Set the debug level for debug log messages, '
                           'higher values result in more verbose output.'),
@@ -78,6 +87,12 @@ class AppStates:
     EXIT = "__EXIT__"
 
 
+class CharConfigMenuEntry(NamedTuple):
+    name: str
+    char_config: CharConfig
+    battle_config: BattleConfig
+
+
 PAUSE_KEYCODES = [SPACE_KEYCODE_A, SPACE_KEYCODE_B]
 RESUME_KEYCODES = [SPACE_KEYCODE_A, SPACE_KEYCODE_B]
 CONFIG_SELECTION_KEYCODE = ENTER_KEYCODE
@@ -91,7 +106,7 @@ class TibiaTerminator:
                  char_reader: CharReader,
                  equipment_reader: EquipmentReader,
                  app_config: AppConfig,
-                 char_configs,
+                 char_configs: List[CharConfig],
                  cliwin,
                  loot_macro: LootMacro,
                  stats_logger: StatsLogger,
@@ -106,7 +121,7 @@ class TibiaTerminator:
         self.char_keeper = char_keeper
         self.char_reader = char_reader
         self.app_config = app_config
-        self.char_configs = char_configs
+        self.char_config_entries = list(self.gen_config_entries(char_configs))
         self.cliwin = cliwin
         self.equipment_reader = equipment_reader
         self.loot_macro = loot_macro
@@ -119,7 +134,7 @@ class TibiaTerminator:
         self.enable_magic_shield = enable_magic_shield
         self.only_monitor = only_monitor
         self.app_state = None
-        self.selected_config_name = char_configs[0]["name"]
+        self.selected_config_name = self.char_config_entries[0].name
         self.view = None
         self.loop_times = deque([0], AVG_LOOP_TIME_SAMPLE_SIZE)
         self.loop_times_sum = 0
@@ -305,14 +320,15 @@ class TibiaTerminator:
                 self.app_state = AppStates.PAUSED
             else:
                 selection = int(view.user_input)
-                if selection >= len(self.char_configs):
+                if selection >= len(self.char_config_entries):
                     view.error = f"Selection index {view.user_input} is invalid."
                     view.signal_error()
                     view.user_input = ''
                 else:
-                    self.selected_config_name = self.char_configs[selection][
-                        "name"]
-                    self.char_keeper.change_char_config(selection)
+                    selected = self.char_config_entries[selection]
+                    self.selected_config_name = selected.name
+                    self.char_keeper.load_char_config(
+                        selected.char_config, selected.battle_config)
                     self.exit_config_selection_state()
                     self.enter_paused_state()
                     self.app_state = AppStates.PAUSED
@@ -324,8 +340,21 @@ class TibiaTerminator:
         else:
             view.signal_error()
 
+    def gen_config_entries(
+            self, char_configs: List[CharConfig]
+    ) -> Iterable[CharConfigMenuEntry]:
+        for char_config in char_configs:
+            for battle_config in char_config.battle_configs:
+                if not battle_config.hidden:
+                    name = f'{char_config.char_name}.{battle_config.config_name}'
+                    yield CharConfigMenuEntry(
+                        name,
+                        char_config,
+                        battle_config
+                    )
+
     def enter_config_selection_state(self):
-        config_names = list(map(lambda c: c['name'], self.char_configs))
+        config_names = list(map(lambda c: c.name, self.char_config_entries))
         self.view = ConfigSelectionView(config_names, self.config_input_cb)
         self.view.title = self.gen_title()
         self.view.main_options = CONFIG_SELECTION_MAIN_OPTIONS_MSG
@@ -344,8 +373,9 @@ class TibiaTerminator:
             self.tibia_wid) + " Active config: " + self.selected_config_name
 
 
-def main(cliwin, pid, app_config_path: str, enable_mana: bool, enable_hp: bool,
-         enable_magic_shield: bool, enable_speed: bool, only_monitor: bool):
+def main(cliwin, pid, app_config_path: str, char_configs_path: str,
+         enable_mana: bool, enable_hp: bool, enable_magic_shield: bool,
+         enable_speed: bool, only_monitor: bool):
     if pid is None or pid == "":
         raise Exception("PID is required, you may use psgrep -a -l bin/Tibia "
                         "to find the process id")
@@ -360,10 +390,16 @@ def main(cliwin, pid, app_config_path: str, enable_mana: bool, enable_hp: bool,
 
     view_renderer = ViewRenderer(cliwin)
     cmd_processor = CommandProcessor(tibia_wid, stats_logger, only_monitor)
+    char_configs = list(load_configs(char_configs_path))
+    if len(char_configs) == 0:
+        print(f"No .charconfig files found in {char_configs_path}",
+              file=sys.stderr)
+        sys.exit(1)
     client = ClientInterface(HOTKEYS_CONFIG,
                              logger=stats_logger,
                              cmd_processor=cmd_processor)
-    char_keeper = CharKeeper(client, CHAR_CONFIGS, HOTKEYS_CONFIG)
+    char_keeper = CharKeeper(client, char_configs[0],
+                             char_configs[0].battle_configs[0], HOTKEYS_CONFIG)
     char_reader = CharReader(MemoryReader(pid, print_async))
     eq_reader = EquipmentReader()
     loot_macro = LootMacro(client, HOTKEYS_CONFIG)
@@ -372,7 +408,7 @@ def main(cliwin, pid, app_config_path: str, enable_mana: bool, enable_hp: bool,
                                        char_reader,
                                        eq_reader,
                                        app_config,
-                                       CHAR_CONFIGS,
+                                       char_configs,
                                        cliwin,
                                        loot_macro,
                                        stats_logger,
@@ -392,6 +428,7 @@ if __name__ == "__main__":
     curses.wrapper(main,
                    args.pid,
                    args.app_config_path,
+                   args.char_configs_path,
                    enable_mana=not args.no_mana,
                    enable_hp=not args.no_hp,
                    enable_magic_shield=not args.no_magic_shield,

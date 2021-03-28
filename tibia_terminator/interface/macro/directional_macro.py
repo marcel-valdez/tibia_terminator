@@ -62,12 +62,11 @@ class DirectionalMacro():
     __rotation_params: List[List[str]]
     __rotation_threshold_sec: int = 60
 
-    def __init__(self, config: Dict[str, Any]):
-        _config = DirectionalMacroConfigSchema().load(config)
+    def __init__(self, config: DirectionalMacroConfig):
         self.__macros = []
-        self.__rotation_params = self.gen_rotation_params(_config)
-        self.__macros = self.gen_pair_macros(_config)
-        self.__rotation_threshold_sec = _config.rotation_threshold_secs
+        self.__rotation_params = self.gen_rotation_params(config)
+        self.__macros = self.gen_pair_macros(config)
+        self.__rotation_threshold_sec = config.rotation_threshold_secs
         self.__last_timestamp_sec = 0
 
     def gen_pair_macros(self,

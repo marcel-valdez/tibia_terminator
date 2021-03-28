@@ -224,6 +224,57 @@ class TestCharConfigSchema(TestCase):
         self.assertEqual(test_base.emergency_hp_threshold,
                          test_child.emergency_hp_threshold)
 
+    def test_load_inherit_inherit_resolve(self):
+        # given
+        input = {
+            "char_name": "test_char_name",
+            "total_hp": 100,
+            "total_mana": 101,
+            "base_speed": 102,
+            "hasted_speed": 103,
+            "strong_hasted_speed": 104,
+            "battle_configs": [
+                {
+                    "config_name": "test_base_base",
+                    "hasted_speed": "{strong_hasted_speed}",
+                    "heal_at_missing": "{total_hp-10}",
+                    "downtime_heal_at_missing": "{total_hp-10}",
+                    "mana_hi": "{total_mana-10}",
+                    "mana_lo": "{total_mana-10}",
+                    "critical_mana": 110,
+                    "downtime_mana": "{total_mana-10}",
+                    "minor_heal": "{total_hp-10}",
+                    "medium_heal": "{total_hp-20}",
+                    "greater_heal": "{total_hp-30}",
+                    "emergency_hp_threshold": "{total_hp-40}",
+                },
+                {
+                    "base": "test_base_base",
+                    "config_name": "test_base",
+                    "hasted_speed": "{hasted_speed}",
+                    "heal_at_missing": 117,
+                },
+                {
+                    "base": "test_base",
+                    "config_name": "test_child",
+                    "hasted_speed": 118,
+                }
+            ]
+        }
+        target = CharConfigSchema()
+        # when
+        actual = target.load(input)
+        # then
+        test_base_base = actual.battle_configs[0]
+        test_base = actual.battle_configs[1]
+        test_child = actual.battle_configs[2]
+        self.assertEqual(test_base_base.config_name, "test_base_base")
+        self.assertEqual(test_base.config_name, "test_base")
+        self.assertEqual(test_child.config_name, "test_child")
+        self.assertEqual(test_child.hasted_speed, 118)
+        self.assertEqual(test_child.heal_at_missing, 117)
+        self.assertEqual(test_child.greater_heal, 70)
+
 
 if __name__ == '__main__':
     unittest.main()

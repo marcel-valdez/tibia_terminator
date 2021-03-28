@@ -2,6 +2,8 @@
 
 from typing import List, Dict
 
+from tibia_terminator.schemas.char_config_schema import (CharConfig,
+                                                         BattleConfig)
 from tibia_terminator.common.char_status import CharStatus
 from tibia_terminator.interface.macro.cancel_emergency_macro import (
     CancelEmergencyMacro)
@@ -25,7 +27,8 @@ from tibia_terminator.keeper.speed_keeper import SpeedKeeper
 class CharKeeper:
     def __init__(self,
                  client,
-                 char_configs,
+                 char_config: CharConfig,
+                 battle_config: BattleConfig,
                  hotkeys: Dict[str, str],
                  emergency_reporter=None,
                  mana_keeper=None,
@@ -39,104 +42,119 @@ class CharKeeper:
         self.directional_macros = []
         self.core_macros = []
         self.client = client
-        self.char_configs = char_configs
         self.hotkeys = hotkeys
-        # load the first one by default
-        char_config = char_configs[0]["config"]
-        self.init_emergency_reporter(char_config, emergency_reporter)
-        self.init_mana_keeper(client, char_config, mana_keeper)
-        self.init_hp_keeper(client, char_config, hp_keeper)
-        self.init_speed_keeper(client, char_config, speed_keeper)
-        self.init_equipment_keeper(client, char_config, equipment_keeper)
-        self.init_magic_shield_keeper(client, char_config, magic_shield_keeper)
+        # load the first battle config from the first char config
+        self.init_emergency_reporter(char_config, battle_config,
+                                     emergency_reporter)
+        self.init_mana_keeper(client, char_config, battle_config, mana_keeper)
+        self.init_hp_keeper(client, char_config, battle_config, hp_keeper)
+        self.init_speed_keeper(client, char_config, battle_config,
+                               speed_keeper)
+        self.init_equipment_keeper(client, char_config, battle_config,
+                                   equipment_keeper)
+        self.init_magic_shield_keeper(client, char_config, battle_config,
+                                      magic_shield_keeper)
         self.init_item_crosshair_macros(
-            char_config.get('item_crosshair_macros', []),
-            item_crosshair_macros)
+            battle_config.item_crosshair_macros or [], item_crosshair_macros)
         self.init_core_macros(self.hotkeys, core_macros)
-        self.init_directional_macros(char_config.get('directional_macros', []))
+        self.init_directional_macros(battle_config.directional_macros or [])
 
-    def change_char_config(self, index):
-        self.load_char_config(self.char_configs[index]["config"])
-
-    def load_char_config(self, char_config):
-        self.init_emergency_reporter(char_config)
-        self.init_mana_keeper(self.client, char_config)
-        self.init_hp_keeper(self.client, char_config)
-        self.init_speed_keeper(self.client, char_config)
-        self.init_equipment_keeper(self.client, char_config)
-        self.init_magic_shield_keeper(self.client, char_config)
-        self.init_item_crosshair_macros(
-            char_config.get('item_crosshair_macros', []))
+    def load_char_config(self, char_config: CharConfig,
+                         battle_config: BattleConfig):
+        self.init_emergency_reporter(char_config, battle_config)
+        self.init_mana_keeper(self.client, char_config, battle_config)
+        self.init_hp_keeper(self.client, char_config, battle_config)
+        self.init_speed_keeper(self.client, char_config, battle_config)
+        self.init_equipment_keeper(self.client, char_config, battle_config)
+        self.init_magic_shield_keeper(self.client, char_config, battle_config)
+        self.init_item_crosshair_macros(battle_config.item_crosshair_macros
+                                        or [])
         self.init_core_macros(self.hotkeys)
-        self.init_directional_macros(char_config.get('directional_macros', []))
+        self.init_directional_macros(battle_config.directional_macros or [])
 
-    def init_emergency_reporter(self, char_config, emergency_reporter=None):
+    def init_emergency_reporter(self,
+                                char_config: CharConfig,
+                                battle_config: BattleConfig,
+                                emergency_reporter=None):
         if emergency_reporter is None:
             self.emergency_reporter = EmergencyReporter(
-                char_config['total_hp'], char_config['mana_lo'],
-                char_config['emergency_shield_hp_treshold'])
+                char_config.total_hp, battle_config.mana_lo,
+                battle_config.emergency_hp_threshold)
         else:
             self.emergency_reporter = emergency_reporter
 
-    def init_mana_keeper(self, client, char_config, mana_keeper=None):
+    def init_mana_keeper(self,
+                         client,
+                         char_config: CharConfig,
+                         battle_config: BattleConfig,
+                         mana_keeper=None):
         if mana_keeper is None:
-            self.mana_keeper = ManaKeeper(client, char_config['mana_hi'],
-                                          char_config['mana_lo'],
-                                          char_config['critical_mana'],
-                                          char_config['downtime_mana'],
-                                          char_config['total_mana'])
+            self.mana_keeper = ManaKeeper(client, battle_config.mana_hi,
+                                          battle_config.mana_lo,
+                                          battle_config.critical_mana,
+                                          battle_config.downtime_mana,
+                                          char_config.total_mana)
         else:
             self.mana_keeper = mana_keeper
 
-    def init_hp_keeper(self, client, char_config, hp_keeper=None):
+    def init_hp_keeper(self,
+                       client,
+                       char_config: CharConfig,
+                       battle_config: BattleConfig,
+                       hp_keeper=None):
         if hp_keeper is None:
             self.hp_keeper = HpKeeper(client, self.emergency_reporter,
-                                      char_config['total_hp'],
-                                      char_config['heal_at_missing'],
-                                      char_config['exura_heal'],
-                                      char_config['exura_gran_heal'],
-                                      char_config['downtime_heal_at_missing'])
+                                      char_config.total_hp,
+                                      battle_config.heal_at_missing,
+                                      battle_config.minor_heal,
+                                      battle_config.medium_heal,
+                                      battle_config.downtime_heal_at_missing)
         else:
             self.hp_keeper = hp_keeper
 
-    def init_speed_keeper(self, client, char_config, speed_keeper=None):
+    def init_speed_keeper(self,
+                          client,
+                          char_config: CharConfig,
+                          battle_config: BattleConfig,
+                          speed_keeper=None):
         if speed_keeper is None:
-            self.speed_keeper = SpeedKeeper(client, char_config['base_speed'],
-                                            char_config['hasted_speed'])
+            self.speed_keeper = SpeedKeeper(client, char_config.base_speed,
+                                            battle_config.hasted_speed)
         else:
             self.speed_keeper = speed_keeper
 
     def init_equipment_keeper(self,
                               client,
-                              char_config,
+                              char_config: CharConfig,
+                              battle_config: BattleConfig,
                               equipment_keeper=None):
         if equipment_keeper is None:
             self.equipment_keeper = EquipmentKeeper(
                 client, self.emergency_reporter,
-                char_config['should_equip_amulet'],
-                char_config['should_equip_ring'],
-                char_config['should_eat_food'],
-                char_config.get('equip_amulet_secs', 1),
-                char_config.get('equip_ring_secs', 1))
+                battle_config.should_equip_amulet,
+                battle_config.should_equip_ring, battle_config.should_eat_food,
+                battle_config.equip_amulet_secs or 1,
+                battle_config.equip_ring_secs or 1)
         else:
             self.equipment_keeper = equipment_keeper
 
     def init_magic_shield_keeper(self,
                                  client,
-                                 char_config,
+                                 char_config: CharConfig,
+                                 battle_config: BattleConfig,
                                  magic_shield_keeper=None):
-        magic_shield_type = char_config.get('magic_shield_type', None)
+        magic_shield_type = battle_config.magic_shield_type
         if magic_shield_keeper is not None:
             self.magic_shield_keeper = magic_shield_keeper
 
         if magic_shield_type == "permanent":
             self.magic_shield_keeper = MagicShieldKeeper(
-                client, char_config['total_hp'],
-                char_config['magic_shield_treshold'])
+                client, char_config.total_hp,
+                battle_config.magic_shield_threshold)
         elif magic_shield_type == "emergency":
             self.magic_shield_keeper = EmergencyMagicShieldKeeper(
-                client, self.emergency_reporter, char_config['total_hp'],
-                char_config['mana_lo'], char_config['magic_shield_treshold'])
+                client, self.emergency_reporter, char_config.total_hp,
+                battle_config.mana_lo, battle_config.magic_shield_threshold)
         elif magic_shield_type is None:
             self.magic_shield_keeper = NoopKeeper()
         elif magic_shield_type is not None:
@@ -151,7 +169,7 @@ class CharKeeper:
         else:
             for macro_config in macro_configs:
                 self.item_crosshair_macros.append(
-                    ItemCrosshairMacro(self.client, macro_config['hotkey']))
+                    ItemCrosshairMacro(self.client, macro_config.hotkey))
 
     def unload_item_crosshair_macros(self):
         self.__unhook_macros(self.item_crosshair_macros)

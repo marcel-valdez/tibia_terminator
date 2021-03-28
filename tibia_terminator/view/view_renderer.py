@@ -6,7 +6,7 @@ import curses
 from queue import Queue
 from threading import Thread, Lock
 from time import sleep
-from typing import List, Any
+from typing import List, Any, Callable
 
 from tibia_terminator.common.char_status import CharStatus
 from tibia_terminator.common.logger import get_debug_level
@@ -159,7 +159,8 @@ class ViewRenderer(Thread):
 class ConfigSelectionView(View):
     CONFIG_SELECTION_ROW = View.ERRORS_ROW + 1
 
-    def __init__(self, config_options, input_cb):
+    def __init__(self, config_options: List[str],
+                 input_cb: Callable[[View, int], None]):
         super().__init__()
         self.config_options = config_options
         self.input_cb = input_cb

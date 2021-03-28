@@ -42,29 +42,31 @@ class BattleConfig(NamedTuple):
     directional_macros: List[DirectionalMacroConfig] = []
     magic_shield_type: Optional[str] = "emergency"
     magic_shield_threshold: Optional[int] = None
+    equip_amulet_secs: Optional[int] = 1
+    equip_ring_secs: Optional[int] = 1
 
 
 class BattleConfigSchema(FactorySchema[BattleConfig]):
     ctor = BattleConfig
     config_name = fields.Str(required=True)
     hidden = fields.Boolean(required=False, default=False)
-    hasted_speed = ResolvableField(int, required=True)
-    heal_at_missing = ResolvableField(int, required=True)
-    downtime_heal_at_missing = ResolvableField(int, required=True)
-    mana_hi = ResolvableField(int, required=True)
-    mana_lo = ResolvableField(int, required=True)
-    critical_mana = ResolvableField(int, required=True)
-    downtime_mana = ResolvableField(int, required=True)
-    minor_heal = ResolvableField(int, required=True)
-    medium_heal = ResolvableField(int, required=True)
-    greater_heal = ResolvableField(int, required=True)
+    hasted_speed = ResolvableField(float, required=True)
+    heal_at_missing = ResolvableField(float, required=True)
+    downtime_heal_at_missing = ResolvableField(float, required=True)
+    mana_hi = ResolvableField(float, required=True)
+    mana_lo = ResolvableField(float, required=True)
+    critical_mana = ResolvableField(float, required=True)
+    downtime_mana = ResolvableField(float, required=True)
+    minor_heal = ResolvableField(float, required=True)
+    medium_heal = ResolvableField(float, required=True)
+    greater_heal = ResolvableField(float, required=True)
     base = fields.Str(required=False)
     should_equip_amulet = fields.Boolean(default=True, required=False)
     should_equip_ring = fields.Boolean(default=True, required=False)
     should_eat_food = fields.Boolean(default=True, required=False)
     magic_shield_type = fields.Str(default="emergency", required=False)
-    magic_shield_threshold = ResolvableField(int, required=False)
-    emergency_hp_threshold = ResolvableField(int, required=True)
+    magic_shield_threshold = ResolvableField(float, required=False)
+    emergency_hp_threshold = ResolvableField(float, required=True)
     item_crosshair_macros = fields.List(
         fields.Nested(ItemCrosshairMacroConfigSchema),
         required=False,
@@ -110,21 +112,45 @@ class CharConfigSchema(FactorySchema[CharConfig]):
             result[config_name] = config
         return result
 
+    def expand_inheritance_recursively(
+            self,
+            config: Dict[str, Any],
+            configs_map: Dict[str, Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        expanded_config = {}
+        base_config = config
+        while True:
+            expanded_config = {**base_config, **expanded_config}
+            base_key = base_config.get('base', None)
+            if base_key is None:
+                break
+            else:
+                base_config = configs_map.get(base_key, None)
+                if base_config is None:
+                    raise ValidationError(
+                        f"Unknown base battle config {base_key}")
+        # keep the original name
+        expanded_config["config_name"] = config["config_name"]
+        # don't inherit hidden
+        if "hidden" in config:
+            expanded_config["hidden"] = config["hidden"]
+        elif "hidden" in expanded_config:
+            expanded_config.pop("hidden")
+        # don't inherit base
+        if "base" in config:
+            expanded_config["base"] = config["base"]
+        elif "base" in expanded_config:
+            expanded_config.pop("base")
+        return expanded_config
+
     def expand_inheritance(
             self, battle_configs_map: Dict[str, Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         expanded_configs = []
         for (key, config) in battle_configs_map.items():
-            expanded_config = {}
-            base_key = config.get('base', None)
-            if base_key is None:
-                expanded_config = config.copy()
-            else:
-                base_config = battle_configs_map.get(base_key, None)
-                if base_config is None:
-                    raise ValidationError(
-                        f"Unknown base battle config {base_key}")
-                expanded_config = {**base_config, **config}
+            expanded_config = self.expand_inheritance_recursively(
+                config, battle_configs_map
+            )
             expanded_configs.append(expanded_config)
         return expanded_configs
 
