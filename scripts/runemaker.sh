@@ -338,7 +338,7 @@ function unequip_ring_of_healing() {
   echo 'Unequipping ring of healing'
   echo '-------------------------'
   sleep "0.$(random 250 390)s"
-  send_keystroke "${tibia_wid}" "${UNEQUIP_RING_ROH_KEY}" 1
+  send_keystroke "${tibia_wid}" "${UNEQUIP_RING_ROH_KEY}" 1 1
 }
 
 function smart_equip_regen_ring() {
@@ -360,7 +360,7 @@ function smart_equip_regen_ring() {
   if [[ "${SOUL_POINTS}" -gt 10 ]]; then
     echo '-------------------------'
     echo 'Equipping ring of healing'
-    echo "because soul points (${SOUL_POINTS}) < 10"
+    echo "because soul points (${SOUL_POINTS}) > 10"
     echo '-------------------------'
     wait_time="0.$(random 250 390)s"
     sleep "${wait_time}"
