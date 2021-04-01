@@ -12,3 +12,4 @@ env/*
 char_config.py
 app_config.py
 .vscode
+char_configs/*

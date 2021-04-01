@@ -4,22 +4,12 @@ import argparse
 
 from collections import OrderedDict
 from marshmallow import fields, pre_load, ValidationError
-from typing import (Optional, NamedTuple, List, Dict, Any, TypeVar)
+from typing import (Optional, NamedTuple, List, Dict, Any)
+from tibia_terminator.schemas.item_crosshair_macro_config_schema import (
+    ItemCrosshairMacroConfig, ItemCrosshairMacroConfigSchema)
 from tibia_terminator.schemas.common import FactorySchema, ResolvableField
 from tibia_terminator.schemas.directional_macro_config_schema import (
     DirectionalMacroConfig, DirectionalMacroConfigSchema)
-
-
-class ItemCrosshairMacroConfig(NamedTuple):
-    hotkey: str
-
-
-T = TypeVar("T")
-
-
-class ItemCrosshairMacroConfigSchema(FactorySchema[ItemCrosshairMacroConfig]):
-    ctor = ItemCrosshairMacroConfig
-    hotkey = fields.Str(required=True)
 
 
 class BattleConfig(NamedTuple):
@@ -46,6 +36,7 @@ class BattleConfig(NamedTuple):
     equip_ring_secs: Optional[int] = 1
     item_crosshair_macros: Optional[List[ItemCrosshairMacroConfig]] = []
     directional_macros: Optional[List[DirectionalMacroConfig]] = []
+
 
 class BattleConfigSchema(FactorySchema[BattleConfig]):
     ctor = BattleConfig

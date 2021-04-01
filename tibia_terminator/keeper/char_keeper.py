@@ -170,7 +170,7 @@ class CharKeeper:
         else:
             for macro_config in macro_configs:
                 self.item_crosshair_macros.append(
-                    ItemCrosshairMacro(self.client, macro_config.hotkey))
+                    ItemCrosshairMacro(self.client, macro_config))
 
     def unload_item_crosshair_macros(self):
         self.__unhook_macros(self.item_crosshair_macros)

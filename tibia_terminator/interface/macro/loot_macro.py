@@ -4,47 +4,34 @@ import argparse
 import keyboard
 import pyautogui
 
-from tibia_terminator.interface.macro.macro import ClientMacro
-from tibia_terminator.interface.client_interface import (
-    ClientInterface, CommandType, CommandProcessor
-)
-from tibia_terminator.schemas.hotkeys_config_schema import (
-    HotkeysConfig
-)
-
+from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfig
+from tibia_terminator.interface.macro.macro import (
+    ClientMacro, UPPER_LEFT_SQM, UPPER_SQM, UPPER_RIGHT_SQM, LEFT_SQM,
+    CENTER_SQM, RIGHT_SQM, LOWER_LEFT_SQM, LOWER_SQM, LOWER_RIGHT_SQM)
+from tibia_terminator.interface.client_interface import (ClientInterface,
+                                                         CommandType,
+                                                         CommandProcessor)
 
 parser = argparse.ArgumentParser(description="Loots all 9 SQMs around a char.")
 
 LEFT_BTN = "1"
 RIGHT_BTN = "3"
 
-CENTER_Y = 385
-CENTER_X = 960
-SQM_LEN = 55
-
-LEFT_X = CENTER_X - SQM_LEN
-RIGHT_X = CENTER_X + SQM_LEN
-UPPER_Y = CENTER_Y - SQM_LEN
-LOWER_Y = CENTER_Y + SQM_LEN
-
 LOOT_SQMS = [
-    (LEFT_X, UPPER_Y),
-    (CENTER_X, UPPER_Y),
-    (RIGHT_X, UPPER_Y),
-    (LEFT_X, CENTER_Y),
-    (CENTER_X, CENTER_Y),
-    (RIGHT_X, CENTER_Y),
-    (LEFT_X, LOWER_Y),
-    (CENTER_X, LOWER_Y),
-    (RIGHT_X, LOWER_Y),
+    UPPER_LEFT_SQM,
+    UPPER_SQM,
+    UPPER_RIGHT_SQM,
+    LEFT_SQM,
+    CENTER_SQM,
+    RIGHT_SQM,
+    LOWER_LEFT_SQM,
+    LOWER_SQM,
+    LOWER_RIGHT_SQM,
 ]
 
 
 class LootMacro(ClientMacro):
-    def __init__(self,
-                 client: ClientInterface,
-                 hotkeys: HotkeysConfig,
-                 *args,
+    def __init__(self, client: ClientInterface, hotkeys: HotkeysConfig, *args,
                  **kwargs):
         super().__init__(
             client,
@@ -57,8 +44,9 @@ class LootMacro(ClientMacro):
 
     def _client_action(self, tibia_wid):
         mouse_x, mouse_y = pyautogui.position()
+        # TODO: Make loot modifier a configurable value
         pyautogui.keyDown("altleft")
-        for (sqm_x, sqm_y) in LOOT_SQMS:
+        for sqm_x, sqm_y in LOOT_SQMS:
             pyautogui.click(sqm_x, sqm_y, button="left", interval=0)
         pyautogui.keyUp("altleft")
         pyautogui.moveTo(mouse_x, mouse_y)
@@ -73,7 +61,13 @@ def main(args):
     logger = MockLogger()
     cmd_processor = CommandProcessor("wid", logger, False)
     client = ClientInterface({}, logger, cmd_processor)
-    macro = LootMacro(client, {"loot": "v"})
+    macro = LootMacro(client, HotkeysConfig(
+        minor_heal="1", medium_heal="2", greater_heal="3", haste="4",
+        equip_ring="5", equip_amulet="6", eat_food="7", magic_shield="8",
+        cancel_magic_shield="9", mana_potion="0", toggle_emergency_amulet="a",
+        toggle_emergency_ring="b", start_emergency="c", cancel_emergency="d",
+        loot="v")
+    )
     cmd_processor.start()
     print("Listening on key v, 9 SQMs will be alt+clicked when pressed.")
     macro.hook_hotkey()
