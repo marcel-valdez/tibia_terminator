@@ -11,7 +11,7 @@ from tibia_terminator.schemas.item_crosshair_macro_config_schema import (
 from tibia_terminator.interface.macro.macro import (ClientMacro, parse_hotkey,
                                                     UPPER_LEFT_SQM, UPPER_SQM,
                                                     UPPER_RIGHT_SQM, LEFT_SQM,
-                                                    CENTER_SQM, RIGHT_SQM,
+                                                    RIGHT_SQM,
                                                     LOWER_LEFT_SQM, LOWER_SQM,
                                                     LOWER_RIGHT_SQM)
 from tibia_terminator.interface.client_interface import (ClientInterface,
@@ -35,8 +35,8 @@ def click_action(hotkey: str, direction_map: Dict[str, Direction] = {}):
 OPPOSITE_DIRECTION_SQM_MAP = {
     Direction.LOWER_LEFT: UPPER_RIGHT_SQM,
     Direction.LEFT: RIGHT_SQM,
-    Direction.UPPER_LEFT: LOWER_LEFT_SQM,
-    Direction.LOWER_LEFT: UPPER_LEFT_SQM,
+    Direction.UPPER_LEFT: LOWER_RIGHT_SQM,
+    Direction.LOWER_RIGHT: UPPER_LEFT_SQM,
     Direction.RIGHT: LEFT_SQM,
     Direction.UPPER_RIGHT: LOWER_LEFT_SQM,
     Direction.UP: LOWER_SQM,
