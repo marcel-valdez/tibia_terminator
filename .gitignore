@@ -7,10 +7,8 @@ tibia_terminator/credentials.json
 src/app_config.py
 src/char_config.py
 scripts/user/*
-src/char_configs/*
 env/*
 .tibia_reconnector.lock
-char_configs
 char_config.py
 app_config.py
 .vscode
