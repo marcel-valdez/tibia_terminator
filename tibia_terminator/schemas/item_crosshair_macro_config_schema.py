@@ -20,7 +20,7 @@ class Direction(Enum):
         if name is None:
             raise ValidationError("direction name cannot be null")
 
-        name_map = Direction.__dict__
+        name_map = Direction.__members__
         direction = name_map.get(name.upper(), None)
         if direction is None:
             raise ValidationError(f"Unknown direction: {name}. "
@@ -40,7 +40,7 @@ class MacroAction(Enum):
         if name is None:
             raise ValidationError("macro action name cannot be null")
 
-        name_map = MacroAction.__dict__
+        name_map = MacroAction.__members__
         action = name_map.get(name.upper(), None)
         if action is None:
             raise ValidationError(f"Unknown macro action: {name}. "
