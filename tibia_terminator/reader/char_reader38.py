@@ -269,9 +269,9 @@ def main(pid,
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    pid = args.pid or MEM_CONFIG['default_pid']
     app_config_schema = AppConfigsSchema()
     configs = app_config_schema.loadf(args.app_config_path)
+    pid = args.pid or configs.default_pid
     config = configs[pid]
     main(pid, args.mana_address
          or config.mana_memory_address, args.hp_address
