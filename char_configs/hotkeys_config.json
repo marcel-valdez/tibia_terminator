@@ -4,7 +4,7 @@
     "minor_heal": "F3",
     "medium_heal": "F4",
     "greater_heal": "F5",
-    "haste": "6",
+    "haste": "F12",
     "equip_ring": "F6",
     "equip_amulet": "F7",
     "eat_food": "F8",
@@ -15,7 +15,7 @@
     "toggle_emergency_ring": "F1",
     // These are keys the App will listen to, rather than send.
     // Loots all 9 SQMs when this key is pressed
-    "loot": "z",
+    "loot": "x",
     // Cancels an on-going emergency state, so the App will cancel
     // utamo and put on ordinary ring & amulet.
     "cancel_emergency": "end",
