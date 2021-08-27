@@ -6,7 +6,7 @@ import argparse
 import time
 import sys
 
-from schemas.credentials_schema import (CredentialsSchema, Credential)
+from tibia_terminator.schemas.credentials_schema import (CredentialsSchema, Credential)
 from tibia_terminator.reader.window_utils import (get_tibia_wid, focus_tibia,
                                                   send_key, send_text,
                                                   left_click,
