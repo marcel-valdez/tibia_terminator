@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 
-SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-ROOT_PATH="$(dirname ${SCRIPTPATH})/tibia_terminator"
-PYTHONPATH="${PYTHONPATH}:${ROOT_PATH}"
-RECONNECTOR_BIN="${ROOT_PATH}/main.py"
+SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+TERMINATOR_PATH="$(dirname ${SCRIPT_PATH})"
+export PYTHONPATH="${PYTHONPATH}:${ROOT_PATH}"
 
-function python_bin {
-  PYTHONPATH=${PYTHONPATH} python3.8 "$@"
+function sudo_python_bin {
+  sudo python3.8 "$@"
 }
 
-python_bin ${RECONNECTOR_BIN} "$@"
+pushd "${TERMINATOR_PATH}" >/dev/null
+trap popd >/dev/null SIGINT SIGTERM
+
+sudo_python_bin -m tibia_terminator start "$@"
+
