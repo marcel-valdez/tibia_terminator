@@ -56,20 +56,27 @@ class CharKeeper:
         self.init_magic_shield_keeper(client, char_config, battle_config,
                                       magic_shield_keeper)
         self.init_item_crosshair_macros(
-            battle_config.item_crosshair_macros or [], item_crosshair_macros)
+            battle_config.item_crosshair_macros or [],
+            self.hotkeys_config,
+            item_crosshair_macros
+        )
         self.init_core_macros(self.hotkeys_config, core_macros)
         self.init_directional_macros(battle_config.directional_macros or [])
 
-    def load_char_config(self, char_config: CharConfig,
-                         battle_config: BattleConfig):
+    def load_char_config(
+            self,
+            char_config: CharConfig,
+            battle_config: BattleConfig):
         self.init_emergency_reporter(char_config, battle_config)
         self.init_mana_keeper(self.client, char_config, battle_config)
         self.init_hp_keeper(self.client, char_config, battle_config)
         self.init_speed_keeper(self.client, char_config, battle_config)
         self.init_equipment_keeper(self.client, char_config, battle_config)
         self.init_magic_shield_keeper(self.client, char_config, battle_config)
-        self.init_item_crosshair_macros(battle_config.item_crosshair_macros
-                                        or [])
+        self.init_item_crosshair_macros(
+            battle_config.item_crosshair_macros or [],
+            self.hotkeys_config
+        )
         self.init_core_macros(self.hotkeys_config)
         self.init_directional_macros(battle_config.directional_macros or [])
 
@@ -161,16 +168,22 @@ class CharKeeper:
         elif magic_shield_type is not None:
             raise Exception(f"Unknown magic shield type {magic_shield_type}")
 
-    def init_item_crosshair_macros(self,
-                                   macro_configs: List[Dict[str, str]],
-                                   item_crosshair_macros: List[Macro] = None):
+    def init_item_crosshair_macros(
+            self,
+            macro_configs: List[Dict[str, str]],
+            hotkeys_config: HotkeysConfig,
+            item_crosshair_macros: List[Macro] = None):
         self.unload_item_crosshair_macros()
         if item_crosshair_macros is not None:
             self.item_crosshair_macros = item_crosshair_macros
         else:
             for macro_config in macro_configs:
                 self.item_crosshair_macros.append(
-                    ItemCrosshairMacro(self.client, macro_config))
+                    ItemCrosshairMacro(
+                        self.client,
+                        macro_config,
+                        hotkeys_config
+                    ))
 
     def unload_item_crosshair_macros(self):
         self.__unhook_macros(self.item_crosshair_macros)

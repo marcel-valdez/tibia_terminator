@@ -15,6 +15,7 @@ from tibia_terminator.interface.macro.macro import (ClientMacro,
 from tibia_terminator.interface.client_interface import (ClientInterface,
                                                          CommandType,
                                                          CommandProcessor)
+from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfig
 
 parser = argparse.ArgumentParser(description='Test item cross hair macro.')
 parser.add_argument("--action",
@@ -89,24 +90,53 @@ class SingleItemCrosshairMacro(ClientMacro):
 class ItemCrosshairMacro():
     __macros: List[SingleItemCrosshairMacro]
 
-    def __init__(self, client: ClientInterface,
-                 config: ItemCrosshairMacroConfig):
-        self.__macros = list(self.gen_macros(client, config))
+    def __init__(
+            self,
+            client: ClientInterface,
+            config: ItemCrosshairMacroConfig,
+            hotkeys_config: HotkeysConfig
+    ):
+        self.__macros = list(self.gen_macros(client, config, hotkeys_config))
 
     def gen_macros(
-        self, client: ClientInterface, config: ItemCrosshairMacroConfig
+            self,
+            client: ClientInterface,
+            config: ItemCrosshairMacroConfig,
+            hotkeys_config: HotkeysConfig
     ) -> Iterable[SingleItemCrosshairMacro]:
-        if config.action == MacroAction.CLICK:
-            action = gen_click_action_fn(config.hotkey)
-            yield SingleItemCrosshairMacro(client, config.hotkey, action)
-        elif config.action == MacroAction.CLICK_BEHIND:
-            for direction_key, direction in config.direction_map.items():
-                hotkey = f"{config.hotkey}+{direction_key}"
-                action = gen_click_behind_fn(config.hotkey, direction_key,
-                                             direction)
+        # Add the standard hotkey setup for when the character isn't moving
+        yield SingleItemCrosshairMacro(
+            client,
+            config.hotkey,
+            gen_click_action_fn(config.hotkey)
+        )
+
+        direction_map = {
+            hotkeys_config.up: Direction.UP,
+            hotkeys_config.down: Direction.DOWN,
+            hotkeys_config.left: Direction.LEFT,
+            hotkeys_config.right: Direction.RIGHT,
+            hotkeys_config.upper_left: Direction.UPPER_LEFT,
+            hotkeys_config.upper_right: Direction.UPPER_RIGHT,
+            hotkeys_config.lower_left: Direction.LOWER_LEFT,
+            hotkeys_config.lower_right: Direction.LOWER_RIGHT
+        }
+
+        # Add hooks for when the character is moving and pressing the hotkey
+        # at the same time.
+        for direction_key, direction in direction_map.items():
+            hotkey = f"{config.hotkey}+{direction_key}"
+            if config.action == MacroAction.CLICK:
+                action = gen_click_action_fn(config.hotkey)
+                yield SingleItemCrosshairMacro(
+                    client, hotkey, action
+                )
+            elif config.action == MacroAction.CLICK_BEHIND:
+                action = gen_click_behind_fn(
+                    config.hotkey, direction_key, direction)
                 yield SingleItemCrosshairMacro(client, hotkey, action)
-        else:
-            raise Exception(f"Unsupported action: {config.action}")
+            else:
+                raise Exception(f"Unsupported action: {config.action}")
 
     def hook_hotkey(self, *args, **kwargs):
         for macro in self.__macros:
@@ -128,20 +158,27 @@ def main(keys: List[str], action: str):
     action = MacroAction.from_str(action)
     cmd_processor = CommandProcessor('wid', logger, False)
     client = ClientInterface({}, logger, cmd_processor)
+    hotkeys_config = HotkeysConfig(
+        up="w", down="s", left="a", right="d", upper_left="q",
+        upper_right="e", lower_left="x", lower_right="c",
+        minor_heal="", medium_heal="", greater_heal="", haste="",
+        equip_ring="", equip_amulet="", eat_food="", magic_shield="",
+        cancel_magic_shield="", mana_potion="", toggle_emergency_amulet="",
+        toggle_emergency_ring="", loot="", start_emergency="",
+        cancel_emergency="",
+    )
     cmd_processor.start()
     for key in keys:
         print(f'Listening on key {key}, a click will be issued when it is '
               'pressed.')
         macro = ItemCrosshairMacro(
             client,
-            ItemCrosshairMacroConfig(hotkey=key,
-                                     action=action,
-                                     direction_map={
-                                         'e': Direction.UP,
-                                         's': Direction.LEFT,
-                                         'd': Direction.DOWN,
-                                         'f': Direction.RIGHT
-                                     }))
+            ItemCrosshairMacroConfig(
+                hotkey=key,
+                action=action,
+            ),
+            hotkeys_config=hotkeys_config
+        )
         macro.hook_hotkey()
         macros.append(macro)
     try:

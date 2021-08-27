@@ -1,18 +1,17 @@
 #!/usr/bin/env python3.8
 
 import os
-import argparse
 import time
 import curses
 import sys
 
+from argparse import ArgumentParser, Namespace
 from collections import deque
-from typing import List, Iterable, NamedTuple
+from typing import List, Iterable, NamedTuple, Optional
 
 from tibia_terminator.char_configs.char_config_loader import load_configs
-from tibia_terminator.schemas.hotkeys_config_schema import (
-    HotkeysConfigSchema
-)
+from tibia_terminator.schemas.hotkeys_config_schema import (HotkeysConfigSchema
+                                                            )
 from tibia_terminator.schemas.char_config_schema import (BattleConfig,
                                                          CharConfig)
 from tibia_terminator.schemas.app_config_schema import (AppConfigsSchema,
@@ -39,36 +38,40 @@ from tibia_terminator.view.view_renderer import (ViewRenderer, PausedView,
 # -  Note that this program needs to be executed as superuser in order to
 #    access program memory pages.
 
-parser = argparse.ArgumentParser(
-    description='Tibia terminator CLI parameters.')
-parser.add_argument('pid', help='The PID of Tibia')
-parser.add_argument('--no_mana',
-                    help='Do not automatically recover mana.',
-                    action='store_true')
-parser.add_argument('--no_hp',
-                    help='Do not automatically recover hp.',
-                    action='store_true')
-parser.add_argument('--no_magic_shield',
-                    help='Do not automatically cast magic shield.',
-                    action='store_true')
-parser.add_argument('--no_speed',
-                    help='Do not monitor speed.',
-                    action='store_true')
-parser.add_argument('--only_monitor',
-                    help='Only print stat changes, no action taken',
-                    action='store_true')
-parser.add_argument('--app_config_path',
-                    help='Path to memory configuration values',
-                    required=True)
-parser.add_argument('--char_configs_path',
-                    help=('Path to the char configs directory, where the '
-                          '.charconfig files are stored.'),
-                    required=True)
-parser.add_argument('--debug_level',
-                    help=('Set the debug level for debug log messages, '
-                          'higher values result in more verbose output.'),
-                    type=int,
-                    default=-1)
+
+def build_parser(
+        src_parser: Optional[ArgumentParser] = None) -> ArgumentParser:
+    parser = src_parser or ArgumentParser(description='Tibia terminator')
+    parser.add_argument('pid', help='The PID of Tibia')
+    parser.add_argument('--no_mana',
+                        help='Do not automatically recover mana.',
+                        action='store_true')
+    parser.add_argument('--no_hp',
+                        help='Do not automatically recover hp.',
+                        action='store_true')
+    parser.add_argument('--no_magic_shield',
+                        help='Do not automatically cast magic shield.',
+                        action='store_true')
+    parser.add_argument('--no_speed',
+                        help='Do not monitor speed.',
+                        action='store_true')
+    parser.add_argument('--only_monitor',
+                        help='Only print stat changes, no action taken',
+                        action='store_true')
+    parser.add_argument('--app_config_path',
+                        help='Path to memory configuration values',
+                        required=True)
+    parser.add_argument('--char_configs_path',
+                        help=('Path to the char configs directory, where the '
+                              '.charconfig files are stored.'),
+                        required=True)
+    parser.add_argument('--debug_level',
+                        help=('Set the debug level for debug log messages, '
+                              'higher values result in more verbose output.'),
+                        type=int,
+                        default=-1)
+    return parser
+
 
 SPACE_KEYCODE_A = 263
 SPACE_KEYCODE_B = 32
@@ -103,23 +106,24 @@ EXIT_KEYCODE = ESCAPE_KEY
 
 
 class TibiaTerminator:
-    def __init__(self,
-                 tibia_wid,
-                 char_keeper: CharKeeper,
-                 char_reader: CharReader,
-                 equipment_reader: EquipmentReader,
-                 app_config: AppConfig,
-                 char_configs: List[CharConfig],
-                 cliwin,
-                 loot_macro: LootMacro,
-                 stats_logger: StatsLogger,
-                 view_renderer: ViewRenderer,
-                 cmd_processor: CommandProcessor,
-                 enable_mana=True,
-                 enable_hp=True,
-                 enable_magic_shield=True,
-                 enable_speed=True,
-                 only_monitor=False):
+    def __init__(
+            self,
+            tibia_wid,
+            char_keeper: CharKeeper,
+            char_reader: CharReader,
+            equipment_reader: EquipmentReader,
+            app_config: AppConfig,
+            char_configs: List[CharConfig],
+            cliwin,
+            loot_macro: LootMacro,
+            stats_logger: StatsLogger,
+            view_renderer: ViewRenderer,
+            cmd_processor: CommandProcessor,
+            enable_mana=True,
+            enable_hp=True,
+            enable_magic_shield=True,
+            enable_speed=True,
+            only_monitor=False):
         self.tibia_wid = tibia_wid
         self.char_keeper = char_keeper
         self.char_reader = char_reader
@@ -331,7 +335,9 @@ class TibiaTerminator:
                     selected = self.char_config_entries[selection]
                     self.selected_config_name = selected.name
                     self.char_keeper.load_char_config(
-                        selected.char_config, selected.battle_config)
+                        selected.char_config,
+                        selected.battle_config
+                    )
                     self.exit_config_selection_state()
                     self.enter_paused_state()
                     self.app_state = AppStates.PAUSED
@@ -344,17 +350,13 @@ class TibiaTerminator:
             view.signal_error()
 
     def gen_config_entries(
-            self, char_configs: List[CharConfig]
-    ) -> Iterable[CharConfigMenuEntry]:
+            self,
+            char_configs: List[CharConfig]) -> Iterable[CharConfigMenuEntry]:
         for char_config in char_configs:
             for battle_config in char_config.battle_configs:
                 if not battle_config.hidden:
                     name = f'{char_config.char_name}.{battle_config.config_name}'
-                    yield CharConfigMenuEntry(
-                        name,
-                        char_config,
-                        battle_config
-                    )
+                    yield CharConfigMenuEntry(name, char_config, battle_config)
 
     def enter_config_selection_state(self):
         config_names = list(map(lambda c: c.name, self.char_config_entries))
@@ -376,14 +378,18 @@ class TibiaTerminator:
             self.tibia_wid) + " Active config: " + self.selected_config_name
 
 
-def main(cliwin, pid, app_config_path: str, char_configs_path: str,
-         enable_mana: bool, enable_hp: bool, enable_magic_shield: bool,
-         enable_speed: bool, only_monitor: bool):
+def curses_main(cliwin, pid, app_config_path: str, char_configs_path: str,
+                enable_mana: bool, enable_hp: bool, enable_magic_shield: bool,
+                enable_speed: bool, only_monitor: bool):
     if pid is None or pid == "":
         raise Exception("PID is required, you may use psgrep -a -l bin/Tibia "
                         "to find the process id")
     app_configs_schema = AppConfigsSchema()
     app_configs = app_configs_schema.loadf(app_config_path)
+    if not app_configs[str(pid)]:
+        raise Exception(f"App config for PID: {pid} not configured. Available"
+                        f" PIDs: {[c.pid for c in app_configs]}")
+
     app_config = app_configs[str(pid)]
     tibia_wid = get_tibia_wid(pid)
     stats_logger = StatsLogger()
@@ -408,29 +414,29 @@ def main(cliwin, pid, app_config_path: str, char_configs_path: str,
     char_reader = CharReader(MemoryReader(pid, print_async))
     eq_reader = EquipmentReader()
     loot_macro = LootMacro(client, hotkeys_config)
-    tibia_terminator = TibiaTerminator(tibia_wid,
-                                       char_keeper,
-                                       char_reader,
-                                       eq_reader,
-                                       app_config,
-                                       char_configs,
-                                       cliwin,
-                                       loot_macro,
-                                       stats_logger,
-                                       view_renderer,
-                                       cmd_processor,
-                                       enable_mana=enable_mana,
-                                       enable_hp=enable_hp,
-                                       enable_magic_shield=enable_magic_shield,
-                                       enable_speed=enable_speed,
-                                       only_monitor=only_monitor)
+    tibia_terminator = TibiaTerminator(
+        tibia_wid,
+        char_keeper,
+        char_reader,
+        eq_reader,
+        app_config,
+        char_configs,
+        cliwin,
+        loot_macro,
+        stats_logger,
+        view_renderer,
+        cmd_processor,
+        enable_mana=enable_mana,
+        enable_hp=enable_hp,
+        enable_magic_shield=enable_magic_shield,
+        enable_speed=enable_speed,
+        only_monitor=only_monitor)
     tibia_terminator.monitor_char()
 
 
-if __name__ == "__main__":
-    args = parser.parse_args()
+def main(args: Namespace):
     set_debug_level(args.debug_level)
-    curses.wrapper(main,
+    curses.wrapper(curses_main,
                    args.pid,
                    args.app_config_path,
                    args.char_configs_path,
@@ -439,3 +445,9 @@ if __name__ == "__main__":
                    enable_magic_shield=not args.no_magic_shield,
                    enable_speed=not args.no_speed,
                    only_monitor=args.only_monitor)
+
+
+if __name__ == "__main__":
+    parser = build_parser()
+    parsed_args = parser.parse_args(sys.argv)
+    main(parsed_args)
