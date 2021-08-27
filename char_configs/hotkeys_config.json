@@ -1,23 +1,33 @@
 // To get the min average heal of your character use:
 // http://www.tibia-stats.com/index.php?akcja=spellDmgCalc
 {
-    "minor_heal": "F3",
-    "medium_heal": "F4",
-    "greater_heal": "F5",
-    "haste": "F12",
-    "equip_ring": "F6",
-    "equip_amulet": "F7",
-    "eat_food": "F8",
-    "magic_shield": "F9",
-    "cancel_magic_shield": "F10",
-    "mana_potion": "F11",
-    "toggle_emergency_amulet": "F2",
-    "toggle_emergency_ring": "F1",
-    // These are keys the App will listen to, rather than send.
-    // Loots all 9 SQMs when this key is pressed
-    "loot": "x",
-    // Cancels an on-going emergency state, so the App will cancel
-    // utamo and put on ordinary ring & amulet.
-    "cancel_emergency": "end",
-    "start_emergency": "home"
+  "minor_heal": "F3",
+  "medium_heal": "F4",
+  "greater_heal": "F5",
+  "haste": "F12",
+  "equip_ring": "F6",
+  "equip_amulet": "F7",
+  "eat_food": "F8",
+  "magic_shield": "F9",
+  "cancel_magic_shield": "F10",
+  "mana_potion": "F11",
+  "toggle_emergency_amulet": "F2",
+  "toggle_emergency_ring": "F1",
+  // These are keys the App will listen to, rather than send.
+  // Loots all 9 SQMs when this key is pressed
+  "loot": "x",
+  // Cancels an on-going emergency state, so the App will cancel
+  // utamo and put on ordinary ring & amulet.
+  "cancel_emergency": "end",
+  "start_emergency": "home",
+  // We need these in order to hook single item hotkeys with
+  // directional keys as separate hotkeys
+  "up": "w",
+  "left": "a",
+  "down": "s",
+  "right", "d",
+  "upper_left": "w",
+  "upper_right": "r",
+  "lower_left": "z",
+  "lower_right": "c"
 }

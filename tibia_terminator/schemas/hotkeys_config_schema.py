@@ -21,6 +21,14 @@ class HotkeysConfig(NamedTuple):
     loot: str
     start_emergency: str
     cancel_emergency: str
+    up: str
+    down: str
+    left: str
+    right: str
+    upper_left: str
+    upper_right: str
+    lower_left: str
+    lower_right: str
 
 
 class HotkeysConfigSchema(FactorySchema[HotkeysConfig]):
@@ -40,3 +48,11 @@ class HotkeysConfigSchema(FactorySchema[HotkeysConfig]):
     loot = fields.Str(required=True)
     start_emergency = fields.Str(required=True)
     cancel_emergency = fields.Str(required=True)
+    up = fields.Str(required=True, default="w")
+    down = fields.Str(required=True, default="s")
+    left = fields.Str(required=True, default="a")
+    right = fields.Str(required=True, default="d")
+    upper_left = fields.Str(required=True, default="w")
+    upper_right = fields.Str(required=True, default="r")
+    lower_left = fields.Str(required=True, default="x")
+    lower_right = fields.Str(required=True, default="c")
