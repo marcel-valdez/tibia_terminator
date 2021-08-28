@@ -59,7 +59,7 @@ def build_parser(
                         help='Only print stat changes, no action taken',
                         action='store_true')
     parser.add_argument('--app_config_path',
-                        help='Path to memory configuration values',
+                        help='Path to memory configuration vnalues',
                         required=True)
     parser.add_argument('--char_configs_path',
                         help=('Path to the char configs directory, where the '
@@ -448,6 +448,6 @@ def main(args: Namespace):
 
 
 if __name__ == "__main__":
-    parser = build_parser()
-    parsed_args = parser.parse_args(sys.argv)
+    main_parser = build_parser()
+    parsed_args = main_parser.parse_args(sys.argv)
     main(parsed_args)
