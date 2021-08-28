@@ -416,7 +416,15 @@ class TestCharKeeper(TestCase):
                 "toggle_emergency_ring": "F1",
                 "loot": "z",
                 "cancel_emergency": "end",
-                "start_emergency": "home"
+                "start_emergency": "home",
+                "up": "w",
+                "down": "s",
+                "left": "a",
+                "right": "d",
+                "upper_left": "q",
+                "upper_right": "r",
+                "lower_left": "z",
+                "lower_right": "v"
             })
         )
 
