@@ -25,7 +25,7 @@
   "up": "w",
   "left": "a",
   "down": "s",
-  "right", "d",
+  "right": "d",
   "upper_left": "w",
   "upper_right": "r",
   "lower_left": "z",
