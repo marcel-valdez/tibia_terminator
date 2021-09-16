@@ -63,7 +63,7 @@ class ItemCrosshairMacroConfigSchema(FactorySchema[ItemCrosshairMacroConfig]):
     action = fields.Function(str,
                              MacroAction.from_str,
                              default=MacroAction.CLICK,
-                             require=False)
+                             required=False)
     direction_map = fields.Dict(keys=fields.Str(),
                                 values=fields.Function(str,
                                                        Direction.from_str),
