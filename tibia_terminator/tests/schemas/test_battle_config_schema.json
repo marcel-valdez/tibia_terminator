@@ -40,27 +40,27 @@
     {
       // wild growth/wall/bomb rune
       "hotkey": "x"
-    },
+    }
   ],
-  'directional_macros': [
+  "directional_macros": [
     {
-      'spell_key_rotation': ['9'],
-      'rotation_threshold_secs': 4,
-      'direction_pairs': [
-        ['alt+f', null],
-        ['alt+e', null],
-        ['alt+s', null],
-        ['alt+d', null],
+      "spell_key_rotation": ["9"],
+      "rotation_threshold_secs": 4,
+      "direction_pairs": [
+        ["alt+f", null],
+        ["alt+e", null],
+        ["alt+s", null],
+        ["alt+d", null]
       ]
     },
     {
-      'spell_key_rotation': ['8'],
-      'rotation_threshold_secs': 4,
-      'direction_pairs': [
-        ['ctrl+f', null],
-        ['ctrl+e', null],
-        ['ctrl+s', null],
-        ['ctrl+d', null],
+      "spell_key_rotation": ["8"],
+      "rotation_threshold_secs": 4,
+      "direction_pairs": [
+        ["ctrl+f", null],
+        ["ctrl+e", null],
+        ["ctrl+s", null],
+        ["ctrl+d", null]
       ]
     }
   ]
