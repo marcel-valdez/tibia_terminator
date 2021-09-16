@@ -114,5 +114,7 @@ class ResolvableField(Generic[K], fields.Field, ResolvableMixin):
                 resolved_value = self.resolve_t(value_str, value, attr)
                 data[attr] = resolved_value
                 return resolved_value
+        except TypeError as e:
+            raise TypeError(f"Type error while deserializing {value} for field {attr}", e)
         finally:
             self.pop_context(data)
