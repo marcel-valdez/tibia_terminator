@@ -39,37 +39,46 @@ from tibia_terminator.view.view_renderer import (ViewRenderer, PausedView,
 #    access program memory pages.
 
 
-def build_parser(
-        src_parser: Optional[ArgumentParser] = None) -> ArgumentParser:
-    parser = src_parser or ArgumentParser(description='Tibia terminator')
-    parser.add_argument('pid', help='The PID of Tibia')
-    parser.add_argument('--no_mana',
-                        help='Do not automatically recover mana.',
-                        action='store_true')
-    parser.add_argument('--no_hp',
-                        help='Do not automatically recover hp.',
-                        action='store_true')
-    parser.add_argument('--no_magic_shield',
-                        help='Do not automatically cast magic shield.',
-                        action='store_true')
-    parser.add_argument('--no_speed',
-                        help='Do not monitor speed.',
-                        action='store_true')
-    parser.add_argument('--only_monitor',
-                        help='Only print stat changes, no action taken',
-                        action='store_true')
-    parser.add_argument('--app_config_path',
-                        help='Path to memory configuration vnalues',
-                        required=True)
-    parser.add_argument('--char_configs_path',
-                        help=('Path to the char configs directory, where the '
-                              '.charconfig files are stored.'),
-                        required=True)
-    parser.add_argument('--debug_level',
-                        help=('Set the debug level for debug log messages, '
-                              'higher values result in more verbose output.'),
-                        type=int,
-                        default=-1)
+def build_parser(src_parser: Optional[ArgumentParser] = None) -> ArgumentParser:
+    parser = src_parser or ArgumentParser(description="Tibia terminator")
+    parser.add_argument("pid", help="The PID of Tibia")
+    parser.add_argument(
+        "--no_mana", help="Do not automatically recover mana.", action="store_true"
+    )
+    parser.add_argument(
+        "--no_hp", help="Do not automatically recover hp.", action="store_true"
+    )
+    parser.add_argument(
+        "--no_magic_shield",
+        help="Do not automatically cast magic shield.",
+        action="store_true",
+    )
+    parser.add_argument("--no_speed", help="Do not monitor speed.", action="store_true")
+    parser.add_argument(
+        "--only_monitor",
+        help="Only print stat changes, no action taken",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--app_config_path", help="Path to memory configuration vnalues", required=True
+    )
+    parser.add_argument(
+        "--char_configs_path",
+        help=(
+            "Path to the char configs directory, where the "
+            ".charconfig files are stored."
+        ),
+        required=True,
+    )
+    parser.add_argument(
+        "--debug_level",
+        help=(
+            "Set the debug level for debug log messages, "
+            "higher values result in more verbose output."
+        ),
+        type=int,
+        default=-1,
+    )
     return parser
 
 
@@ -279,7 +288,7 @@ class TibiaTerminator:
                 magic_shield_status_cb=self.view.set_magic_shield_status))
 
     def handle_running_state(self):
-        start = time.time()
+        start_ms = time.time() * 1000
         char_status = self.gen_char_status()
         self.char_keeper.handle_char_status(char_status)
         self.equipment_reader.cancel_pending_futures()
@@ -289,9 +298,9 @@ class TibiaTerminator:
         if self.char_keeper.emergency_reporter.in_emergency:
             self.view.emergency_status = 'ON'
         else:
-            self.view.emergency_status = 'OFF'
-        end = time.time()
-        self.add_elapsed_loop_time((end - start) * 1000)
+            self.view.emergency_status = "OFF"
+        end_ms = time.time() * 1000
+        self.add_elapsed_loop_time(end_ms - start_ms)
 
     def add_elapsed_loop_time(self, elapsed_ms: int):
         self.loop_times_sum += elapsed_ms - self.loop_times[0]
@@ -436,15 +445,19 @@ def curses_main(cliwin, pid, app_config_path: str, char_configs_path: str,
 
 def main(args: Namespace):
     set_debug_level(args.debug_level)
-    curses.wrapper(curses_main,
-                   args.pid,
-                   args.app_config_path,
-                   args.char_configs_path,
-                   enable_mana=not args.no_mana,
-                   enable_hp=not args.no_hp,
-                   enable_magic_shield=not args.no_magic_shield,
-                   enable_speed=not args.no_speed,
-                   only_monitor=args.only_monitor)
+    if args.debug_level > 1:
+        print(args)
+    curses.wrapper(
+        curses_main,
+        args.pid,
+        args.app_config_path,
+        args.char_configs_path,
+        enable_mana=not args.no_mana,
+        enable_hp=not args.no_hp,
+        enable_magic_shield=not args.no_magic_shield,
+        enable_speed=not args.no_speed,
+        only_monitor=args.only_monitor,
+    )
 
 
 if __name__ == "__main__":
