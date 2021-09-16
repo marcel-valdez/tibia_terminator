@@ -10,25 +10,30 @@ from collections import deque
 from typing import List, Iterable, NamedTuple, Optional
 
 from tibia_terminator.char_configs.char_config_loader import load_configs
-from tibia_terminator.schemas.hotkeys_config_schema import (HotkeysConfigSchema
-                                                            )
-from tibia_terminator.schemas.char_config_schema import (BattleConfig,
-                                                         CharConfig)
-from tibia_terminator.schemas.app_config_schema import (AppConfigsSchema,
-                                                        AppConfig)
+from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfigSchema
+from tibia_terminator.schemas.char_config_schema import BattleConfig, CharConfig
+from tibia_terminator.schemas.app_config_schema import AppConfigsSchema, AppConfig
 from tibia_terminator.common.char_status import CharStatus, CharStatusAsync
-from tibia_terminator.common.logger import (set_debug_level, StatsLogger)
-from tibia_terminator.interface.client_interface import (ClientInterface,
-                                                         CommandProcessor)
+from tibia_terminator.common.logger import set_debug_level, StatsLogger
+from tibia_terminator.interface.client_interface import (
+    ClientInterface,
+    CommandProcessor,
+)
 from tibia_terminator.interface.macro.loot_macro import LootMacro
 from tibia_terminator.keeper.char_keeper import CharKeeper
 from tibia_terminator.reader.char_reader38 import CharReader38 as CharReader
 from tibia_terminator.reader.equipment_reader import EquipmentReader
-from tibia_terminator.reader.memory_reader38 import (MemoryReader38 as
-                                                     MemoryReader)
+from tibia_terminator.reader.memory_reader38 import MemoryReader38 as MemoryReader
 from tibia_terminator.reader.window_utils import get_tibia_wid
-from tibia_terminator.view.view_renderer import (ViewRenderer, PausedView,
-                                                 RunView, ConfigSelectionView)
+from tibia_terminator.view.view_renderer import (
+    ViewRenderer,
+    PausedView,
+    RunView,
+    ConfigSelectionView,
+)
+from tibia_terminator.schemas.app_status_schema import (
+    AppStatus, AppState, AppStatusSchema
+)
 
 # - If you get the error:
 #     Xlib.error.DisplayConnectionError: Can't connect to display ":0": b'No protocol specified\n'
@@ -89,17 +94,14 @@ ESCAPE_KEY = 27
 LOOP_FREQ_MS = 50
 AVG_LOOP_TIME_SAMPLE_SIZE = 50
 
-RUNNING_STATE_MAIN_OPTIONS_MSG = "[Space]: Pause, [Esc]: Exit, [Enter]: Config selection."
-PAUSED_STATE_MAIN_OPTIONS_MSG = "[Space]: Resume, [Esc]: Exit, [Enter]: Config selection."
+RUNNING_STATE_MAIN_OPTIONS_MSG = (
+    "[Space]: Pause, [Esc]: Exit, [Enter]: Config selection."
+)
+PAUSED_STATE_MAIN_OPTIONS_MSG = (
+    "[Space]: Resume, [Esc]: Exit, [Enter]: Config selection."
+)
 CONFIG_SELECTION_MAIN_OPTIONS_MSG = "[Esc]: Exit, [Enter]: Back to paused state."
 CONFIG_SELECTION_TITLE = "Type the number of the char config to load: "
-
-
-class AppStates:
-    PAUSED = "__PAUSED__"
-    RUNNING = "__RUNNING__"
-    CONFIG_SELECTION = "__CONFIG_SELECTION__"
-    EXIT = "__EXIT__"
 
 
 class CharConfigMenuEntry(NamedTuple):
@@ -112,27 +114,30 @@ PAUSE_KEYCODES = [SPACE_KEYCODE_A, SPACE_KEYCODE_B]
 RESUME_KEYCODES = [SPACE_KEYCODE_A, SPACE_KEYCODE_B]
 CONFIG_SELECTION_KEYCODE = ENTER_KEYCODE
 EXIT_KEYCODE = ESCAPE_KEY
+DEFAULT_APP_STATUS_FILE = "./app_status.json"
 
 
 class TibiaTerminator:
     def __init__(
-            self,
-            tibia_wid,
-            char_keeper: CharKeeper,
-            char_reader: CharReader,
-            equipment_reader: EquipmentReader,
-            app_config: AppConfig,
-            char_configs: List[CharConfig],
-            cliwin,
-            loot_macro: LootMacro,
-            stats_logger: StatsLogger,
-            view_renderer: ViewRenderer,
-            cmd_processor: CommandProcessor,
-            enable_mana=True,
-            enable_hp=True,
-            enable_magic_shield=True,
-            enable_speed=True,
-            only_monitor=False):
+        self,
+        tibia_wid,
+        char_keeper: CharKeeper,
+        char_reader: CharReader,
+        equipment_reader: EquipmentReader,
+        app_config: AppConfig,
+        char_configs: List[CharConfig],
+        cliwin,
+        loot_macro: LootMacro,
+        stats_logger: StatsLogger,
+        view_renderer: ViewRenderer,
+        cmd_processor: CommandProcessor,
+        app_status_file: str = DEFAULT_APP_STATUS_FILE,
+        enable_mana=True,
+        enable_hp=True,
+        enable_magic_shield=True,
+        enable_speed=True,
+        only_monitor=False,
+    ):
         self.tibia_wid = tibia_wid
         self.char_keeper = char_keeper
         self.char_reader = char_reader
@@ -144,16 +149,53 @@ class TibiaTerminator:
         self.stats_logger = stats_logger
         self.view_renderer = view_renderer
         self.cmd_processor = cmd_processor
+
+        # TODO: This should be a separate init function
+        self.app_status_file = app_status_file
+        app_status = self.load_app_status()
+        self.app_state = app_status.state or AppState.CONFIG_SELECTION
+        self.selected_config_name = app_status.selected_config_name or \
+            self.char_config_entries[0].name
+        if not self.load_config(self.selected_config_name):
+            self.selected_config_name = self.char_config_entries[0].name
+
         self.enable_speed = enable_speed
         self.enable_mana = enable_mana
         self.enable_hp = enable_hp
         self.enable_magic_shield = enable_magic_shield
         self.only_monitor = only_monitor
-        self.app_state = None
-        self.selected_config_name = self.char_config_entries[0].name
         self.view = None
         self.loop_times = deque([0], AVG_LOOP_TIME_SAMPLE_SIZE)
         self.loop_times_sum = 0
+
+    def load_config(self, config_name: str) -> bool:
+        for config in self.char_config_entries:
+            if config.name == config_name:
+                self.char_keeper.load_char_config(
+                    config.char_config, config.battle_config
+                )
+                return True
+        return False
+
+    def load_app_status(self) -> AppStatus:
+        if os.path.isfile(self.app_status_file) and \
+           os.path.getsize(self.app_status_file) > 0:
+            app_status_schema = AppStatusSchema()
+            return app_status_schema.loadf(self.app_status_file)
+        else:
+            return AppStatus(
+                state=AppState.CONFIG_SELECTION,
+                selected_config_name=self.char_config_entries[0].name
+            )
+
+    def write_app_status(self):
+        app_status_schema = AppStatusSchema()
+        app_status = AppStatus(
+            state=self.app_state,
+            selected_config_name=self.selected_config_name
+        )
+        with open(self.app_status_file, 'w') as f:
+            f.write(app_status_schema.dumps(app_status))
 
     def monitor_char(self):
         # TODO: Rather than hardcoding these values, implement the init_*
@@ -178,8 +220,7 @@ class TibiaTerminator:
             speed_address = None
 
         if self.app_config.magic_shield_memory_address is not None:
-            magic_shield_address = int(
-                self.app_config.magic_shield_memory_address, 16)
+            magic_shield_address = int(self.app_config.magic_shield_memory_address, 16)
         else:
             magic_shield_address = None
 
@@ -198,26 +239,33 @@ class TibiaTerminator:
         self.view_renderer.start()
         self.cmd_processor.start()
         try:
-            self.app_state = AppStates.PAUSED
+            # Always enter paused state first
             self.enter_paused_state()
-            while self.app_state != AppStates.EXIT:
-                start = time.time() * 1000
+            if self.app_state is not None and \
+               self.app_state is not AppState.PAUSED:
+                # load the pre-configured value
+                initial_state = self.app_state
+                self.app_state = AppState.PAUSED
+                self.enter_next_app_state(initial_state)
 
+            while self.app_state != AppState.EXIT:
+                start_ms = time.time() * 1000
                 keycode = self.cliwin.getch()
-                self.enter_next_app_state(keycode)
-                if self.app_state == AppStates.EXIT:
+                next_state = self.get_next_app_state(keycode)
+                self.enter_next_app_state(next_state)
+                if self.app_state == AppState.EXIT:
                     self.handle_exit_state()
                     break
-                elif self.app_state == AppStates.PAUSED:
+                elif self.app_state == AppState.PAUSED:
                     self.handle_paused_state()
-                elif self.app_state == AppStates.RUNNING:
+                elif self.app_state == AppState.RUNNING:
                     self.handle_running_state()
-                elif self.app_state == AppStates.CONFIG_SELECTION:
+                elif self.app_state == AppState.CONFIG_SELECTION:
                     self.handle_config_selection_state()
 
-                end = time.time() * 1000
+                end_ms = time.time() * 1000
                 # Throttle loop frequency
-                loop_wait_ms = LOOP_FREQ_MS - (end - start)
+                loop_wait_ms = LOOP_FREQ_MS - (end_ms - start_ms)
                 if loop_wait_ms > 0:
                     time.sleep(loop_wait_ms / 1000)
         finally:
@@ -231,41 +279,48 @@ class TibiaTerminator:
         """Exits the program based on user input."""
         pass
 
-    def enter_next_app_state(self, keycode):
-        next_state = self.app_state
+    def get_next_app_state(self, keycode: int) -> AppState:
         if keycode == EXIT_KEYCODE:
-            next_state = AppStates.EXIT
+            return AppState.EXIT
 
-        if self.app_state == AppStates.RUNNING:
+        if self.app_state == AppState.RUNNING:
             if keycode in PAUSE_KEYCODES:
-                next_state = AppStates.PAUSED
+                return AppState.PAUSED
 
-        if self.app_state == AppStates.PAUSED:
+        if self.app_state == AppState.PAUSED:
             if keycode in RESUME_KEYCODES:
-                next_state = AppStates.RUNNING
+                return AppState.RUNNING
 
-        if self.app_state == AppStates.CONFIG_SELECTION:
+        if self.app_state == AppState.CONFIG_SELECTION:
             if keycode == CONFIG_SELECTION_KEYCODE:
-                next_state = AppStates.PAUSED
+                return AppState.PAUSED
         elif keycode == CONFIG_SELECTION_KEYCODE:
-            next_state = AppStates.CONFIG_SELECTION
+            return AppState.CONFIG_SELECTION
+        # No state change
+        return self.app_state
 
-        if self.app_state != next_state:
-            if self.app_state == AppStates.RUNNING:
-                self.exit_running_state()
-            if self.app_state == AppStates.PAUSED:
-                self.exit_paused_state()
-            if self.app_state == AppStates.CONFIG_SELECTION:
-                self.exit_config_selection_state()
+    def enter_next_app_state(self, next_state: AppState) -> bool:
+        if self.app_state == next_state:
+            return False
 
-            if next_state == AppStates.RUNNING:
-                self.enter_running_state()
-            if next_state == AppStates.PAUSED:
-                self.enter_paused_state()
-            if next_state == AppStates.CONFIG_SELECTION:
-                self.enter_config_selection_state()
+        if self.app_state == AppState.RUNNING:
+            self.exit_running_state()
+        if self.app_state == AppState.PAUSED:
+            self.exit_paused_state()
+        if self.app_state == AppState.CONFIG_SELECTION:
+            self.exit_config_selection_state()
+
+        if next_state == AppState.RUNNING:
+            self.enter_running_state()
+        elif next_state == AppState.PAUSED:
+            self.enter_paused_state()
+        elif next_state == AppState.CONFIG_SELECTION:
+            self.enter_config_selection_state()
 
         self.app_state = next_state
+        if self.app_state != AppState.EXIT:
+            self.write_app_status()
+        return True
 
     def enter_running_state(self):
         self.loot_macro.hook_hotkey()
@@ -280,12 +335,13 @@ class TibiaTerminator:
         return CharStatusAsync(
             self.char_reader.get_stats(),
             self.equipment_reader.get_equipment_status(
-                emergency_action_amulet_cb=self.view.
-                set_emergency_action_amulet,
+                emergency_action_amulet_cb=self.view.set_emergency_action_amulet,
                 emergency_action_ring_cb=self.view.set_emergency_action_ring,
                 equipped_amulet_cb=self.view.set_equipped_amulet,
                 equipped_ring_cb=self.view.set_equipped_ring,
-                magic_shield_status_cb=self.view.set_magic_shield_status))
+                magic_shield_status_cb=self.view.set_magic_shield_status,
+            ),
+        )
 
     def handle_running_state(self):
         start_ms = time.time() * 1000
@@ -296,7 +352,7 @@ class TibiaTerminator:
         # tries to fetch all values in order to print to screen
         self.view.set_char_stats(char_status)
         if self.char_keeper.emergency_reporter.in_emergency:
-            self.view.emergency_status = 'ON'
+            self.view.emergency_status = "ON"
         else:
             self.view.emergency_status = "OFF"
         end_ms = time.time() * 1000
@@ -306,8 +362,7 @@ class TibiaTerminator:
         self.loop_times_sum += elapsed_ms - self.loop_times[0]
         self.loop_times.append(elapsed_ms)
         self.avg_loop_time_ms = self.loop_times_sum / len(self.loop_times)
-        self.view.set_debug_line(
-            f"Avg loop time: {int(self.avg_loop_time_ms)} ms")
+        self.view.set_debug_line(f"Avg loop time: {int(self.avg_loop_time_ms)} ms")
 
     def exit_running_state(self):
         self.stats_logger.run_view = None
@@ -330,41 +385,36 @@ class TibiaTerminator:
         if keycode >= 48 and keycode <= 57:
             view.user_input += str(keycode - 48)
         elif keycode == ENTER_KEYCODE:
-            if view.user_input == '':
-                self.exit_config_selection_state()
-                self.enter_paused_state()
-                self.app_state = AppStates.PAUSED
+            if view.user_input == "":
+                self.enter_next_app_state(AppState.PAUSED)
             else:
                 selection = int(view.user_input)
                 if selection >= len(self.char_config_entries):
                     view.error = f"Selection index {view.user_input} is invalid."
                     view.signal_error()
-                    view.user_input = ''
+                    view.user_input = ""
                 else:
                     selected = self.char_config_entries[selection]
                     self.selected_config_name = selected.name
                     self.char_keeper.load_char_config(
-                        selected.char_config,
-                        selected.battle_config
+                        selected.char_config, selected.battle_config
                     )
-                    self.exit_config_selection_state()
-                    self.enter_paused_state()
-                    self.app_state = AppStates.PAUSED
+                    self.enter_next_app_state(AppState.PAUSED)
         elif keycode == EXIT_KEYCODE:
-            self.app_state = AppStates.EXIT
+            self.app_state = AppState.EXIT
         elif keycode == curses.KEY_BACKSPACE:
             if len(view.user_input) > 0:
-                view.user_input = view.user_input[:len(view.user_input) - 1]
+                view.user_input = view.user_input[: len(view.user_input) - 1]
         else:
             view.signal_error()
 
     def gen_config_entries(
-            self,
-            char_configs: List[CharConfig]) -> Iterable[CharConfigMenuEntry]:
+        self, char_configs: List[CharConfig]
+    ) -> Iterable[CharConfigMenuEntry]:
         for char_config in char_configs:
             for battle_config in char_config.battle_configs:
                 if not battle_config.hidden:
-                    name = f'{char_config.char_name}.{battle_config.config_name}'
+                    name = f"{char_config.char_name}.{battle_config.config_name}"
                     yield CharConfigMenuEntry(name, char_config, battle_config)
 
     def enter_config_selection_state(self):
@@ -375,29 +425,45 @@ class TibiaTerminator:
         self.view_renderer.change_views(self.view)
 
     def exit_config_selection_state(self):
-        pass
+        self.write_app_status()
 
     def handle_config_selection_state(self):
-        while self.app_state == AppStates.CONFIG_SELECTION:
+        while self.app_state == AppState.CONFIG_SELECTION:
             # temporarily override state transitions
             time.sleep(0.01)
 
     def gen_title(self):
-        return "Tibia Terminator. WID: " + str(
-            self.tibia_wid) + " Active config: " + self.selected_config_name
+        return (
+            "Tibia Terminator. WID: "
+            + str(self.tibia_wid)
+            + " Active config: "
+            + self.selected_config_name
+        )
 
 
-def curses_main(cliwin, pid, app_config_path: str, char_configs_path: str,
-                enable_mana: bool, enable_hp: bool, enable_magic_shield: bool,
-                enable_speed: bool, only_monitor: bool):
+def curses_main(
+    cliwin,
+    pid,
+    app_config_path: str,
+    char_configs_path: str,
+    enable_mana: bool,
+    enable_hp: bool,
+    enable_magic_shield: bool,
+    enable_speed: bool,
+    only_monitor: bool,
+):
     if pid is None or pid == "":
-        raise Exception("PID is required, you may use psgrep -a -l bin/Tibia "
-                        "to find the process id")
+        raise Exception(
+            "PID is required, you may use psgrep -a -l bin/Tibia "
+            "to find the process id"
+        )
     app_configs_schema = AppConfigsSchema()
     app_configs = app_configs_schema.loadf(app_config_path)
     if not app_configs[str(pid)]:
-        raise Exception(f"App config for PID: {pid} not configured. Available"
-                        f" PIDs: {[c.pid for c in app_configs]}")
+        raise Exception(
+            f"App config for PID: {pid} not configured. Available"
+            f" PIDs: {[c.pid for c in app_configs]}"
+        )
 
     app_config = app_configs[str(pid)]
     tibia_wid = get_tibia_wid(pid)
@@ -409,17 +475,19 @@ def curses_main(cliwin, pid, app_config_path: str, char_configs_path: str,
     view_renderer = ViewRenderer(cliwin)
     cmd_processor = CommandProcessor(tibia_wid, stats_logger, only_monitor)
     hotkeys_config = HotkeysConfigSchema().loadf(
-        os.path.join(char_configs_path, 'hotkeys_config.json'))
+        os.path.join(char_configs_path, "hotkeys_config.json")
+    )
     char_configs = list(load_configs(char_configs_path))
     if len(char_configs) == 0:
-        print(f"No .charconfig files found in {char_configs_path}",
-              file=sys.stderr)
-        sys.exit(1)
-    client = ClientInterface(hotkeys_config,
-                             logger=stats_logger,
-                             cmd_processor=cmd_processor)
-    char_keeper = CharKeeper(client, char_configs[0],
-                             char_configs[0].battle_configs[0], hotkeys_config)
+        raise Exception(
+            f"No .charconfig files found in {char_configs_path}", file=sys.stderr
+        )
+    client = ClientInterface(
+        hotkeys_config, logger=stats_logger, cmd_processor=cmd_processor
+    )
+    char_keeper = CharKeeper(
+        client, char_configs[0], char_configs[0].battle_configs[0], hotkeys_config
+    )
     char_reader = CharReader(MemoryReader(pid, print_async))
     eq_reader = EquipmentReader()
     loot_macro = LootMacro(client, hotkeys_config)
@@ -439,7 +507,8 @@ def curses_main(cliwin, pid, app_config_path: str, char_configs_path: str,
         enable_hp=enable_hp,
         enable_magic_shield=enable_magic_shield,
         enable_speed=enable_speed,
-        only_monitor=only_monitor)
+        only_monitor=only_monitor,
+    )
     tibia_terminator.monitor_char()
 
 
