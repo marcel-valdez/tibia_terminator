@@ -7,20 +7,27 @@ import sys
 from tibia_terminator.reader.window_utils import ScreenReader
 
 parser = argparse.ArgumentParser(
-    description='Reads equipment status for the Tibia window')
-parser.add_argument('--check_specs',
-                    help='Checks the color specs for the different menus.',
-                    action='store_true')
-parser.add_argument('--check_menu',
-                    help=('Returns exit code 0 if it is empty, 1 otherwise.\n'
-                          'Options: empty, depot_box_open'),
-                    type=str,
-                    default=None)
-parser.add_argument('tibia_wid', help='Window id of the tibia client.')
+    description="Reads equipment status for the Tibia window"
+)
+parser.add_argument(
+    "--check_specs",
+    help="Checks the color specs for the different menus.",
+    action="store_true",
+)
+parser.add_argument(
+    "--check_menu",
+    help=(
+        "Returns exit code 0 if it is empty, 1 otherwise.\n"
+        "Options: empty, depot_box_open"
+    ),
+    type=str,
+    default=None,
+)
+parser.add_argument("tibia_wid", help="Window id of the tibia client.")
 
 
 def get_debug_level():
-    level = os.environ.get('DEBUG_LEVEL')
+    level = os.environ.get("DEBUG_LEVEL")
     if level is not None and isinstance(level, str) and level.isdigit():
         return int(level)
     else:
@@ -32,14 +39,13 @@ def debug(msg, debug_level=0):
         print(msg)
 
 
-class Coords():
+class Coords:
     def __init__(self, x, y):
         self.x = x
         self.y = y
 
     def __eq__(self, other):
-        return isinstance(other, Coords) and \
-            other.x == self.x and other.y == self.y
+        return isinstance(other, Coords) and other.x == self.x and other.y == self.y
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -71,29 +77,31 @@ MENU_SPECS = {
         xy(1772, 503): "464647",
         xy(1777, 503): "4a4a4b",
         xy(1782, 503): "4c4b4b",
-    }
+    },
 }
 
 
 class MenuReader(ScreenReader):
     def is_menu(self, tibia_wid, name):
         color_spec = MENU_SPECS[name]
-        actual_pixel_colors = map(
-            lambda coord: self.get_pixel_color_slow(tibia_wid, coord.x, coord.y
-                                                    ), color_spec.keys())
+        actual_pixel_colors = list(map(
+            lambda coord: self.get_pixel_color_slow(tibia_wid, coord.x, coord.y),
+            color_spec.keys(),
+        ))
 
-        expected_pixel_colors = color_spec.values()
+        expected_pixel_colors = list(color_spec.values())
         for i in range(len(actual_pixel_colors)):
-            if actual_pixel_colors[i].lower(
-            ) != expected_pixel_colors[i].lower():
+            if actual_pixel_colors[i].lower() != expected_pixel_colors[i].lower():
                 debug(
-                    '%s (%s) is not equal to %s' %
-                    (actual_pixel_colors[i], i, expected_pixel_colors[i]), 1)
+                    "%s (%s) is not equal to %s"
+                    % (actual_pixel_colors[i], i, expected_pixel_colors[i]),
+                    1,
+                )
                 return False
         return True
 
     def is_depot_box_open(self, tibia_wid):
-        return self.is_menu(tibia_wid, 'depot_box_open')
+        return self.is_menu(tibia_wid, "depot_box_open")
 
 
 def check_specs(wid):
@@ -102,10 +110,15 @@ def check_specs(wid):
     for name in MENU_SPECS.keys():
         print(name + " spec.")
         for coords in MENU_SPECS[name].keys():
-            print("(%s,%s): %s (%s)" %
-                  (coords.x, coords.y,
-                   reader.get_pixel_color_slow(
-                       wid, coords.x, coords.y), MENU_SPECS[name][coords]))
+            print(
+                "(%s,%s): %s (%s)"
+                % (
+                    coords.x,
+                    coords.y,
+                    reader.get_pixel_color_slow(wid, coords.x, coords.y),
+                    MENU_SPECS[name][coords],
+                )
+            )
 
 
 def check_menu(wid, name):
@@ -124,5 +137,5 @@ def main(args):
             sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(parser.parse_args())
