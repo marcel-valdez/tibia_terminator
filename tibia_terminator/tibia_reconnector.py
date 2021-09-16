@@ -33,10 +33,11 @@ parser.add_argument('--debug_level',
 parser.add_argument('--max_wait',
                     help='Maximum amount of time to keep retrying in minutes',
                     type=int,
+                    dest='max_wait_minutes',
                     default=120)
 
 DEBUG_LEVEL = 0
-SCREEN_SPECS = {"logged_out": ["6b5e6f", "59343c", "57453b", "41e8fb"]}
+SCREEN_SPECS = {"logged_out": ["84a3b7", "a9684c", "4f3d55", "b85955"]}
 SCREEN_COORDS = [(1132, 316), (1531, 713), (480, 310), (482, 546)]
 CREDENTIALS_SCHEMA = CredentialsSchema()
 LOGGED_IN_EXIT_STATUS = 0
@@ -55,13 +56,14 @@ class IntroScreenReader():
             return get_pixel_color_slow(tibia_wid, xy[0], xy[1])
 
         pixels = list(map(fn, SCREEN_COORDS))
-        for i in range(0, 3):
+        match = True
+        for i in range(0, 4):
             if pixels[i] != SCREEN_SPECS[name][i]:
                 debug(
                     '%s (%s) is not equal to %s' %
                     (pixels[i], i, SCREEN_SPECS[name][i]), 1)
-                return False
-        return True
+                match = False
+        return match
 
     def is_logged_out_screen(self, tibia_wid):
         return self.is_screen(tibia_wid, 'logged_out')
@@ -133,6 +135,14 @@ def login(tibia_wid, credential: Credential):
     return False
 
 
+def acquire_lock():
+    open('./.tibia_reconnector.lock', 'a').close()
+
+
+def release_lock():
+    os.remove('./.tibia_reconnector.lock')
+
+
 def wait_for_lock():
     if not os.path.exists('.tibia_reconnector.lock'):
         return True
@@ -153,34 +163,35 @@ def wait_for_lock():
     return False
 
 
-def handle_login(tibia_wid, credentials, max_wait):
-    if not wait_for_lock():
-        raise Exception('Unable to acquire reconnector lock, quitting.')
-    else:
-        open('.tibia_reconnector.lock', 'a').close()
-
-    try:
+def handle_login(tibia_wid, credentials, max_wait_minutes):
+    max_wait_secs = max_wait_minutes * 60
+    wait_retry_secs = 60
+    total_wait_secs = 0
+    while total_wait_secs + wait_retry_secs <= max_wait_secs:
         if check_ingame(tibia_wid):
             print('The character is already in-game.', file=sys.stderr)
             sys.exit(LOGGED_IN_EXIT_STATUS)
 
-        max_wait_secs = max_wait * 60
-        wait_retry_secs = 60
-        total_wait_secs = 0
-        while total_wait_secs + wait_retry_secs <= max_wait_secs:
-            success = login(tibia_wid, credentials)
-            if success:
+        if not wait_for_lock():
+            raise Exception('Timed out waiting for lock to be released.')
+        else:
+            print('Acquiring lock.')
+            acquire_lock()
+
+        try:
+            if login(tibia_wid, credentials):
                 print('Login succeeded.')
                 sys.exit(LOGGED_IN_EXIT_STATUS)
             else:
                 print('Login failed.')
-                print('Waiting %s seconds before retrying.' % wait_retry_secs)
-                time.sleep(wait_retry_secs)
-                total_wait_secs += wait_retry_secs
-            wait_retry_secs *= 2
-        sys.exit(LOGGED_OUT_EXIT_STATUS)
-    finally:
-        os.remove('./.tibia_reconnector.lock')
+        finally:
+            print('Releasing lock.')
+            release_lock()
+        print('Waiting %s seconds before retrying.' % wait_retry_secs)
+        time.sleep(wait_retry_secs)
+        total_wait_secs += wait_retry_secs
+        wait_retry_secs *= 2
+    sys.exit(LOGGED_OUT_EXIT_STATUS)
 
 
 def handle_check(tibia_wid):
@@ -205,7 +216,7 @@ def main(tibia_pid,
          credentials_path,
          only_check=False,
          login=False,
-         max_wait=120):
+         max_wait_minutes=120):
     """Main entry point of the program."""
     tibia_wid = get_tibia_wid(tibia_pid)
     if only_check:
@@ -218,7 +229,7 @@ def main(tibia_pid,
             raise Exception("We require a user profile to login.")
 
         credential = load_credential(credentials_user, credentials_path)
-        handle_login(tibia_wid, credential, max_wait)
+        handle_login(tibia_wid, credential, max_wait_minutes)
 
 
 if __name__ == '__main__':
@@ -226,9 +237,9 @@ if __name__ == '__main__':
     DEBUG_LEVEL = args.debug_level
     try:
         main(args.pid, args.credentials_user, args.credentials_path,
-             args.check_if_ingame, args.login, args.max_wait)
+             args.check_if_ingame, args.login, args.max_wait_minutes)
     except SystemExit as e:
         raise e
     except Exception as e:
         print(f"Unexpected error: {e}", file=sys.stderr)
-        exit(FAILURE_EXIT_STATUS)
+        sys.exit(FAILURE_EXIT_STATUS)
