@@ -1,4 +1,4 @@
-#!/usr/bine/env python3.8
+#!/usr/bin/env python3.8
 
 from marshmallow import fields, EXCLUDE
 from typing import Optional, NamedTuple, List
