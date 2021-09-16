@@ -131,9 +131,6 @@ class ViewRenderer(Thread):
             if self.transition:
                 self.lock.acquire()
                 try:
-                    if self.view is not None:
-                        self.view.unset_modes(self.cli_screen)
-                    self.next_view.set_modes(self.cli_screen)
                     self.view = self.next_view
                     self.next_view = None
                     self.transition = False
@@ -148,6 +145,9 @@ class ViewRenderer(Thread):
         try:
             self.transition = True
             self.next_view = view
+            if self.view is not None:
+                self.view.unset_modes(self.cli_screen)
+            self.next_view.set_modes(self.cli_screen)
         finally:
             self.lock.release()
 
