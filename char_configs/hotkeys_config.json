@@ -15,7 +15,7 @@
   "toggle_emergency_ring": "F1",
   // These are keys the App will listen to, rather than send.
   // Loots all 9 SQMs when this key is pressed
-  "loot": "x",
+  "loot": "\\",
   // Cancels an on-going emergency state, so the App will cancel
   // utamo and put on ordinary ring & amulet.
   "cancel_emergency": "end",
