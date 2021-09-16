@@ -20,6 +20,11 @@
 #    - Approximate vertical size is at y=698. Use the mouse location indicator
 #      to adjust the size accordingly.
 
+wid="dummy_wid"
+if [[ "$1" ]]; then
+    wid="$1"
+fi
+
 function __screen_resize_monitor {
   SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
   ROOT_PATH="${SCRIPT_PATH}/tibia_terminator"
@@ -28,7 +33,7 @@ function __screen_resize_monitor {
 
   echo "mouse location: $(xdotool getmouselocation)"
   PYTHONPATH=${PYTHONPATH} python3.8 "${EQUIPMENT_READER_BIN}" \
-            --equipment_status dummy_wid
+            --equipment_status "${wid}"
 }
 
 export -f __screen_resize_monitor
