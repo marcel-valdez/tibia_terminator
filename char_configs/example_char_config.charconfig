@@ -100,7 +100,7 @@
         {
           // wild growth/wall/bomb rune
           "hotkey": "x"
-        },
+        }
       ],
       // 1. Map 4 macros, one for each direction
       // 2. Each time a macro is triggered, it will rotate in that direction
@@ -118,7 +118,7 @@
             ["alt+f", null],
             ["alt+e", null],
             ["alt+s", null],
-            ["alt+d", null],
+            ["alt+d", null]
           ]
         },
         {
@@ -131,7 +131,7 @@
             ["ctrl+f", null],
             ["ctrl+e", null],
             ["ctrl+s", null],
-            ["ctrl+d", null],
+            ["ctrl+d", null]
           ]
         }
       ]
@@ -211,7 +211,7 @@
       // Only use minor_heal key when there is nearly no damage received
       "minor_heal": 100,
       "medium_heal": 350,
-      "emergency_hp_threshold": "{total_hp * 0.4}",
+      "emergency_hp_threshold": "{total_hp * 0.4}"
     },
     {
       // This configuration was used for team hunts with an EK or more vocs.
