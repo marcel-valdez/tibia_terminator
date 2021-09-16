@@ -69,8 +69,8 @@ function click_mana_potion() {
   sleep ${wait_time}
 
   echo "Clicking mana potion (${X},${Y})" &
-  xdotool mousemove --screen "${SCREEN_NO}" "${X}" "${Y}"
-  xdotool click --window ${tibia_wid} --delay $(random 125 250) 1
+  xdotool mousemove --screen "${SCREEN_NO}" --window "${tibia_wid}" "${X}" "${Y}"
+  xdotool click --window "${tibia_wid}" --delay $(random 125 250) 1
 }
 
 function click_char() {
@@ -711,7 +711,7 @@ max-wait-per turn ${max_wait_per_turn}" >&2
     fi
   fi
 
-  if [[ "${cast_rune_spell_after_drinking_potion}}" ]]; then
+  if [[ "${cast_rune_spell_after_drinking_potion}" ]]; then
     echo "We will cast the rune spell right after drinking potions."
   fi
 
