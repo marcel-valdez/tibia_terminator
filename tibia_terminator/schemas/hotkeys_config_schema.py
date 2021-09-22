@@ -29,6 +29,8 @@ class HotkeysConfig(NamedTuple):
     upper_right: str
     lower_left: str
     lower_right: str
+    loot_button: str = "right"
+    loot_modifier: str = "shift"
 
 
 class HotkeysConfigSchema(FactorySchema[HotkeysConfig]):
@@ -56,3 +58,5 @@ class HotkeysConfigSchema(FactorySchema[HotkeysConfig]):
     upper_right = fields.Str(required=True, default="r")
     lower_left = fields.Str(required=True, default="x")
     lower_right = fields.Str(required=True, default="c")
+    loot_button = fields.Str(required=True, default="right")
+    loot_modifier = fields.Str(required=False)
