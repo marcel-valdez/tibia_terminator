@@ -13,10 +13,10 @@ yapf = "*"
 python-xlib = "*"
 pillow = "*"
 commentjson = "*"
-masrhmsallow = "*"
+marshmallow = "*"
 keyboard = "*"
 pyautogui = "*"
-tibia.py = "*"
+"tibia.py" = "*"
 requests = "*"
 
 [requires]
