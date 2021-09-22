@@ -32,7 +32,9 @@ from tibia_terminator.view.view_renderer import (
     ConfigSelectionView,
 )
 from tibia_terminator.schemas.app_status_schema import (
-    AppStatus, AppState, AppStatusSchema
+    AppStatus,
+    AppState,
+    AppStatusSchema,
 )
 
 # - If you get the error:
@@ -154,8 +156,9 @@ class TibiaTerminator:
         self.app_status_file = app_status_file
         app_status = self.load_app_status()
         self.app_state = app_status.state or AppState.CONFIG_SELECTION
-        self.selected_config_name = app_status.selected_config_name or \
-            self.char_config_entries[0].name
+        self.selected_config_name = (
+            app_status.selected_config_name or self.char_config_entries[0].name
+        )
         if not self.load_config(self.selected_config_name):
             self.selected_config_name = self.char_config_entries[0].name
 
@@ -178,23 +181,24 @@ class TibiaTerminator:
         return False
 
     def load_app_status(self) -> AppStatus:
-        if os.path.isfile(self.app_status_file) and \
-           os.path.getsize(self.app_status_file) > 0:
+        if (
+            os.path.isfile(self.app_status_file)
+            and os.path.getsize(self.app_status_file) > 0
+        ):
             app_status_schema = AppStatusSchema()
             return app_status_schema.loadf(self.app_status_file)
         else:
             return AppStatus(
                 state=AppState.CONFIG_SELECTION,
-                selected_config_name=self.char_config_entries[0].name
+                selected_config_name=self.char_config_entries[0].name,
             )
 
     def write_app_status(self):
         app_status_schema = AppStatusSchema()
         app_status = AppStatus(
-            state=self.app_state,
-            selected_config_name=self.selected_config_name
+            state=self.app_state, selected_config_name=self.selected_config_name
         )
-        with open(self.app_status_file, 'w') as f:
+        with open(self.app_status_file, "w") as f:
             f.write(app_status_schema.dumps(app_status))
 
     def monitor_char(self):
@@ -241,8 +245,7 @@ class TibiaTerminator:
         try:
             # Always enter paused state first
             self.enter_paused_state()
-            if self.app_state is not None and \
-               self.app_state is not AppState.PAUSED:
+            if self.app_state is not None and self.app_state is not AppState.PAUSED:
                 # load the pre-configured value
                 initial_state = self.app_state
                 self.app_state = AppState.PAUSED
