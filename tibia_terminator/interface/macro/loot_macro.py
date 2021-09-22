@@ -41,17 +41,28 @@ class LootMacro(ClientMacro):
             *args,
             **kwargs,
         )
+        self.directional_keys = [
+            hotkeys.up, hotkeys.down, hotkeys.left, hotkeys.right, hotkeys.upper_left,
+            hotkeys.upper_right, hotkeys.lower_left, hotkeys.lower_right
+        ]
         self.loot_button = hotkeys.loot_button.lower()
         if hotkeys.loot_modifier:
             self.loot_modifier = f"{hotkeys.loot_modifier}left"
         else:
             self.loot_modifier = None
 
+    def get_pressed_direction_key(self) -> str:
+        for direction_key in self.directional_keys:
+            if keyboard.is_pressed(direction_key):
+                return direction_key
+
+
     def _client_action(self, tibia_wid):
         mouse_x, mouse_y = pyautogui.position()
-        # TODO: Make loot modifier a configurable value
         prev_pause = pyautogui.PAUSE
-        pyautogui.PAUSE = 0.00125/2
+        pyautogui.PAUSE = 1 / 1000  # 1 ms
+        pressed_direction_key = self.get_pressed_direction_key()
+
         try:
             if self.loot_modifier:
                 pyautogui.keyDown(self.loot_modifier)
@@ -62,9 +73,10 @@ class LootMacro(ClientMacro):
 
             if self.loot_modifier:
                 pyautogui.keyUp(self.loot_modifier)
-
-            pyautogui.moveTo(mouse_x, mouse_y)
         finally:
+            if pressed_direction_key:
+                pyautogui.keyDown(pressed_direction_key)
+            pyautogui.moveTo(mouse_x, mouse_y)
             pyautogui.PAUSE = prev_pause
 
 
@@ -82,8 +94,8 @@ def main(args):
         equip_ring="5", equip_amulet="6", eat_food="7", magic_shield="8",
         cancel_magic_shield="9", mana_potion="0", toggle_emergency_amulet="a",
         toggle_emergency_ring="b", start_emergency="c", cancel_emergency="d",
-        loot="\\", up="w", down="s", left="a", right="f", upper_left="q",
-        upper_right="r", lower_left="z", lower_right="c"
+        loot="\\", up="w", down="s", left="a", right="d", upper_left="q",
+        upper_right="e", lower_left="z", lower_right="c"
     ))
     cmd_processor.start()
     print("Listening on key \\, 9 SQMs will be looted when pressed.")
