@@ -30,9 +30,9 @@ function __screen_resize_monitor {
   ROOT_PATH="${SCRIPT_PATH}/tibia_terminator"
   PYTHONPATH="${PYTHONPATH}:${ROOT_PATH}"
   EQUIPMENT_READER_BIN="${ROOT_PATH}/reader/equipment_reader.py"
-
+  PYTHON_BIN="$(type -p python3.8)"
   echo "mouse location: $(xdotool getmouselocation)"
-  PYTHONPATH=${PYTHONPATH} python3.8 "${EQUIPMENT_READER_BIN}" \
+  PYTHONPATH=${PYTHONPATH} "${PYTHON_BIN}" "${EQUIPMENT_READER_BIN}" \
             --equipment_status "${wid}"
 }
 

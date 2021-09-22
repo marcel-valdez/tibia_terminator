@@ -6,13 +6,14 @@ ROOT_PATH="$(dirname ${SCRIPTPATH})/tibia_terminator"
 PYTHONPATH="${PYTHONPATH}:${ROOT_PATH}"
 CHAR_READER_BIN="${ROOT_PATH}/reader/char_reader38.py"
 RECONNECTOR_BIN="${ROOT_PATH}/tibia_reconnector.py"
+PYTHON_BIN="$(type -p python3.8)"
 
 function python_bin {
-  PYTHONPATH=${PYTHONPATH} python3.8 "$@"
+  PYTHONPATH=${PYTHONPATH} "${PYTHON_BIN}" "$@"
 }
 
 function sudo_python_bin {
-  sudo PYTHONPATH=${PYTHONPATH} python3.8 "$@"
+  sudo PYTHONPATH=${PYTHONPATH} "${PYTHON_BIN}" "$@"
 }
 
 SCREEN_WIDTH_PIXELS=1920

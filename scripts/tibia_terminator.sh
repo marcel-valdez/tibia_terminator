@@ -2,10 +2,11 @@
 
 SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 TERMINATOR_PATH="$(dirname ${SCRIPT_PATH})"
+PYTHON_BIN="$(type -p python3.8)"
 export PYTHONPATH="${PYTHONPATH}:${ROOT_PATH}"
 
 function sudo_python_bin {
-  sudo python3.8 "$@"
+  sudo --preserve-env "${PYTHON_BIN}" "$@"
 }
 
 pushd "${TERMINATOR_PATH}" >/dev/null
