@@ -153,7 +153,7 @@ def left_click(wid: str, x: int, y: int):
 class ScreenReader:
     """Reads pixels in the screen."""
 
-    def __init__(self, x_offnset=0):
+    def __init__(self, x_offset=0):
         self.screen = None
         self.display = None
         self.x_offset = x_offset
