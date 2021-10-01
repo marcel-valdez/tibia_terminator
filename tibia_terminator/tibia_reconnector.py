@@ -43,6 +43,12 @@ CREDENTIALS_SCHEMA = CredentialsSchema()
 LOGGED_IN_EXIT_STATUS = 0
 LOGGED_OUT_EXIT_STATUS = 2
 FAILURE_EXIT_STATUS = 1
+# Login screen coordinates
+# TODO: Make these configurable through JSON
+EMAIL_FIELD_XY = (989, 477)
+PASSWD_FIELD_XY = (973, 506)
+LOGIN_BTN_XY =  (1040, 610)
+CHAR_LIST_OK_BTN_XY = (1226, 725)
 
 
 def debug(msg, debug_level=0):
@@ -76,31 +82,33 @@ def check_ingame(tibia_wid):
 
 def close_dialogs(tibia_wid):
     # Menus are closed by either of these 2 keys.
-    print('send_key(tibia_wid, Key.ESCAPE)')
-    send_key(tibia_wid, Key.ESCAPE)
-    time.sleep(1)
-    send_key(tibia_wid, Key.ENTER)
-    time.sleep(1)
-    send_key(tibia_wid, Key.SPACE)
-    time.sleep(1)
-    send_key(tibia_wid, Key.ENTER)
-    time.sleep(1)
-    send_key(tibia_wid, Key.SPACE)
-    time.sleep(1)
-    send_key(tibia_wid, Key.ENTER)
-    time.sleep(1)
-    send_key(tibia_wid, Key.ESCAPE)
-    time.sleep(1)
-    send_key(tibia_wid, Key.ENTER)
-    time.sleep(1)
-    send_key(tibia_wid, Key.SPACE)
-    time.sleep(1)
-    send_key(tibia_wid, Key.ENTER)
-    time.sleep(1)
-    send_key(tibia_wid, Key.SPACE)
-    time.sleep(1)
-    send_key(tibia_wid, Key.ENTER)
-    time.sleep(1)
+    for i in range(5):
+        send_key(tibia_wid, Key.ESCAPE)
+        time.sleep(0.5)
+        send_key(tibia_wid, Key.ENTER)
+        time.sleep(0.5)
+        send_key(tibia_wid, Key.SPACE)
+        time.sleep(0.25)
+        send_key(tibia_wid, Key.BACKSPACE)
+        time.sleep(0.25)
+
+def clear_text_field(tibia_wid, x: int, y: int):
+    # focus field
+    left_click(tibia_wid, x, y)
+    time.sleep(0.1)
+    # clear text
+    send_key(tibia_wid, Key.HOME)
+    time.sleep(0.25)
+    send_key(tibia_wid, f"{Key.SHIFT}+{Key.END}")
+    time.sleep(0.25)
+    send_key(tibia_wid, Key.BACKSPACE)
+    time.sleep(0.25)
+
+
+def overwrite_text_field(tibia_wid, x: int, y: int, new_text: str):
+    clear_text_field(tibia_wid, x, y)
+    send_text(tibia_wid, new_text)
+    time.sleep(0.1)
 
 
 def login(tibia_wid, credential: Credential):
@@ -108,24 +116,21 @@ def login(tibia_wid, credential: Credential):
     focus_tibia(tibia_wid)
     time.sleep(0.5)
     close_dialogs(tibia_wid)
-    time.sleep(0.5)
-    # Click on the password field (x:973, y:506)
-    left_click(tibia_wid, 973, 506)
-    time.sleep(0.1)
-    # Delete the password field contents
-    send_key(tibia_wid, Key.END)
-    time.sleep(0.1)
-    send_key(tibia_wid, Key.CTRL + '+' + Key.BACKSPACE)
-    time.sleep(0.1)
-    # Type in password with 250ms between keypress
-    send_text(tibia_wid, credential.password)
-    time.sleep(0.1)
+    time.sleep(0.25)
+    # fill-in email field
+    overwrite_text_field(
+        tibia_wid, EMAIL_FIELD_XY[0], EMAIL_FIELD_XY[1], credential.user
+    )
+    # fill-in password
+    overwrite_text_field(
+        tibia_wid, PASSWD_FIELD_XY[0], PASSWD_FIELD_XY[1], credential.password
+    )
     # Click [Login] button
-    left_click(tibia_wid, 1040, 610)
+    left_click(tibia_wid, LOGIN_BTN_XY[0], LOGIN_BTN_XY[1])
     time.sleep(5)
     #   - Focus should be on the 1st char on the list.
-    # Click [OK] in char menup
-    left_click(tibia_wid, 1226, 725)
+    # Click [OK] in char menu
+    left_click(tibia_wid, CHAR_LIST_OK_BTN_XY[0], CHAR_LIST_OK_BTN_XY[1])
     #   - Spin-wait for 30 seconds waiting for character to be in-game
     for _ in range(1, 30):
         if check_ingame(tibia_wid):
