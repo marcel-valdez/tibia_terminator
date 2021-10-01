@@ -30,6 +30,8 @@ class Key:
     ESCAPE = "Escape"
     CTRL = "Ctrl"
     END = "End"
+    SHIFT = "Shift_L"
+    HOME = "Home"
 
 
 def get_tibia_wid(pid):
@@ -115,9 +117,9 @@ def send_key(wid: str, key: str):
 
 
 def send_text(wid: str, text: str):
-    debug("/usr/bin/xdotool type --window %s --delay 50 <text>" % (wid))
+    debug(f"/usr/bin/xdotool type --window %s --delay 250 <text>" % (wid))
     output = subprocess.check_output(
-        ["/usr/bin/xdotool", "type", "--window", str(wid), "--delay", "50", text],
+        ["/usr/bin/xdotool", "type", "--window", str(wid), "--delay", "250", text],
         stderr=subprocess.STDOUT,
     )
 
