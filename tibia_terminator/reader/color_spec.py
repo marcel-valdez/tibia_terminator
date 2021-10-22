@@ -187,7 +187,12 @@ SSA = item(
             # right pixel
             "454545")
     ],
-    [spec("252626", "b8b8b8", "252626", "232424")])
+    [spec(
+        "252625",
+        "3c3c3c",
+        "202020",
+        "202020"
+    )])
 
 STA = item(AmuletName.STA, [spec("4d170", "1ad552", "d421d", "93215")],
            [spec("252626", "1b42c", "252626", "a3f19")])
@@ -211,20 +216,26 @@ SHOCK = item(AmuletName.SHOCK, [
 EMPTY_AMULET = item(AmuletName.EMPTY,
                     [spec("1111111", "222222", "333333", "444444")],
                     [spec(
-                        "3d3f42",
-                        "434648",
-                        "252626",
-                        "232424",
+                        "252625",
+                        "46484a",
+                        "1f2225",
+                        "4a4c4e"
                     )])
 
 AMULET_REPOSITORY = ItemRepository([SSA, STA, SHOCK, LEVIATHAN, EMPTY_AMULET])
 
-MIGHT = item(RingName.MIGHT, [spec("9b8132", "d1af44", "faed75", "d5b246")],
-             [spec("252625", "272728", "d1ae43", "927b34")])
+MIGHT = item(RingName.MIGHT,
+             [spec("9b8132", "d1af44", "faed75", "d5b246")],
+             [spec(
+                 "e0bc4a",
+                 "000",
+                 "faed75",
+                 "000"
+             )])
 
 EMPTY_RING = item(RingName.EMPTY,
                   [spec("1111111", "222222", "333333", "444444")],
-                  [spec("252625", "36393c", "2e2e2f", "3d4042")])
+                  [spec("3c3f42", "222528", "2d3033", "424548")])
 
 RING_REPOSITORY = ItemRepository([MIGHT, EMPTY_RING])
 
