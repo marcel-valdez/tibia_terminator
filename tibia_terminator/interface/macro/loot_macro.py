@@ -10,7 +10,8 @@ from tibia_terminator.interface.macro.macro import (
     CENTER_SQM, RIGHT_SQM, LOWER_LEFT_SQM, LOWER_SQM, LOWER_RIGHT_SQM)
 from tibia_terminator.interface.client_interface import (ClientInterface,
                                                          CommandType,
-                                                         CommandProcessor)
+                                                         CommandProcessor,
+                                                         ThrottleBehavior)
 
 parser = argparse.ArgumentParser(description="Loots all 9 SQMs around a char.")
 pyautogui.PAUSE = 0.02
@@ -38,6 +39,8 @@ class LootMacro(ClientMacro):
             hotkey=hotkeys.loot,
             command_type=CommandType.USE_ITEM,
             throttle_ms=250,
+            cmd_id = "LOOT_CMD",
+            throttle_behavior = ThrottleBehavior.REQUEUE_TOP,
             *args,
             **kwargs,
         )

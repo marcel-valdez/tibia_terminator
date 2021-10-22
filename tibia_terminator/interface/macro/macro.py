@@ -6,7 +6,10 @@ import pyautogui
 from typing import List, Set, Dict, NamedTuple
 from keyboard import KeyboardEvent
 
-from tibia_terminator.interface.client_interface import ClientInterface
+from tibia_terminator.interface.client_interface import (
+    ClientInterface,
+    ThrottleBehavior,
+)
 
 pyautogui.PAUSE = 0.02
 
@@ -46,15 +49,15 @@ def parse_hotkey(hotkey: str) -> Hotkey:
     while "+" in hotkey:
         modifier_idx = hotkey.index("+")
         modifiers.append(hotkey[:modifier_idx])
-        hotkey = hotkey[modifier_idx + 1:]
+        hotkey = hotkey[modifier_idx + 1 :]
     return Hotkey(hotkey, modifiers)
 
 
 def to_issuable(hotkey: Hotkey) -> Hotkey:
     issuable_modifiers = []
     for modifier in hotkey.modifiers:
-        if modifier in ('ctrl', 'shift', 'alt'):
-            modifier = f'{modifier}left'
+        if modifier in ("ctrl", "shift", "alt"):
+            modifier = f"{modifier}left"
         issuable_modifiers.append(modifier)
     return Hotkey(hotkey.key, issuable_modifiers)
 
@@ -89,7 +92,7 @@ class Macro:
         while "+" in hotkey:
             modifier_idx = hotkey.index("+")
             modifiers.append(hotkey[:modifier_idx])
-            hotkey = hotkey[modifier_idx + 1:]
+            hotkey = hotkey[modifier_idx + 1 :]
 
         return (set(modifiers), hotkey)
 
@@ -102,10 +105,8 @@ class Macro:
 
         # Do nothing if we're already hooked
         if self.hotkey_hook is None:
-            Macro.key_macro_count[hotkey] = Macro.key_macro_count.get(
-                hotkey, 0) + 1
-            self.hotkey_hook = keyboard.hook_key(hotkey, self.__action,
-                                                 self.suppress)
+            Macro.key_macro_count[hotkey] = Macro.key_macro_count.get(hotkey, 0) + 1
+            self.hotkey_hook = keyboard.hook_key(hotkey, self.__action, self.suppress)
 
     def unhook_hotkey(self):
         if self.hotkey_hook is not None:
@@ -135,22 +136,34 @@ class ClientMacro(Macro):
     hotkey: str = None
     command_type: str = None
     throttle_ms: int = None
+    cmd_id: str = None
 
-    def __init__(self, client: ClientInterface, hotkey: str, command_type: str,
-                 throttle_ms: int, *args, **kwargs):
+    def __init__(
+        self,
+        client: ClientInterface,
+        hotkey: str,
+        command_type: str,
+        throttle_ms: int,
+        cmd_id: str = None,
+        throttle_behavior: ThrottleBehavior = ThrottleBehavior.DEFAULT,
+        *args,
+        **kwargs,
+    ):
         super().__init__(hotkey, *args, **kwargs)
         self.client = client
         self.hotkey = hotkey
         self.command_type = command_type
         self.throttle_ms = throttle_ms
+        self.throttle_behavior = throttle_behavior
 
     def _client_action(self, tibia_wid):
         raise Exception("This should be implemented by the child class")
 
     def _action(self):
-        # Tibia will detect the key to trigger the action and this macro
-        # will actually trigger the mouse click, so it is all done in a
-        # single action.
-        self.client.execute_macro(self._client_action,
-                                  self.command_type,
-                                  throttle_ms=self.throttle_ms)
+        self.client.execute_macro(
+            self._client_action,
+            self.command_type,
+            throttle_ms=self.throttle_ms,
+            cmd_id=self.cmd_id,
+            throttle_behavior=self.throttle_behavior
+        )

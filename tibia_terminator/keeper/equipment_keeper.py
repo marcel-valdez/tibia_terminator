@@ -52,6 +52,7 @@ class EquipmentKeeper:
                    or self.is_emergency_amulet_on(char_status))):
             self.handle_emergency_transition_change(char_status)
         else:
+            # Update prev_mode until we successfully changed equipment
             self.handle_normal_status_change(char_status)
             self.prev_mode = next_mode
 
@@ -125,7 +126,7 @@ class EquipmentKeeper:
 
     def toggle_emergency_ring(self):
         self.timestamps['emergency_ring'] = self.timestamp_secs()
-        self.client.toggle_emergency_ring(0)
+        self.client.toggle_emergency_ring(250)
 
     def secs_since_toggle_emergency_ring(self):
         return self.timestamp_secs() - self.timestamps['emergency_ring']
@@ -139,7 +140,7 @@ class EquipmentKeeper:
 
     def toggle_emergency_amulet(self):
         self.timestamps['emergency_amulet'] = self.timestamp_secs()
-        self.client.toggle_emergency_amulet(0)
+        self.client.toggle_emergency_amulet(250)
 
     def secs_since_toggle_emergency_amulet(self):
         return self.timestamp_secs() - self.timestamps['emergency_amulet']
