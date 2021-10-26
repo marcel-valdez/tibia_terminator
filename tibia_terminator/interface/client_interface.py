@@ -18,15 +18,17 @@ def timestamp_ms():
     return int(round(time.time() * 1000))
 
 
+# TODO: Unit test the different throttle behaviors
 class ThrottleBehavior(Enum):
+    # DEFAULT = DROP
     DEFAULT = 1
-    # The command should be dropped if it is throttled
+    # The command should be dropped if it is throttled.
     DROP = 1
-    # The command should be requeued at the back of the queue if it is throttled
+    # The command should be requeued at the back of the queue if it is throttled.
     REQUEUE_BACK = 2
-    # The command should be requeued at the front of the queue if it is throttled
+    # The command should be requeued at the front of the queue if it is throttled.
     REQUEUE_TOP = 3
-    # The command should be executed and ignore throttle (this ca be achieved with
+    # The command should be executed and ignore throttle (this can be achieved with
     # a throttle_ms value of 0), this should very rarely be used.
     FORCE = 4
 
@@ -91,6 +93,30 @@ class Command:
     def _send(self, tibia_wid):
         raise Exception("Needs to be implemented by subclass")
 
+    def __str__(self):
+        return (
+            f"Command(cmd_type: {self.cmd_type}, "
+            f"throttle_ms: {self.throttle_ms}, "
+            f"cmd_id: {self.cmd_id}, "
+            f"throttle_behavior: {self.throttle_behavior})"
+        )
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Command):
+            return False
+
+        return (
+            other.cmd_id == self.cmd_id
+            and other.cmd_type == self.cmd_type
+            and self.throttle_behavior is other.throttle_behavior
+            and self.throttle_ms == other.throttle_ms
+        )
+
+    def __hash__(self) -> int:
+        return hash(
+            tuple(self.cmd_id, self.cmd_type, self.throttle_behavior, self.throttle_ms)
+        )
+
 
 class KeeperHotkeyCommand(Command):
     """Hotkey command issued by one of Terminator's keepers."""
@@ -107,6 +133,10 @@ class KeeperHotkeyCommand(Command):
         self.hotkey = hotkey
 
     def _send(self, tibia_wid):
+        # TODO: Figure out how to send keys to a specific window (as opposed to the entire desktop)
+        # ithout using xdotool; sending keys through xdotool is inefficient since it creates an
+        # entire new process to do so.
+        # TODO: We may need windows-specific implementations for this. See: pywinauto
         subprocess.Popen(
             ["/usr/bin/xdotool", "key", "--window", str(tibia_wid), self.hotkey]
         )
@@ -139,8 +169,8 @@ class MacroCommand(Command):
 
 
 class CommandSender(threading.Thread):
-    NOOP_COMMAND = Command("noop", 0)
-    STOP_COMMAND = Command("stop", 0)
+    NOOP_COMMAND = Command("noop", 0, "noop_id", ThrottleBehavior.FORCE)
+    STOP_COMMAND = Command("stop", 0, "stop_id", ThrottleBehavior.FORCE)
 
     def __init__(self, tibia_wid, logger: StatsLogger, only_monitor: bool):
         super().__init__(daemon=True)
@@ -185,8 +215,8 @@ class CommandSender(threading.Thread):
 
     def requeue_back(self, command: Command) -> None:
         if (
-            self.prev_requeued_cmd is not command
-            and self.prev_requeued_cmd.cmd_id == command.cmd_id
+            self.prev_requeued_cmd is command
+            or self.prev_requeued_cmd.cmd_id == command.cmd_id
         ):
             return
         # Do not requeue if the queue is too large
@@ -206,10 +236,11 @@ class CommandSender(threading.Thread):
 
     def requeue_front(self, command: Command) -> None:
         if (
-            self.prev_requeued_cmd is not command
-            and self.prev_requeued_cmd.cmd_id != command.cmd_id
+            self.prev_requeued_cmd is command
+            or self.prev_requeued_cmd.cmd_id == command.cmd_id
         ):
             return
+
         # No more than 10 commands in the retry queue
         if len(self.retry_queue) >= 10:
             return
@@ -218,33 +249,40 @@ class CommandSender(threading.Thread):
             self.retry_queue.append(command)
             self.prev_requeued_cmd = command
 
+    # TODO: Test this method individually with a unit test
+    def fetch_next_cmd(self) -> Command:
+        cmd: Command = CommandSender.NOOP_COMMAND
+        if len(self.retry_queue) > 0:
+            cmd: Command = self.retry_queue.pop()
+        else:
+            cmd: Command = self.cmd_queue.get()
+
+        if self.__throttle(cmd.throttle_ms):
+            # If an instance last requeued command succeeds to execute,
+            # reset the previous requed command state.
+            if cmd.cmd_id == self.prev_requeued_cmd.cmd_id:
+                self.prev_requeued_cmd = CommandSender.NOOP_COMMAND
+            return cmd
+        else:
+            if cmd.throttle_behavior == ThrottleBehavior.DROP:
+                return CommandSender.NOOP_COMMAND
+            elif cmd.throttle_behavior == ThrottleBehavior.FORCE:
+                return cmd
+            elif cmd.throttle_behavior == ThrottleBehavior.REQUEUE_BACK:
+                self.requeue_back(cmd)
+            elif cmd.throttle_behavior == ThrottleBehavior.REQUEUE_TOP:
+                self.requeue_front(cmd)
+        return CommandSender.NOOP_COMMAND
+
     def run(self):
         while True:
-            cmd: Command = None
-            if len(self.retry_queue) > 0:
-                cmd: Command = self.retry_queue.pop()
-            else:
-                cmd: Command = self.cmd_queue.get()
-
-            if cmd == CommandSender.STOP_COMMAND:
+            cmd = self.fetch_next_cmd()
+            if cmd is CommandSender.NOOP_COMMAND:
+                continue
+            elif cmd is CommandSender.STOP_COMMAND:
                 break
-
-            if self.__throttle(cmd.throttle_ms):
-                self.issue_cmd(cmd)
-                # If and instance last requeued command succeeds to execute,
-                # reset the previous requed command state.
-                if cmd.cmd_id == self.prev_requeued_cmd.cmd_id:
-                    self.prev_requeued_cmd = CommandSender.NOOP_COMMAND
             else:
-                if cmd.profile.throttle_behavior == ThrottleBehavior.DROP:
-                    continue
-                elif cmd.profile.throttle_behavior == ThrottleBehavior.FORCE:
-                    # Hopefully this never happens
-                    self.issue_cmd(cmd)
-                elif cmd.profile.throttle_behavior == ThrottleBehavior.REQUEUE_BACK:
-                    self.requeue_back(cmd)
-                elif cmd.profile.throttle_behavior == ThrottleBehavior.REQUEUE_TOP:
-                    self.requeue_front(cmd)
+                self.issue_cmd(cmd)
 
 
 class CommandProcessor:
