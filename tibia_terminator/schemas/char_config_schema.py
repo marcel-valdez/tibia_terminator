@@ -4,12 +4,16 @@ import argparse
 
 from collections import OrderedDict
 from marshmallow import fields, pre_load, ValidationError
-from typing import (Optional, NamedTuple, List, Dict, Any)
+from typing import Optional, NamedTuple, List, Dict, Any
 from tibia_terminator.schemas.item_crosshair_macro_config_schema import (
-    ItemCrosshairMacroConfig, ItemCrosshairMacroConfigSchema)
+    ItemCrosshairMacroConfig,
+    ItemCrosshairMacroConfigSchema,
+)
 from tibia_terminator.schemas.common import FactorySchema, ResolvableField
 from tibia_terminator.schemas.directional_macro_config_schema import (
-    DirectionalMacroConfig, DirectionalMacroConfigSchema)
+    DirectionalMacroConfig,
+    DirectionalMacroConfigSchema,
+)
 
 
 class BattleConfig(NamedTuple):
@@ -56,17 +60,15 @@ class BattleConfigSchema(FactorySchema[BattleConfig]):
     should_equip_amulet = fields.Boolean(default=True, required=False)
     should_equip_ring = fields.Boolean(default=True, required=False)
     should_eat_food = fields.Boolean(default=True, required=False)
-    magic_shield_type = fields.Str(default="emergency", required=False)
+    magic_shield_type = fields.Str(default="emergency", required=False, allow_none=True)
     magic_shield_threshold = ResolvableField(float, required=False)
     emergency_hp_threshold = ResolvableField(float, required=True)
     item_crosshair_macros = fields.List(
-        fields.Nested(ItemCrosshairMacroConfigSchema),
-        required=False,
-        default=[])
+        fields.Nested(ItemCrosshairMacroConfigSchema), required=False, default=[]
+    )
     directional_macros = fields.List(
-        fields.Nested(DirectionalMacroConfigSchema),
-        required=False,
-        default=[])
+        fields.Nested(DirectionalMacroConfigSchema), required=False, default=[]
+    )
 
 
 class CharConfig(NamedTuple):
@@ -90,34 +92,32 @@ class CharConfigSchema(FactorySchema[CharConfig]):
     battle_configs = fields.List(fields.Nested(BattleConfigSchema), default=[])
 
     def gen_battle_config_map(
-            self,
-            battle_configs: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+        self, battle_configs: List[Dict[str, Any]]
+    ) -> Dict[str, Dict[str, Any]]:
         result = OrderedDict()
         for config in battle_configs:
-            config_name = config.get('config_name', None)
+            config_name = config.get("config_name", None)
             if config_name is None:
                 raise ValidationError("Battle config is missing a config_name")
             if config_name in result:
-                raise ValidationError(
-                    f"Duplicate battle config name {config_name}")
+                raise ValidationError(f"Duplicate battle config name {config_name}")
             result[config_name] = config
         return result
 
     def expand_inheritance_recursively(
-            self, config: Dict[str, Any],
-            configs_map: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+        self, config: Dict[str, Any], configs_map: Dict[str, Dict[str, Any]]
+    ) -> Dict[str, Any]:
         expanded_config = {}
         base_config = config
         while True:
             expanded_config = {**base_config, **expanded_config}
-            base_key = base_config.get('base', None)
+            base_key = base_config.get("base", None)
             if base_key is None:
                 break
             else:
                 base_config = configs_map.get(base_key, None)
                 if base_config is None:
-                    raise ValidationError(
-                        f"Unknown base battle config {base_key}")
+                    raise ValidationError(f"Unknown base battle config {base_key}")
         # keep the original name
         expanded_config["config_name"] = config["config_name"]
         # don't inherit hidden
@@ -133,23 +133,21 @@ class CharConfigSchema(FactorySchema[CharConfig]):
         return expanded_config
 
     def expand_inheritance(
-            self, battle_configs_map: Dict[str,
-                                           Dict[str,
-                                                Any]]) -> List[Dict[str, Any]]:
+        self, battle_configs_map: Dict[str, Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         expanded_configs = []
         for (key, config) in battle_configs_map.items():
             expanded_config = self.expand_inheritance_recursively(
-                config, battle_configs_map)
+                config, battle_configs_map
+            )
             expanded_configs.append(expanded_config)
         return expanded_configs
 
     @pre_load
-    def apply_inheritance(self, data: Dict[str, Any],
-                          **kwargs) -> Dict[str, Any]:
-        battle_configs = self.gen_battle_config_map(
-            data.get('battle_configs', []))
+    def apply_inheritance(self, data: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+        battle_configs = self.gen_battle_config_map(data.get("battle_configs", []))
         expanded_battle_configs = self.expand_inheritance(battle_configs)
-        data['battle_configs'] = expanded_battle_configs
+        data["battle_configs"] = expanded_battle_configs
         return data
 
 
@@ -158,9 +156,9 @@ def main(char_config_path: str):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description='Tibia terminator CLI parameters.')
-    parser.add_argument('char_config_path',
-                        help='Path to the char config file to validate')
+    parser = argparse.ArgumentParser(description="Tibia terminator CLI parameters.")
+    parser.add_argument(
+        "char_config_path", help="Path to the char config file to validate"
+    )
     args = parser.parse_args()
     main(args.char_config_path)
