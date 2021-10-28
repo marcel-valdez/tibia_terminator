@@ -9,6 +9,8 @@ import PIL.Image  # python-imaging
 import PIL.ImageStat  # python-imaging
 import os
 
+from typing import Union
+
 
 def get_debug_level():
     level = os.environ.get("DEBUG")
@@ -34,7 +36,7 @@ class Key:
     HOME = "Home"
 
 
-def get_tibia_wid(pid):
+def get_tibia_wid(pid: Union[str, int]) -> str:
     """Get the Tibia window id belonging to the process with PID."""
     debug("/usr/bin/xdotool search --pid %s" % (pid))
     wid = subprocess.check_output(
@@ -44,7 +46,7 @@ def get_tibia_wid(pid):
     return wid.decode("utf-8").strip()
 
 
-def focus_tibia(wid):
+def focus_tibia(wid: str):
     """Bring the tibia window to the front by focusing it."""
     debug("/usr/bin/xdotool windowactivate --sync %s" % (wid))
     wid = subprocess.check_output(
@@ -60,7 +62,7 @@ def rgb_color_to_hex_str(rgb_color: str) -> str:
     return "%s%s%s" % (hex(r)[2:], hex(g)[2:], hex(b)[2:])
 
 
-def get_pixel_rgb_bytes_imagemagick(wid, x, y):
+def get_pixel_rgb_bytes_imagemagick(wid: str, x: int, y: int):
     cmd = [
         "/usr/bin/import",
         "-window",
@@ -82,7 +84,7 @@ def get_pixel_rgb_bytes_imagemagick(wid, x, y):
     return pixel_rgb_bytes
 
 
-def get_pixel_color_slow(wid, x, y):
+def get_pixel_color_slow(wid: str, x: int, y: int) -> str:
     """Get color of a pixel very slowly, only use for runemaking."""
     pixel_rgb_bytes = get_pixel_rgb_bytes_imagemagick(wid, x, y)
     pixel_rgb_image = PIL.Image.frombytes("RGB", (1, 1), pixel_rgb_bytes, "raw")

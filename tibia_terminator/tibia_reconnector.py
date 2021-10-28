@@ -57,11 +57,11 @@ def debug(msg, debug_level=0):
 
 
 class IntroScreenReader():
-    def is_screen(self, tibia_wid, name):
-        def fn(xy):
+    def is_screen(self, tibia_wid: str, name: str) -> bool:
+        def get_color(xy):
             return get_pixel_color_slow(tibia_wid, xy[0], xy[1])
 
-        pixels = list(map(fn, SCREEN_COORDS))
+        pixels = list(map(get_color, SCREEN_COORDS))
         match = True
         for i in range(0, 4):
             if pixels[i] != SCREEN_SPECS[name][i]:
@@ -75,12 +75,12 @@ class IntroScreenReader():
         return self.is_screen(tibia_wid, 'logged_out')
 
 
-def check_ingame(tibia_wid):
+def check_ingame(tibia_wid: str) -> bool:
     reader = IntroScreenReader()
     return not reader.is_logged_out_screen(tibia_wid)
 
 
-def close_dialogs(tibia_wid):
+def close_dialogs(tibia_wid: str):
     # Menus are closed by either of these 2 keys.
     for i in range(5):
         send_key(tibia_wid, Key.ESCAPE)
