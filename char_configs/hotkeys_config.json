@@ -11,8 +11,8 @@
     "magic_shield": "F9",
     "cancel_magic_shield": "F10",
     "mana_potion": "F11",
-    "toggle_emergency_amulet": "F2",
-    "toggle_emergency_ring": "F1",
+    "toggle_emergency_amulet": "F1",
+    "toggle_emergency_ring": "F2",
     // These are keys the App will listen to, rather than send.
     // Loots all 9 SQMs when this key is pressed
     "loot": "\\",
