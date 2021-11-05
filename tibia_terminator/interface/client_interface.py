@@ -18,7 +18,7 @@ def timestamp_ms():
     return int(round(time.time() * 1000))
 
 
-# TODO: Unit test the different throttle behaviors
+
 class ThrottleBehavior(Enum):
     # DEFAULT = DROP
     DEFAULT = 1

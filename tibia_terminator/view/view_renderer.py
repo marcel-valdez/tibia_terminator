@@ -216,8 +216,9 @@ class RunView(View):
     EQUIPPED_RING_ROW = EQUIPPED_AMULET_ROW + 1
     MAGIC_SHIELD_STATUS_ROW = EQUIPPED_RING_ROW + 1
     EMERGENCY_STATUS_ROW = MAGIC_SHIELD_STATUS_ROW + 1
-    DEBUG_ROW = EMERGENCY_STATUS_ROW + 1
-    LOG_ROW = DEBUG_ROW + 1
+    DEBUG_ROW_1 = EMERGENCY_STATUS_ROW + 1
+    DEBUG_ROW_2 = DEBUG_ROW_1 + 1
+    LOG_ROW = DEBUG_ROW_2 + 1
     MAX_LOG_BUFFER = 10
 
     def __init__(self):
@@ -233,7 +234,8 @@ class RunView(View):
         self.equipped_ring = 'N/A'
         self.magic_shield_status = 'N/A'
         self.emergency_status = 'N/A'
-        self.debug_line = ''
+        self.debug_line_1 = ''
+        self.debug_line_2 = ''
         self.action_log_queue = Queue()
         self.log_entries = []
         self.lock = Lock()
@@ -243,7 +245,13 @@ class RunView(View):
             self.action_log_queue.put_nowait(log)
 
     def set_debug_line(self, debug_line: str = ''):
-        self.debug_line = debug_line
+        self.set_debug_line_1(debug_line)
+
+    def set_debug_line_1(self, debug_line: str = ''):
+        self.debug_line_1 = debug_line
+
+    def set_debug_line_2(self, debug_line: str = ''):
+        self.debug_line_2 = debug_line
 
     def set_char_stats(self, char_status: CharStatus):
         self.mana = char_status.mana
@@ -269,7 +277,7 @@ class RunView(View):
     def render(self, cli_screen: CliScreen):
         self.render_header(cli_screen)
         self.render_stats(cli_screen)
-        self.render_debug_line(cli_screen)
+        self.render_debug_lines(cli_screen)
         self.render_logs(cli_screen)
         cli_screen.refresh()
 
@@ -321,8 +329,9 @@ class RunView(View):
         cli_screen.print(f"Emergency Status: {self.emergency_status}",
                          RunView.EMERGENCY_STATUS_ROW)
 
-    def render_debug_line(self, cli_screen: CliScreen):
-        cli_screen.print(self.debug_line, RunView.DEBUG_ROW)
+    def render_debug_lines(self, cli_screen: CliScreen):
+        cli_screen.print(self.debug_line_1, RunView.DEBUG_ROW_1)
+        cli_screen.print(self.debug_line_2, RunView.DEBUG_ROW_2)
 
 
 def stress_run_view(cliwin):

@@ -58,6 +58,14 @@ class StatsLogger():
         if self.run_view is not None:
             self.run_view.add_log(msg, debug_level)
 
+    def set_debug_line_1(self, msg: str):
+        if self.run_view:
+            self.run_view.set_debug_line_1(msg)
+
+    def set_debug_line_2(self, msg: str):
+        if self.run_view:
+            self.run_view.set_debug_line_2(msg)
+
 
 if __name__ != "__main__":
     init_debug_level()
