@@ -3,6 +3,7 @@
 import argparse
 import keyboard
 import pyautogui
+import time
 
 from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfig
 from tibia_terminator.interface.macro.macro import (
@@ -28,6 +29,9 @@ LOOT_SQMS = [
     LOWER_SQM,
     LOWER_RIGHT_SQM,
     CENTER_SQM,
+    # Click one lsat time on the first SQM since if the cursos is in crosshair
+    # that click will simply trigger the crosshair.
+    UPPER_LEFT_SQM,
 ]
 
 
@@ -40,7 +44,9 @@ class LootMacro(ClientMacro):
             command_type=CommandType.USE_ITEM,
             throttle_ms=250,
             cmd_id = "LOOT_CMD",
-            throttle_behavior = ThrottleBehavior.REQUEUE_TOP,
+            # We want to drop the request in order to avoid multiple loot commands
+            # stacking and making the character move around like a drunk.
+            throttle_behavior = ThrottleBehavior.DROP,
             *args,
             **kwargs,
         )
@@ -74,6 +80,9 @@ class LootMacro(ClientMacro):
                 pyautogui.moveTo(sqm_x, sqm_y)
                 pyautogui.click(sqm_x, sqm_y, button=self.loot_button)
 
+            # This last sleep is to make sure the last click does happen
+            # at the last SQM and shift key is still pressed.
+            time.sleep(0.01)
             if self.loot_modifier:
                 pyautogui.keyUp(self.loot_modifier)
         finally:
