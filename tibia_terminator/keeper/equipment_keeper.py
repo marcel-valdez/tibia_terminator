@@ -2,12 +2,13 @@
 """Keeps equipment always ON."""
 
 import time
+
 from tibia_terminator.reader.equipment_reader import (RingName, AmuletName)
 
 # We throttle commands here and ask the client_interface
 # to use 0 throttling.
 DEFAULT_EQUIP_FREQ = 0.5
-DEFAULT_EQUIP_EMERGENCY_FREQ = 0.5
+DEFAULT_EQUIP_EMERGENCY_FREQ = 0.25
 
 
 class EquipmentMode:
@@ -117,22 +118,13 @@ class EquipmentKeeper:
         if self.should_eat_food and self.secs_since_eat_food() >= 60:
             self.eat_food()
 
-    def secs_since_equip_ring(self):
-        return self.timestamp_secs() - self.timestamps['ring']
-
     def equip_ring(self):
         self.timestamps['ring'] = self.timestamp_secs()
         self.client.equip_ring(0)
 
     def toggle_emergency_ring(self):
         self.timestamps['emergency_ring'] = self.timestamp_secs()
-        self.client.toggle_emergency_ring(250)
-
-    def secs_since_toggle_emergency_ring(self):
-        return self.timestamp_secs() - self.timestamps['emergency_ring']
-
-    def secs_since_equip_amulet(self):
-        return self.timestamp_secs() - self.timestamps['amulet']
+        self.client.toggle_emergency_ring(0)
 
     def equip_amulet(self):
         self.timestamps['amulet'] = self.timestamp_secs()
@@ -140,7 +132,16 @@ class EquipmentKeeper:
 
     def toggle_emergency_amulet(self):
         self.timestamps['emergency_amulet'] = self.timestamp_secs()
-        self.client.toggle_emergency_amulet(250)
+        self.client.toggle_emergency_amulet(0)
+
+    def secs_since_equip_ring(self):
+        return self.timestamp_secs() - self.timestamps['ring']
+
+    def secs_since_toggle_emergency_ring(self):
+        return self.timestamp_secs() - self.timestamps['emergency_ring']
+
+    def secs_since_equip_amulet(self):
+        return self.timestamp_secs() - self.timestamps['amulet']
 
     def secs_since_toggle_emergency_amulet(self):
         return self.timestamp_secs() - self.timestamps['emergency_amulet']
