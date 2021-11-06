@@ -71,10 +71,12 @@ class LootMacro(ClientMacro):
         prev_pause = pyautogui.PAUSE
         pyautogui.PAUSE = 1 / 1000  # 1 ms
         pressed_direction_key = self.get_pressed_direction_key()
-
+        sleep_shift_sec = 10 / 1000 # 10 ms
         try:
             if self.loot_modifier:
                 pyautogui.keyDown(self.loot_modifier)
+
+            time.sleep(sleep_shift_sec)
 
             for sqm_x, sqm_y in LOOT_SQMS:
                 pyautogui.moveTo(sqm_x, sqm_y)
@@ -82,7 +84,7 @@ class LootMacro(ClientMacro):
 
             # This last sleep is to make sure the last click does happen
             # at the last SQM and shift key is still pressed.
-            time.sleep(0.01)
+            time.sleep(sleep_shift_sec)
             if self.loot_modifier:
                 pyautogui.keyUp(self.loot_modifier)
         finally:
