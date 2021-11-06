@@ -3,6 +3,7 @@
 import argparse
 import keyboard
 import pyautogui
+import time
 
 from typing import Any, Callable, List, Tuple, Iterable
 from tibia_terminator.schemas.item_crosshair_macro_config_schema import (
@@ -52,12 +53,17 @@ OPPOSITE_DIRECTION_SQM_MAP = {
     Direction.DOWN: UPPER_SQM,
 }
 
+MIN_SLEEP = 0.002
+
 
 def gen_click_action_fn(hotkey: str, *args, **kwargs):
     # re-executing the keypress makes sure we don't issue a click
     # without a keypress and it does not affect client behavior
     def click_action(*args, **kwargs):
+        extra_sleep = MIN_SLEEP - pyautogui.PAUSE
         pyautogui.press([hotkey])  # use interval=0.## to add a pause
+        if extra_sleep > 0:
+            time.sleep(extra_sleep) # at least sleep 2 ms
         pyautogui.leftClick()
 
     return click_action
