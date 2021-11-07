@@ -59,6 +59,8 @@ class AmuletName(ItemName):
     DEEP = ItemName('deep.amulet')
     # prismatic necklace
     PRISM = ItemName('prismatic.amulet')
+    # glooth
+    GLOOTH = ItemName('glooth.amulet')
 
     def __init__(self, name):
         super().__init__(name)
@@ -197,6 +199,12 @@ SSA = item(
 STA = item(AmuletName.STA, [spec("4d170", "1ad552", "d421d", "93215")],
            [spec("252626", "1b42c", "252626", "a3f19")])
 
+GLOOTH = item(
+    AmuletName.GLOOTH,
+    [spec("000", "404040", "736f5c","000")],
+    [spec("252625", "000", "595647", "000")]
+)
+
 LEVIATHAN = item(AmuletName.LEVIATHAN,
                  [spec("b4e2f0", "032c1", "444444", "454545")],
                  [spec("252626", "262627", "252626", "232424")])
@@ -222,7 +230,7 @@ EMPTY_AMULET = item(AmuletName.EMPTY,
                         "4a4c4e"
                     )])
 
-AMULET_REPOSITORY = ItemRepository([SSA, STA, SHOCK, LEVIATHAN, EMPTY_AMULET])
+AMULET_REPOSITORY = ItemRepository([SSA, STA, SHOCK, LEVIATHAN, GLOOTH, EMPTY_AMULET])
 
 MIGHT = item(RingName.MIGHT,
              [spec("9b8132", "d1af44", "faed75", "d5b246")],
