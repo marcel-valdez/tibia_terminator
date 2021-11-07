@@ -6,6 +6,7 @@ import pyautogui
 import time
 
 from typing import Any, Callable, List, Tuple, Iterable
+from threading import Lock
 from tibia_terminator.schemas.item_crosshair_macro_config_schema import (
     ItemCrosshairMacroConfig,
     MacroAction,
@@ -53,31 +54,46 @@ OPPOSITE_DIRECTION_SQM_MAP = {
     Direction.DOWN: UPPER_SQM,
 }
 
-MIN_SLEEP = 0.002
+MIN_SLEEP = 2 / 1000  # 2 ms
+SINGLE_ITEM_THROTTLE_MS = 250
+SLEEP_BEFORE_CLICK_SEC = 5 / 1000
 
 
-def gen_click_action_fn(hotkey: str, *args, **kwargs):
+def gen_click_action_fn(hotkey: str, directional_lock: Lock, *args, **kwargs):
     # re-executing the keypress makes sure we don't issue a click
     # without a keypress and it does not affect client behavior
+    extra_sleep = MIN_SLEEP - pyautogui.PAUSE
+
     def click_action(*args, **kwargs):
-        extra_sleep = MIN_SLEEP - pyautogui.PAUSE
-        pyautogui.press([hotkey])  # use interval=0.## to add a pause
-        if extra_sleep > 0:
-            time.sleep(extra_sleep) # at least sleep 2 ms
-        pyautogui.leftClick()
+        # Make sure we only execute this command once at a time, otherwise
+        # the character will walk into the rune target in race conditions.
+        if directional_lock.acquire(timeout=0):
+            try:
+                pyautogui.press([hotkey])
+                pyautogui.leftClick()
+            finally:
+                directional_lock.release()
 
     return click_action
 
 
 def gen_click_behind_fn(
-    item_key: str, direction_key: str, direction: Direction, *args, **kwargs
+    item_key: str,
+    direction_key: str,
+    direction: Direction,
+    directional_lock: Lock,
+    *args,
+    **kwargs,
 ):
     x, y = OPPOSITE_DIRECTION_SQM_MAP[direction]
 
     def click_behind(*args, **kwargs):
-        pyautogui.hotkey(item_key)
-        pyautogui.leftClick(x, y)
-
+        if directional_lock.acquire(timeout=0):
+            try:
+                pyautogui.hotkey(item_key)
+                pyautogui.leftClick(x, y)
+            finally:
+                directional_lock.release()
     return click_behind
 
 
@@ -90,13 +106,13 @@ class SingleItemCrosshairMacro(ClientMacro):
         hotkey: str,
         action: Callable[[Tuple[Any, ...]], None],
         cmd_id: str = None,
-        throttle_behavior=ThrottleBehavior.REQUEUE_TOP
+        throttle_behavior=ThrottleBehavior.REQUEUE_TOP,
     ):
         super().__init__(
             client,
             hotkey,
             CommandType.USE_ITEM,
-            throttle_ms=125,
+            throttle_ms=SINGLE_ITEM_THROTTLE_MS,
             cmd_id=cmd_id or f"ITEM_CROSSHAIR_{hotkey}",
             throttle_behavior=throttle_behavior,
         )
@@ -135,9 +151,10 @@ class ItemCrosshairMacro:
         config: ItemCrosshairMacroConfig,
         hotkeys_config: HotkeysConfig,
     ) -> Iterable[SingleItemCrosshairMacro]:
+        directional_lock = Lock()
         # Add the standard hotkey setup for when the character isn't moving
         yield SingleItemCrosshairMacro(
-            client, config.hotkey, gen_click_action_fn(config.hotkey)
+            client, config.hotkey, gen_click_action_fn(config.hotkey, directional_lock)
         )
 
         direction_map = {
@@ -156,10 +173,12 @@ class ItemCrosshairMacro:
         for direction_key, direction in direction_map.items():
             hotkey = f"{config.hotkey}+{direction_key}"
             if config.action == MacroAction.CLICK:
-                action = gen_click_action_fn(config.hotkey)
+                action = gen_click_action_fn(config.hotkey, directional_lock)
                 yield SingleItemCrosshairMacro(client, hotkey, action)
             elif config.action == MacroAction.CLICK_BEHIND:
-                action = gen_click_behind_fn(config.hotkey, direction_key, direction)
+                action = gen_click_behind_fn(
+                    config.hotkey, direction_key, direction, directional_lock
+                )
                 yield SingleItemCrosshairMacro(client, hotkey, action)
             else:
                 raise Exception(f"Unsupported action: {config.action}")
@@ -191,7 +210,7 @@ def main(keys: List[str], action: str):
         right="d",
         upper_left="q",
         upper_right="e",
-        lower_left="x",
+        lower_left="z",
         lower_right="c",
         minor_heal="",
         medium_heal="",
