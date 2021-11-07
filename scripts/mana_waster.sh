@@ -159,7 +159,6 @@ function release_interaction_lock() {
 }
 
 function click_mana_potion() {
-    local tibia_wid=$1
     local minX=$((MANA_POTION_CENTER_X-12))
     local maxX=$((MANA_POTION_CENTER_X+12))
     # with full depot box
@@ -176,12 +175,11 @@ function click_mana_potion() {
     sleep ${wait_time}
 
     echo "Clicking mana potion (${X},${Y})" &
-    xdotool mousemove --screen "${SCREEN_NO}" --window "${tibia_wid}" "${X}" "${Y}"
-    xdotool click --window "${tibia_wid}" --delay $(random 125 250) "${RIGHT_BTN}"
+    xdotool mousemove --screen "${SCREEN_NO}" --window "${tibia_window}" "${X}" "${Y}"
+    xdotool click --window "${tibia_window}" --delay $(random 125 250) "${RIGHT_BTN}"
 }
 
 function click_char() {
-  local tibia_wid=$1
   local minY=$((CHAR_CENTER_Y-12))
   local maxY=$((CHAR_CENTER_Y+12))
   local minX=$((CHAR_CENTER_X-12))
@@ -194,12 +192,11 @@ function click_char() {
   sleep ${wait_time}
 
   echo "Clicking char (${X},${Y})" &
-  xdotool mousemove --screen "${SCREEN_NO}" --window "${tibia_wid}" "${X}" "${Y}"
-  xdotool click --window "${tibia_wid}" --delay "$(random 125 250)" "${LEFT_BTN}"
+  xdotool mousemove --screen "${SCREEN_NO}" --window "${tibia_window}" "${X}" "${Y}"
+  xdotool click --window "${tibia_window}" --delay "$(random 125 250)" "${LEFT_BTN}"
 }
 
 function drink_mana_potion() {
-    local tibia_wid=$1
     fetch_char_stats
     if [[ ${MANA} -ge ${MAX_MANA} ]]; then
         return 1
@@ -207,10 +204,10 @@ function drink_mana_potion() {
 
 
     if [[ ${click_for_potion} ]]; then
-        click_mana_potion ${tibia_wid}
-        click_char ${tibia_wid}
+        click_mana_potion
+        click_char
     else
-        send_keystroke "${tibia_wid}" "${DRINK_POTION_KEY}" 1 1
+        send_keystroke "${DRINK_POTION_KEY}" 1 1
     fi
 }
 
