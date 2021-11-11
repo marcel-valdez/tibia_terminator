@@ -5,6 +5,8 @@ import keyboard
 import pyautogui
 import time
 
+from threading import Lock
+
 from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfig
 from tibia_terminator.interface.macro.macro import (
     ClientMacro,
@@ -34,6 +36,8 @@ LEFT_BTN = "1"
 RIGHT_BTN = "3"
 
 LOOT_SQMS = [
+    # We press ourselves first to avoid opening bodies or interacting with stuff
+    CENTER_SQM,
     UPPER_LEFT_SQM,
     UPPER_SQM,
     UPPER_RIGHT_SQM,
@@ -42,18 +46,23 @@ LOOT_SQMS = [
     LOWER_LEFT_SQM,
     LOWER_SQM,
     LOWER_RIGHT_SQM,
-    CENTER_SQM,
-    # Click one lsat time on the first SQM since if the cursos is in crosshair
+    # Click one lsat time on the first SQM since if the cursor is in crosshair
     # that click will simply trigger the crosshair.
-    UPPER_LEFT_SQM,
+    # Also we leave the cursor on ourselves to avoid accidentally moving.
+    CENTER_SQM,
 ]
+LEN_LOOT_SQMS = len(LOOT_SQMS)
 
-# Amount of time to wait after looting the 9 SQM before putting the cursor
+# (unused) Amount of time to wait after looting the 9 SQM before putting the cursor
 # back in the original x,y
-SLEEP_POST_LOOT_SEC = 25 / 1000 # 25 ms
-LOOT_THROTTLE_MS = 375 # 375 ms
+SLEEP_POST_LOOT_SEC = 25 / 1000
+LOOT_THROTTLE_MS = 375
+# (unused) Pause before returning the cursor to the previous position
+PAUSE_BEFORE_RETURN_SEC = 62.5 / 1000
 # Amount of time to wait to click on SQM after pressing the loot modifier
-SLEEP_AFTER_MODIFIER_SEC = 5 / 1000  # 5 ms
+SLEEP_LOOT_MODIFIER_SEC = 10 / 1000
+# Pause in between pyautogui commands
+PYAUTOGUI_LOOT_PAUSE_SEC = 2 / 1000
 
 
 class LootMacro(ClientMacro):
@@ -61,7 +70,11 @@ class LootMacro(ClientMacro):
         self,
         client: ClientInterface,
         hotkeys: HotkeysConfig,
-        throttle_ms=LOOT_THROTTLE_MS,
+        # X offset of the Tibia window with respect to 0,0 (upper left corner)
+        # in dual monitor setups, this is normally the width in pixeld of the
+        # monitor to the left
+        x_offset: int = 0,
+        throttle_ms: int = LOOT_THROTTLE_MS,
         *args,
         **kwargs,
     ):
@@ -92,38 +105,55 @@ class LootMacro(ClientMacro):
             self.loot_modifier = f"{hotkeys.loot_modifier}left"
         else:
             self.loot_modifier = None
+        self.x_offset = x_offset
+        self.lock = Lock()
 
     def get_pressed_direction_key(self) -> str:
         for direction_key in self.directional_keys:
             if keyboard.is_pressed(direction_key):
                 return direction_key
 
-    def _client_action(self, tibia_wid):
-        mouse_x, mouse_y = pyautogui.position()
+    def _wait_for_mouse_pos(self, x: int, y: int, max_attempts = 10) -> bool:
+        poll_freq = 1 / 1000 # 0.1 ms
+        curr_x, curr_y = pyautogui.position()
+        attempt_count = 1
+        while curr_x != x and curr_y != y and attempt_count < max_attempts:
+            time.sleep(poll_freq)
+            curr_x, curr_y = pyautogui.position()
+            attempt_count += 1
+
+        return curr_x == x and curr_y == y
+
+    def _do_loot(self):
         prev_pause = pyautogui.PAUSE
-        pyautogui.PAUSE = 1 / 1000  # 1 ms
+        pyautogui.PAUSE = PYAUTOGUI_LOOT_PAUSE_SEC
         pressed_direction_key = self.get_pressed_direction_key()
         try:
             if self.loot_modifier:
                 pyautogui.keyDown(self.loot_modifier)
-
+                time.sleep(SLEEP_LOOT_MODIFIER_SEC)
             for sqm_x, sqm_y in LOOT_SQMS:
+                sqm_x += self.x_offset
                 pyautogui.moveTo(sqm_x, sqm_y)
-                if self.loot_modifier:
-                    pyautogui.keyDown(self.loot_modifier)
-                    time.sleep(SLEEP_AFTER_MODIFIER_SEC)
-                pyautogui.click(sqm_x, sqm_y, button=self.loot_button)
+                # We only want to wait on the *last* sqm
+                if self._wait_for_mouse_pos(sqm_x, sqm_y):
+                    pyautogui.click(button=self.loot_button)
 
-            # This last sleep is to make sure the last click does happen
-            # at the last SQM and shift key is still pressed.
-            time.sleep(SLEEP_POST_LOOT_SEC)
-            if pressed_direction_key:
-                pyautogui.keyDown(pressed_direction_key)
-            pyautogui.moveTo(mouse_x, mouse_y)
             if self.loot_modifier:
                 pyautogui.keyUp(self.loot_modifier)
+                time.sleep(SLEEP_LOOT_MODIFIER_SEC)
+            if pressed_direction_key:
+                pyautogui.keyDown(pressed_direction_key)
         finally:
             pyautogui.PAUSE = prev_pause
+
+
+    def _client_action(self, tibia_wid):
+        if self.lock.acquire(blocking=False):
+            try:
+                self._do_loot()
+            finally:
+                self.lock.release()
 
 
 class MockLogger:

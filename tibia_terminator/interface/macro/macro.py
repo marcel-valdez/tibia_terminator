@@ -155,14 +155,15 @@ class ClientMacro(Macro):
         self.command_type = command_type
         self.throttle_ms = throttle_ms
         self.throttle_behavior = throttle_behavior
+        self.cmd_id = cmd_id
 
     def _client_action(self, tibia_wid):
         raise Exception("This should be implemented by the child class")
 
     def _action(self):
         self.client.execute_macro(
-            self._client_action,
-            self.command_type,
+            macro_fn=self._client_action,
+            cmd_type=self.command_type,
             throttle_ms=self.throttle_ms,
             cmd_id=self.cmd_id,
             throttle_behavior=self.throttle_behavior
