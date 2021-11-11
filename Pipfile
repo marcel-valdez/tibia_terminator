@@ -18,6 +18,7 @@ keyboard = "*"
 pyautogui = "*"
 "tibia.py" = "*"
 requests = "*"
+pynput = "*"
 
 [requires]
 python_version = "3.8"
