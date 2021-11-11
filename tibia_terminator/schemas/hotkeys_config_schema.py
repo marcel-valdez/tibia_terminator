@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.8
 
 from marshmallow import fields
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 from tibia_terminator.schemas.common import FactorySchema
 
 
@@ -30,7 +30,7 @@ class HotkeysConfig(NamedTuple):
     lower_left: str
     lower_right: str
     loot_button: str = "right"
-    loot_modifier: str = "shift"
+    loot_modifier: Optional[str] = None
 
 
 class HotkeysConfigSchema(FactorySchema[HotkeysConfig]):
@@ -59,4 +59,4 @@ class HotkeysConfigSchema(FactorySchema[HotkeysConfig]):
     lower_left = fields.Str(required=True, default="x")
     lower_right = fields.Str(required=True, default="c")
     loot_button = fields.Str(required=True, default="right")
-    loot_modifier = fields.Str(required=False)
+    loot_modifier = fields.Str(required=False, default=None, allow_none=True)
