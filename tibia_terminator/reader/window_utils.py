@@ -35,6 +35,30 @@ class Key:
     SHIFT = "Shift_L"
     HOME = "Home"
 
+class WindowGeometry:
+    window: int
+    x: int
+    y: int
+    width: int
+    height: int
+    screen: int
+
+def get_window_geometry(wid: Union[str, int]) -> WindowGeometry:
+    """Get the Tibia window id belonging to the process with PID."""
+    debug("/usr/bin/xdotool getwindowgeometry --shell %s" % (wid))
+    stdout = subprocess.check_output(
+        ["/usr/bin/xdotool", "getwindowgeometry", "--shell", str(wid)], stderr=subprocess.STDOUT
+    )
+    debug(stdout)
+    result = WindowGeometry()
+    geometry_str: str = stdout.decode("utf-8")
+    for line in geometry_str.split(os.linesep):
+        clean_line = line.strip().lower()
+        if clean_line:
+            attr_name = clean_line[0:clean_line.index('=')]
+            attr_value = int(clean_line[clean_line.index('=')+1:])
+            result.__setattr__(attr_name, attr_value)
+    return result
 
 def get_tibia_wid(pid: Union[str, int]) -> str:
     """Get the Tibia window id belonging to the process with PID."""
@@ -68,7 +92,7 @@ def get_pixel_rgb_bytes_imagemagick(wid: str, x: int, y: int):
         "-window",
         str(wid),
         "-crop",
-        "1x1+%s+%s" % (x, y),
+        f"1x1+{x}+{y}",
         "-depth",
         "8",
         "rgba:-",
@@ -157,23 +181,36 @@ def left_click(wid: str, x: int, y: int):
 class ScreenReader:
     """Reads pixels in the screen."""
 
-    def __init__(self, x_offset=0):
-        self.screen = None
-        self.display = None
-        self.x_offset = x_offset
+    def __init__(
+            self,
+            tibia_wid: int = None,
+            screen: Xlib.protocol.display.Screen = None,
+            display: Xlib.display.Display = None
+    ):
+        self.screen = screen
+        self.display = display
+        self.tibia_wid = tibia_wid
+        self.tibia_window = None
 
     def open(self):
         self.display = Xlib.display.Display()
         self.screen = self.display.screen()
+        if self.tibia_wid:
+            self.tibia_window = Xlib.xobject.drawable.Window(
+                self.display.display,
+                self.tibia_wid
+            )
 
     def close(self):
+        self.tibia_window = None
         self.screen = None
         self.display.close()
         self.display = None
 
     def get_pixel_rgb_bytes_xlib(self, x: int, y: int):
-        return self.screen.root.get_image(
-            x + self.x_offset, y, 1, 1, Xlib.X.ZPixmap, 0xFFFFFFFF
+        window = self.tibia_window or self.screen.root
+        return window.get_image(
+            x, y, 1, 1, Xlib.X.ZPixmap, 0xFFFFFFFF
         )
 
     def get_pixel_color(self, x: int, y: int):
@@ -193,6 +230,8 @@ class ScreenReader:
         return rgb_color_to_hex_str(pixel_rgb_color).lower()
 
     def get_pixel_color_slow(self, wid, x, y):
+        # We do not offset this, since it uses values relative to the
+        # window.
         return get_pixel_color_slow(wid, x, y)
 
     def get_pixels_slow(self, wid, coords):

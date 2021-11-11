@@ -18,7 +18,7 @@ parser.add_argument('--equipment_status',
                     help='Prints all of the equipment status.',
                     action='store_true')
 wid_group = parser.add_argument_group()
-wid_group.add_argument('tibia_wid', help='Window id of the tibia client.')
+wid_group.add_argument('tibia_wid', help='Window id of the tibia client.', type=int)
 wid_group_options = wid_group.add_mutually_exclusive_group()
 wid_group_options.add_argument(
     '--check_specs',
@@ -161,8 +161,8 @@ NOOP: Callable[[str], None] = lambda x: None
 
 
 class EquipmentReader(ScreenReader):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, tibia_wid: int = None):
+        super().__init__(tibia_wid=tibia_wid)
         self.task_loop = TaskLoop()
 
     def open(self):
@@ -279,16 +279,16 @@ class EquipmentReader(ScreenReader):
 
 
 class EquipmentReaderSlow(EquipmentReader):
-    def __init__(self, wid):
-        self.wid = wid
+    def __init__(self, tibia_wid: int):
+        super().__init__(tibia_wid=tibia_wid)
 
     def get_pixels(self, coords: Tuple[int, int]):
-        return self.get_pixels_slow(self.wid, coords)
+        return self.get_pixels_slow(self.tibia_wid, coords)
 
     def _compare_screen_coords(self, coords: Tuple[int, int],
                                color_spec: Tuple[PixelColor, ...]):
         colors = list(map(lambda c: str(c), color_spec))
-        return matches_screen_slow(self.wid, coords, colors)
+        return matches_screen_slow(self.tibia_wid, coords, colors)
 
 
 def time_perf(title, fn):
@@ -301,8 +301,8 @@ def time_perf(title, fn):
     print(f"  Elapsed time: {elapsed} ms")
 
 
-def check_specs():
-    eq_reader = EquipmentReader()
+def check_specs(tibia_wid: int):
+    eq_reader = EquipmentReader(tibia_wid)
     eq_reader.open()
     try:
         print("###############\n"
@@ -387,7 +387,7 @@ def check_specs():
         eq_reader.close()
 
 
-def check_slot_empty(tibia_wid, slot):
+def check_slot_empty(tibia_wid: int, slot):
     eq_reader = EquipmentReaderSlow(tibia_wid)
     if slot == 'ring':
         return eq_reader.is_ring_empty()
@@ -397,13 +397,13 @@ def check_slot_empty(tibia_wid, slot):
         raise Exception('Unknown slot: {}'.format(slot))
 
 
-def check_magic_shield_status(tibia_wid):
+def check_magic_shield_status(tibia_wid: int):
     eq_reader = EquipmentReaderSlow(tibia_wid)
     print(eq_reader.get_magic_shield_status())
 
 
-def check_equipment_status(tibia_wid):
-    eq_reader = EquipmentReader()
+def check_equipment_status(tibia_wid: int):
+    eq_reader = EquipmentReader(tibia_wid=tibia_wid)
     eq_reader.open()
 
     def read():
@@ -417,7 +417,7 @@ def check_equipment_status(tibia_wid):
 
 def main(args):
     if args.check_specs is True:
-        check_specs()
+        check_specs(args.tibia_wid)
     elif args.check_slot_empty is not None:
         if check_slot_empty(args.tibia_wid, args.check_slot_empty):
             sys.exit(0)

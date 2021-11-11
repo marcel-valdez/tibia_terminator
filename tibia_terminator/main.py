@@ -27,7 +27,7 @@ from tibia_terminator.keeper.char_keeper import CharKeeper
 from tibia_terminator.reader.char_reader38 import CharReader38 as CharReader
 from tibia_terminator.reader.equipment_reader import EquipmentReader
 from tibia_terminator.reader.memory_reader38 import MemoryReader38 as MemoryReader
-from tibia_terminator.reader.window_utils import get_tibia_wid
+from tibia_terminator.reader.window_utils import (get_tibia_wid, get_window_geometry)
 from tibia_terminator.view.view_renderer import (
     ViewRenderer,
     PausedView,
@@ -88,6 +88,18 @@ def build_parser(src_parser: Optional[ArgumentParser] = None) -> ArgumentParser:
         ),
         type=int,
         default=-1,
+    )
+    parser.add_argument(
+        "--x_offset",
+        help=(
+            "X value offset for the Tibia window. This is useful for dual monitor"
+            " setups, wher you have the Tibia window on the right screen."
+            "e.g. If you have 1920x1080 setup, and Tibia is on the monitor to the"
+            " right, then this value should be 1920"
+        ),
+        type=int,
+        default=0,
+        required=False
     )
     return parser
 
@@ -457,6 +469,7 @@ def curses_main(
     enable_magic_shield: bool,
     enable_speed: bool,
     only_monitor: bool,
+    x_offset: int = 0
 ):
     if pid is None or pid == "":
         raise Exception(
@@ -473,6 +486,8 @@ def curses_main(
 
     app_config = app_configs[str(pid)]
     tibia_wid = get_tibia_wid(pid)
+    window_geometry = get_window_geometry(tibia_wid)
+    x_offset = x_offset or window_geometry.x
     stats_logger = StatsLogger()
 
     def print_async(msg):
@@ -538,6 +553,7 @@ def main(args: Namespace):
         enable_magic_shield=not args.no_magic_shield,
         enable_speed=not args.no_speed,
         only_monitor=args.only_monitor,
+        x_offset=args.x_offset
     )
 
 
