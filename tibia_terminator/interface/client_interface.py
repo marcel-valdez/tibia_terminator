@@ -12,11 +12,11 @@ from collections import deque
 
 from tibia_terminator.common.logger import StatsLogger
 from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfig
+from tibia_terminator.interface.keystroke_sender import KeystrokeSender
 
 
 def timestamp_ms():
     return int(round(time.time() * 1000))
-
 
 
 class ThrottleBehavior(Enum):
@@ -126,20 +126,22 @@ class KeeperHotkeyCommand(Command):
         cmd_type: str,
         throttle_ms: int,
         hotkey: str,
+        keystroke_sender: KeystrokeSender,
         cmd_id: str = None,
         throttle_behavior: ThrottleBehavior = ThrottleBehavior.DEFAULT,
     ):
         super().__init__(cmd_type, throttle_ms, cmd_id, throttle_behavior)
         self.hotkey = hotkey
+        self.keystroke_sender = keystroke_sender
 
     def _send(self, tibia_wid):
-        # TODO: Figure out how to send keys to a specific window (as opposed to the entire desktop)
-        # ithout using xdotool; sending keys through xdotool is inefficient since it creates an
-        # entire new process to do so.
+        # TODO: Figure out how to send keys to a specific window (as opposed to
+        # the entire desktop) without using xdotool.
         # TODO: We may need windows-specific implementations for this. See: pywinauto
-        subprocess.Popen(
-            ["/usr/bin/xdotool", "key", "--window", str(tibia_wid), self.hotkey]
-        )
+        # subprocess.Popen(
+        #    ["/usr/bin/xdotool", "key", "--window", str(tibia_wid), self.hotkey]
+        # )
+        self.keystroke_sender.send_key(self.hotkey)
 
     def __str__(self):
         cmd_id = self.cmd_id or "N/A"
@@ -191,7 +193,7 @@ class CommandSender(threading.Thread):
     def __log_cmd(self, cmd: Command):
         self.logger.log_action(0, str(cmd))
 
-    def __throttle(self, throttle_ms: int = 250) -> Tuple[bool, int]:
+    def __throttle(self, throttle_ms: int = 250) -> bool:
         """Throttles an action.
         Returns:
 
@@ -338,10 +340,12 @@ class ClientInterface:
     def __init__(
         self,
         hotkeys_config: HotkeysConfig,
+        keystroke_sender: KeystrokeSender,
         logger: StatsLogger = None,
         cmd_processor: CommandProcessor = None,
     ):
         self.hotkeys_config = hotkeys_config
+        self.keystroke_sender = keystroke_sender
         self.logger = logger
         self.cmd_processor = cmd_processor
 
@@ -355,7 +359,12 @@ class ClientInterface:
     ):
         self.cmd_processor.send(
             KeeperHotkeyCommand(
-                cmd_type, throttle_ms, hotkey, cmd_id, throttle_behavior
+                cmd_type,
+                throttle_ms,
+                hotkey,
+                self.keystroke_sender,
+                cmd_id,
+                throttle_behavior,
             )
         )
 

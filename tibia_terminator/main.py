@@ -19,6 +19,9 @@ from tibia_terminator.interface.client_interface import (
     ClientInterface,
     CommandProcessor,
 )
+from tibia_terminator.interface.keystroke_sender import (
+    XdotoolProcess, XdotoolKeystrokeSender
+)
 from tibia_terminator.interface.macro.loot_macro import LootMacro
 from tibia_terminator.keeper.char_keeper import CharKeeper
 from tibia_terminator.reader.char_reader38 import CharReader38 as CharReader
@@ -485,34 +488,40 @@ def curses_main(
         raise Exception(
             f"No .charconfig files found in {char_configs_path}", file=sys.stderr
         )
-    client = ClientInterface(
-        hotkeys_config, logger=stats_logger, cmd_processor=cmd_processor
-    )
-    char_keeper = CharKeeper(
-        client, char_configs[0], char_configs[0].battle_configs[0], hotkeys_config
-    )
-    char_reader = CharReader(MemoryReader(pid, print_async))
-    eq_reader = EquipmentReader()
-    loot_macro = LootMacro(client, hotkeys_config)
-    tibia_terminator = TibiaTerminator(
-        tibia_wid,
-        char_keeper,
-        char_reader,
-        eq_reader,
-        app_config,
-        char_configs,
-        cliwin,
-        loot_macro,
-        stats_logger,
-        view_renderer,
-        cmd_processor,
-        enable_mana=enable_mana,
-        enable_hp=enable_hp,
-        enable_magic_shield=enable_magic_shield,
-        enable_speed=enable_speed,
-        only_monitor=only_monitor,
-    )
-    tibia_terminator.monitor_char()
+    xdotool_proc = XdotoolProcess()
+    xdotool_proc.start()
+    try:
+        client = ClientInterface(
+            hotkeys_config, logger=stats_logger, cmd_processor=cmd_processor,
+            keystroke_sender=XdotoolKeystrokeSender(xdotool_proc, tibia_wid)
+        )
+        char_keeper = CharKeeper(
+            client, char_configs[0], char_configs[0].battle_configs[0], hotkeys_config
+        )
+        char_reader = CharReader(MemoryReader(pid, print_async))
+        eq_reader = EquipmentReader(tibia_wid=int(tibia_wid))
+        loot_macro = LootMacro(client, hotkeys_config, x_offset)
+        tibia_terminator = TibiaTerminator(
+            tibia_wid,
+            char_keeper,
+            char_reader,
+            eq_reader,
+            app_config,
+            char_configs,
+            cliwin,
+            loot_macro,
+            stats_logger,
+            view_renderer,
+            cmd_processor,
+            enable_mana=enable_mana,
+            enable_hp=enable_hp,
+            enable_magic_shield=enable_magic_shield,
+            enable_speed=enable_speed,
+            only_monitor=only_monitor,
+        )
+        tibia_terminator.monitor_char()
+    finally:
+        xdotool_proc.stop()
 
 
 def main(args: Namespace):

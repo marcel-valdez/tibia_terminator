@@ -24,6 +24,9 @@ from tibia_terminator.interface.client_interface import (
     CommandProcessor,
     ThrottleBehavior,
 )
+from tibia_terminator.interface.keystroke_sender import (
+    KeystrokeSender
+)
 
 parser = argparse.ArgumentParser(description="Loots all 9 SQMs around a char.")
 pyautogui.PAUSE = 0.02
@@ -128,13 +131,25 @@ class MockLogger:
         print(str(level), msg)
 
 
+class MockKeystrokeSender(KeystrokeSender):
+    def send_key(self, key: str):
+        pass
+
 def main(args):
     logger = MockLogger()
     cmd_processor = CommandProcessor("wid", logger, False)
-    client = ClientInterface({}, logger, cmd_processor)
+    client = ClientInterface(
+        {},
+        MockKeystrokeSender(),
+        logger,
+        cmd_processor
+    )
     macro = LootMacro(
         client,
         hotkeys=HotkeysConfig(
+            loot="\\",
+            loot_button="left",
+            loot_modifier="shift",
             minor_heal="1",
             medium_heal="2",
             greater_heal="3",
@@ -149,7 +164,6 @@ def main(args):
             toggle_emergency_ring="b",
             start_emergency="c",
             cancel_emergency="d",
-            loot="\\",
             up="w",
             down="s",
             left="a",

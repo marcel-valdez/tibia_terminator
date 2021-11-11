@@ -29,6 +29,9 @@ from tibia_terminator.interface.client_interface import (
     CommandProcessor,
     ThrottleBehavior,
 )
+from tibia_terminator.interface.keystroke_sender import (
+    KeystrokeSender
+)
 from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfig
 
 parser = argparse.ArgumentParser(description="Test item cross hair macro.")
@@ -67,9 +70,10 @@ def gen_click_action_fn(hotkey: str, directional_lock: Lock, *args, **kwargs):
     def click_action(*args, **kwargs):
         # Make sure we only execute this command once at a time, otherwise
         # the character will walk into the rune target in race conditions.
-        if directional_lock.acquire(timeout=0):
+        if directional_lock.acquire(blocking=False):
             try:
                 pyautogui.press([hotkey])
+                time.sleep(5/1000) # sleep 5 ms
                 pyautogui.leftClick()
             finally:
                 directional_lock.release()
@@ -196,13 +200,16 @@ class MockLogger:
     def log_action(self, level, msg):
         print(str(level), msg)
 
+class MockKeystrokeSender(KeystrokeSender):
+    def send_key(self, key: str):
+        pass
 
 def main(keys: List[str], action: str):
     macros = []
     logger = MockLogger()
     action = MacroAction.from_str(action)
     cmd_processor = CommandProcessor("wid", logger, False)
-    client = ClientInterface({}, logger, cmd_processor)
+    client = ClientInterface({}, MockKeystrokeSender(), logger, cmd_processor)
     hotkeys_config = HotkeysConfig(
         up="w",
         down="s",
