@@ -57,25 +57,29 @@ OPPOSITE_DIRECTION_SQM_MAP = {
     Direction.DOWN: UPPER_SQM,
 }
 
-MIN_SLEEP = 2 / 1000  # 2 ms
-SINGLE_ITEM_THROTTLE_MS = 250
+PYAUTOGUI_ITEM_CROSSHAIR_PAUSE = 5 / 1000 # 5 ms
+# We want these to execute almost instantly, but not
+# as fast as the keyboard can repeat itself.
+SINGLE_ITEM_THROTTLE_MS = 50
 SLEEP_BEFORE_CLICK_SEC = 5 / 1000
 
 
 def gen_click_action_fn(hotkey: str, directional_lock: Lock, *args, **kwargs):
     # re-executing the keypress makes sure we don't issue a click
     # without a keypress and it does not affect client behavior
-    extra_sleep = MIN_SLEEP - pyautogui.PAUSE
+
 
     def click_action(*args, **kwargs):
         # Make sure we only execute this command once at a time, otherwise
         # the character will walk into the rune target in race conditions.
         if directional_lock.acquire(blocking=False):
+            prev_pause = pyautogui.PAUSE
+            pyautogui.PAUSE = PYAUTOGUI_ITEM_CROSSHAIR_PAUSE
             try:
                 pyautogui.press([hotkey])
-                time.sleep(5/1000) # sleep 5 ms
                 pyautogui.leftClick()
             finally:
+                pyautogui.PAUSE = prev_pause
                 directional_lock.release()
 
     return click_action
@@ -89,14 +93,18 @@ def gen_click_behind_fn(
     *args,
     **kwargs,
 ):
+    # TODO: Use x_offset for this
     x, y = OPPOSITE_DIRECTION_SQM_MAP[direction]
 
     def click_behind(*args, **kwargs):
-        if directional_lock.acquire(timeout=0):
+        if directional_lock.acquire(blocking=False):
+            prev_pause = pyautogui.PAUSE
+            pyautogui.PAUSE = PYAUTOGUI_ITEM_CROSSHAIR_PAUSE
             try:
                 pyautogui.hotkey(item_key)
                 pyautogui.leftClick(x, y)
             finally:
+                pyautogui.PAUSE = prev_pause
                 directional_lock.release()
     return click_behind
 
@@ -110,7 +118,7 @@ class SingleItemCrosshairMacro(ClientMacro):
         hotkey: str,
         action: Callable[[Tuple[Any, ...]], None],
         cmd_id: str = None,
-        throttle_behavior=ThrottleBehavior.REQUEUE_TOP,
+        throttle_behavior=ThrottleBehavior.DROP
     ):
         super().__init__(
             client,
@@ -130,7 +138,9 @@ class SingleItemCrosshairMacro(ClientMacro):
         if self.hotkey_hook is None:
             # timeout parameter controls how long between each key in the
             # hotkey combination, default=1
-            self.hotkey_hook = keyboard.add_hotkey(self.hotkey, self._action, timeout=1)
+            self.hotkey_hook = keyboard.add_hotkey(
+                self.hotkey, self._action, timeout=0.5
+            )
 
     def unhook_hotkey(self, *args, **kwargs):
         if self.hotkey_hook is not None:
