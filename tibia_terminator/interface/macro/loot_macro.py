@@ -31,7 +31,6 @@ from tibia_terminator.interface.keystroke_sender import (
 )
 
 parser = argparse.ArgumentParser(description="Loots all 9 SQMs around a char.")
-pyautogui.PAUSE = 0.02
 LEFT_BTN = "1"
 RIGHT_BTN = "3"
 
@@ -62,7 +61,7 @@ PAUSE_BEFORE_RETURN_SEC = 62.5 / 1000
 # Amount of time to wait to click on SQM after pressing the loot modifier
 SLEEP_LOOT_MODIFIER_SEC = 10 / 1000
 # Pause in between pyautogui commands
-PYAUTOGUI_LOOT_PAUSE_SEC = 2 / 1000
+PYAUTOGUI_LOOT_PAUSE_SEC = 5 / 1000
 
 
 class LootMacro(ClientMacro):
@@ -70,7 +69,7 @@ class LootMacro(ClientMacro):
         self,
         client: ClientInterface,
         hotkeys: HotkeysConfig,
-        # X offset of the Tibia window with respect to 0,0 (upper left corner)
+        # X deoffset of the Tibia window with respect to 0,0 (upper left corner)
         # in dual monitor setups, this is normally the width in pixeld of the
         # monitor to the left
         x_offset: int = 0,
@@ -135,7 +134,6 @@ class LootMacro(ClientMacro):
             for sqm_x, sqm_y in LOOT_SQMS:
                 sqm_x += self.x_offset
                 pyautogui.moveTo(sqm_x, sqm_y)
-                # We only want to wait on the *last* sqm
                 if self._wait_for_mouse_pos(sqm_x, sqm_y):
                     pyautogui.click(button=self.loot_button)
 
