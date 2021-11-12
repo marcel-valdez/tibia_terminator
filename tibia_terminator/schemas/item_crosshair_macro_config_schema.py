@@ -4,6 +4,8 @@ from marshmallow import fields, ValidationError
 from typing import NamedTuple, Dict
 from tibia_terminator.schemas.common import FactorySchema
 
+DEFAULT_ITEM_CROSSHAIR_THROTTLE_MS = 250
+
 
 class Direction(Enum):
     LEFT = 1
@@ -56,7 +58,7 @@ class MacroAction(Enum):
 class ItemCrosshairMacroConfig(NamedTuple):
     hotkey: str
     action: MacroAction = MacroAction.CLICK
-    throttle_ms: int = 250
+    throttle_ms: int = DEFAULT_ITEM_CROSSHAIR_THROTTLE_MS
     direction_map: Dict[str, Direction] = None
 
 
@@ -66,7 +68,9 @@ class ItemCrosshairMacroConfigSchema(FactorySchema[ItemCrosshairMacroConfig]):
     action = fields.Function(
         str, MacroAction.from_str, default=MacroAction.CLICK, required=False
     )
-    throttle_ms = fields.Int(required=False, default=250, allow_none=False)
+    throttle_ms = fields.Int(
+        required=False, default=DEFAULT_ITEM_CROSSHAIR_THROTTLE_MS, allow_none=False
+    )
     direction_map = fields.Dict(
         keys=fields.Str(),
         values=fields.Function(str, Direction.from_str),

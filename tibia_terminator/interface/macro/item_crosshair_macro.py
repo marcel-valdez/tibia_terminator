@@ -58,7 +58,7 @@ OPPOSITE_DIRECTION_SQM_MAP = {
 PYAUTOGUI_ITEM_CROSSHAIR_PAUSE = 5 / 1000  # 5 ms
 # We want these to execute almost instantly, but not
 # as fast as the keyboard can repeat itself.
-SINGLE_ITEM_THROTTLE_MS = 50
+DEFAULT_ITEM_CROSSHAIR_THROTTLE_MS = 250
 SLEEP_BEFORE_CLICK_SEC = 5 / 1000
 
 
@@ -115,7 +115,7 @@ class SingleItemCrosshairMacro(ClientMacro):
         client: ClientInterface,
         hotkey: str,
         action: Callable[[Tuple[Any, ...]], None],
-        throttle_ms: int = SINGLE_ITEM_THROTTLE_MS,
+        throttle_ms: int = DEFAULT_ITEM_CROSSHAIR_THROTTLE_MS,
         cmd_id: str = None,
         throttle_behavior=ThrottleBehavior.DROP,
     ):
@@ -197,7 +197,9 @@ class ItemCrosshairMacro:
                 action = gen_click_behind_fn(
                     config.hotkey, direction_key, direction, directional_lock
                 )
-                yield SingleItemCrosshairMacro(client, hotkey, action, config.throttle_ms)
+                yield SingleItemCrosshairMacro(
+                    client, hotkey, action, config.throttle_ms
+                )
             else:
                 raise Exception(f"Unsupported action: {config.action}")
 
