@@ -29,9 +29,7 @@ from tibia_terminator.interface.client_interface import (
     CommandProcessor,
     ThrottleBehavior,
 )
-from tibia_terminator.interface.keystroke_sender import (
-    KeystrokeSender
-)
+from tibia_terminator.interface.keystroke_sender import KeystrokeSender
 from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfig
 
 parser = argparse.ArgumentParser(description="Test item cross hair macro.")
@@ -57,7 +55,7 @@ OPPOSITE_DIRECTION_SQM_MAP = {
     Direction.DOWN: UPPER_SQM,
 }
 
-PYAUTOGUI_ITEM_CROSSHAIR_PAUSE = 5 / 1000 # 5 ms
+PYAUTOGUI_ITEM_CROSSHAIR_PAUSE = 5 / 1000  # 5 ms
 # We want these to execute almost instantly, but not
 # as fast as the keyboard can repeat itself.
 SINGLE_ITEM_THROTTLE_MS = 50
@@ -67,7 +65,6 @@ SLEEP_BEFORE_CLICK_SEC = 5 / 1000
 def gen_click_action_fn(hotkey: str, directional_lock: Lock, *args, **kwargs):
     # re-executing the keypress makes sure we don't issue a click
     # without a keypress and it does not affect client behavior
-
 
     def click_action(*args, **kwargs):
         # Make sure we only execute this command once at a time, otherwise
@@ -106,6 +103,7 @@ def gen_click_behind_fn(
             finally:
                 pyautogui.PAUSE = prev_pause
                 directional_lock.release()
+
     return click_behind
 
 
@@ -117,14 +115,15 @@ class SingleItemCrosshairMacro(ClientMacro):
         client: ClientInterface,
         hotkey: str,
         action: Callable[[Tuple[Any, ...]], None],
+        throttle_ms: int = SINGLE_ITEM_THROTTLE_MS,
         cmd_id: str = None,
-        throttle_behavior=ThrottleBehavior.DROP
+        throttle_behavior=ThrottleBehavior.DROP,
     ):
         super().__init__(
             client,
             hotkey,
             CommandType.USE_ITEM,
-            throttle_ms=SINGLE_ITEM_THROTTLE_MS,
+            throttle_ms=throttle_ms,
             cmd_id=cmd_id or f"ITEM_CROSSHAIR_{hotkey}",
             throttle_behavior=throttle_behavior,
         )
@@ -168,7 +167,10 @@ class ItemCrosshairMacro:
         directional_lock = Lock()
         # Add the standard hotkey setup for when the character isn't moving
         yield SingleItemCrosshairMacro(
-            client, config.hotkey, gen_click_action_fn(config.hotkey, directional_lock)
+            client,
+            config.hotkey,
+            gen_click_action_fn(config.hotkey, directional_lock),
+            config.throttle_ms,
         )
 
         direction_map = {
@@ -188,12 +190,14 @@ class ItemCrosshairMacro:
             hotkey = f"{config.hotkey}+{direction_key}"
             if config.action == MacroAction.CLICK:
                 action = gen_click_action_fn(config.hotkey, directional_lock)
-                yield SingleItemCrosshairMacro(client, hotkey, action)
+                yield SingleItemCrosshairMacro(
+                    client, hotkey, action, config.throttle_ms
+                )
             elif config.action == MacroAction.CLICK_BEHIND:
                 action = gen_click_behind_fn(
                     config.hotkey, direction_key, direction, directional_lock
                 )
-                yield SingleItemCrosshairMacro(client, hotkey, action)
+                yield SingleItemCrosshairMacro(client, hotkey, action, config.throttle_ms)
             else:
                 raise Exception(f"Unsupported action: {config.action}")
 
@@ -210,9 +214,11 @@ class MockLogger:
     def log_action(self, level, msg):
         print(str(level), msg)
 
+
 class MockKeystrokeSender(KeystrokeSender):
     def send_key(self, key: str):
         pass
+
 
 def main(keys: List[str], action: str):
     macros = []
