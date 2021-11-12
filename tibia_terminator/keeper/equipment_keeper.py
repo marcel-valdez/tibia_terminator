@@ -7,7 +7,7 @@ from tibia_terminator.reader.equipment_reader import (RingName, AmuletName)
 
 # We throttle commands here and ask the client_interface
 # to use 0 throttling.
-DEFAULT_EQUIP_FREQ = 0.5
+DEFAULT_EQUIP_FREQ = 0.25
 DEFAULT_EQUIP_EMERGENCY_FREQ = 0.25
 
 
