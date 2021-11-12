@@ -114,7 +114,7 @@ class Command:
 
     def __hash__(self) -> int:
         return hash(
-            tuple(self.cmd_id, self.cmd_type, self.throttle_behavior, self.throttle_ms)
+            tuple([self.cmd_id, self.cmd_type, self.throttle_behavior, self.throttle_ms])
         )
 
 
@@ -171,6 +171,7 @@ class MacroCommand(Command):
 
 
 class CommandSender(threading.Thread):
+    MAX_QUEUE_SIZE = 10
     NOOP_COMMAND = Command("noop", 0, "noop_id", ThrottleBehavior.FORCE)
     STOP_COMMAND = Command("stop", 0, "stop_id", ThrottleBehavior.FORCE)
 
@@ -222,7 +223,7 @@ class CommandSender(threading.Thread):
         ):
             return
         # Do not requeue if the queue is too large
-        if self.cmd_queue.qsize() >= 10:
+        if self.cmd_queue.qsize() >= CommandSender.MAX_QUEUE_SIZE:
             return
 
         if self.cmd_queue.qsize() > 0:
@@ -243,8 +244,8 @@ class CommandSender(threading.Thread):
         ):
             return
 
-        # No more than 10 commands in the retry queue
-        if len(self.retry_queue) >= 10:
+        # No more than MAX_QUEUE_SIZE commands in the retry queue
+        if len(self.retry_queue) >= CommandSender.MAX_QUEUE_SIZE:
             return
 
         if not self.is_cmd_requeued(command):
@@ -261,18 +262,20 @@ class CommandSender(threading.Thread):
 
         if self.__throttle(cmd.throttle_ms):
             # If an instance last requeued command succeeds to execute,
-            # reset the previous requed command state.
+            # reset the previous requeued command state, so that it can
+            # continue to get requeued
             if cmd.cmd_id == self.prev_requeued_cmd.cmd_id:
                 self.prev_requeued_cmd = CommandSender.NOOP_COMMAND
             return cmd
         else:
-            if cmd.throttle_behavior == ThrottleBehavior.DROP:
+            if cmd.throttle_behavior is ThrottleBehavior.DROP or \
+               cmd.throttle_behavior is ThrottleBehavior.DEFAULT:
                 return CommandSender.NOOP_COMMAND
-            elif cmd.throttle_behavior == ThrottleBehavior.FORCE:
+            elif cmd.throttle_behavior is ThrottleBehavior.FORCE:
                 return cmd
-            elif cmd.throttle_behavior == ThrottleBehavior.REQUEUE_BACK:
+            elif cmd.throttle_behavior is ThrottleBehavior.REQUEUE_BACK:
                 self.requeue_back(cmd)
-            elif cmd.throttle_behavior == ThrottleBehavior.REQUEUE_TOP:
+            elif cmd.throttle_behavior is ThrottleBehavior.REQUEUE_TOP:
                 self.requeue_front(cmd)
         return CommandSender.NOOP_COMMAND
 
