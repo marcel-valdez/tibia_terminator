@@ -51,11 +51,11 @@ class LogEntry():
 
 
 class StatsLogger():
-    def __init__(self):
-        self.run_view = None
+    def __init__(self, run_view = None):
+        self.run_view = run_view
 
     def log_action(self, debug_level: int, msg: str):
-        if self.run_view is not None:
+        if self.run_view:
             self.run_view.add_log(msg, debug_level)
 
     def set_debug_line_1(self, msg: str):
