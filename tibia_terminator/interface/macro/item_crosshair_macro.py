@@ -127,24 +127,10 @@ class SingleItemCrosshairMacro(ClientMacro):
             cmd_id=cmd_id or f"ITEM_CROSSHAIR_{hotkey}",
             throttle_behavior=throttle_behavior,
         )
-        self.hotkey = hotkey
-        self.__action = action
+        self.__item_action = action
 
     def _client_action(self, tibia_wid):
-        self.__action(tibia_wid)
-
-    def hook_hotkey(self, *args, **kwargs):
-        if self.hotkey_hook is None:
-            # timeout parameter controls how long between each key in the
-            # hotkey combination, default=1
-            self.hotkey_hook = keyboard.add_hotkey(
-                self.hotkey, self._action, timeout=0.5
-            )
-
-    def unhook_hotkey(self, *args, **kwargs):
-        if self.hotkey_hook is not None:
-            keyboard.remove_hotkey(self.hotkey_hook)
-            self.hotkey_hook = None
+        self.__item_action(tibia_wid)
 
 
 class ItemCrosshairMacro:

@@ -73,16 +73,34 @@ class Macro:
         self.hotkey_hook = None
         self.key_event_type = key_event_type
         self.suppress = suppress
+        self.modifiers_clean = set(map(lambda n: n.lower().strip(), self.modifiers))
+        self.key_clean = self.key.lower().strip()
 
     def __action(self, event: KeyboardEvent):
+        # NOTE: This approach cannot handle combinations of normal keys without
+        # actual modifiers. e.g. a+s or a+b keys.
+        #
+        # To get that to work we need to use the keyboard.add_hotkey, however
+        # some keys have issues in that they trigger the keyboard.add_hotkey listener
+        # on more than one key, for example the h key and backspace key trigger the same
+        # event. Therefore we can't support 'normal' key combinations for the
+        # moment until we figure out a way to get around that bug.
+        #
+        # For reference see the implementation of item_crosshair_macro.py at commit
+        # b17f108f1355f1de5f9bd88e5dc3a30f1ba5a873
         if event.event_type != self.key_event_type:
             return
 
         if len(self.modifiers) == 0 and len(event.modifiers) > 0:
             return
 
-        if self.modifiers.issubset(set(event.modifiers or [])):
-            self._action()
+        if self.modifiers_clean.issubset(set(event.modifiers or [])):
+            event_key_clean = event.name.lower().strip()
+            if (
+                event_key_clean in self.modifiers_clean
+                or event_key_clean == self.key_clean
+            ):
+                self._action()
 
     def _action(self, event: KeyboardEvent):
         pass
@@ -166,5 +184,5 @@ class ClientMacro(Macro):
             cmd_type=self.command_type,
             throttle_ms=self.throttle_ms,
             cmd_id=self.cmd_id,
-            throttle_behavior=self.throttle_behavior
+            throttle_behavior=self.throttle_behavior,
         )
