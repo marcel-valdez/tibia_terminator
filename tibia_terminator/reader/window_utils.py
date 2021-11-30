@@ -9,7 +9,7 @@ import PIL.Image  # python-imaging
 import PIL.ImageStat  # python-imaging
 import os
 
-from typing import Union
+from typing import Union, List
 
 
 def get_debug_level():
@@ -35,6 +35,7 @@ class Key:
     SHIFT = "Shift_L"
     HOME = "Home"
 
+
 class WindowGeometry:
     window: int
     x: int
@@ -43,42 +44,45 @@ class WindowGeometry:
     height: int
     screen: int
 
-def get_window_geometry(wid: Union[str, int]) -> WindowGeometry:
-    """Get the Tibia window id belonging to the process with PID."""
-    debug("/usr/bin/xdotool getwindowgeometry --shell %s" % (wid))
-    stdout = subprocess.check_output(
-        ["/usr/bin/xdotool", "getwindowgeometry", "--shell", str(wid)], stderr=subprocess.STDOUT
-    )
-    debug(stdout)
-    result = WindowGeometry()
-    geometry_str: str = stdout.decode("utf-8")
-    for line in geometry_str.split(os.linesep):
+
+def parse_bash_variables_to_object(dst: object, bash_variables: str) -> None:
+    for line in bash_variables.split(os.linesep):
         clean_line = line.strip().lower()
         if clean_line:
-            attr_name = clean_line[0:clean_line.index('=')]
-            attr_value = int(clean_line[clean_line.index('=')+1:])
-            result.__setattr__(attr_name, attr_value)
-    return result
+            attr_name = clean_line[0 : clean_line.index("=")]
+            attr_value = int(clean_line[clean_line.index("=") + 1 :])
+            dst.__setattr__(attr_name, attr_value)
+    return dst
+
+
+def run_cmd(cmd: List[str], debug_level=2) -> str:
+    debug(" ".join(cmd), debug_level)
+    stdout = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+    debug(stdout, debug_level)
+    # TODO: In windows / mac this encoding may be a different value
+    return stdout.decode("utf-8")
+
+
+def get_window_geometry(wid: Union[str, int]) -> WindowGeometry:
+    """Get the window geometry for a given window id."""
+    geometry_str = run_cmd(
+        ["/usr/bin/xdotool", "getwindowgeometry", "--shell", str(wid)], debug_level=1
+    )
+    return parse_bash_variables_to_object(WindowGeometry(), geometry_str)
+
 
 def get_tibia_wid(pid: Union[str, int]) -> str:
     """Get the Tibia window id belonging to the process with PID."""
-    debug("/usr/bin/xdotool search --pid %s" % (pid))
-    wid = subprocess.check_output(
-        ["/usr/bin/xdotool", "search", "--pid", str(pid)], stderr=subprocess.STDOUT
-    )
-    debug(wid)
-    return wid.decode("utf-8").strip()
+    return run_cmd(
+        ["/usr/bin/xdotool", "search", "--pid", str(pid)], debug_level=1
+    ).strip()
 
 
-def focus_tibia(wid: str):
+def focus_tibia(wid: str) -> str:
     """Bring the tibia window to the front by focusing it."""
-    debug("/usr/bin/xdotool windowactivate --sync %s" % (wid))
-    wid = subprocess.check_output(
-        ["/usr/bin/xdotool", "windowactivate", "--sync", str(wid)],
-        stderr=subprocess.STDOUT,
-    )
-    debug(wid)
-    return wid
+    return run_cmd(
+        ["/usr/bin/xdotool", "windowactivate", "--sync", str(wid)], debug_level=1
+    ).strip()
 
 
 def rgb_color_to_hex_str(rgb_color: str) -> str:
@@ -119,7 +123,7 @@ def get_pixel_color_slow(wid: str, x: int, y: int) -> str:
         pixel_rgb_image.close()
 
 
-def matches_screen_slow(wid, coords, color_spec):
+def matches_screen_slow(wid, coords, color_spec) -> bool:
     def get_pixel_fn(coords):
         return get_pixel_color_slow(wid, *coords)
 
@@ -130,32 +134,26 @@ def matches_screen_slow(wid, coords, color_spec):
     return match
 
 
-def send_key(wid: str, key: str):
+def send_key(wid: str, key: str) -> None:
     # synchronously send the keystroke
-    debug("/usr/bin/xdotool key --window %s %s" % (wid, key))
-    output = subprocess.check_output(
-        ["/usr/bin/xdotool", "key", "--window", str(wid), str(key)],
-        stderr=subprocess.STDOUT,
-    )
+    output = run_cmd(
+        ["/usr/bin/xdotool", "key", "--window", str(wid), str(key)]
+    ).strip()
 
-    if output is not None and output != "":
+    if output:
         print(output)
 
 
-def send_text(wid: str, text: str):
-    debug(f"/usr/bin/xdotool type --window %s --delay 250 <text>" % (wid))
-    output = subprocess.check_output(
-        ["/usr/bin/xdotool", "type", "--window", str(wid), "--delay", "250", text],
-        stderr=subprocess.STDOUT,
-    )
-
-    if output is not None and output != "":
+def send_text(wid: str, text: str) -> None:
+    output = run_cmd(
+        ["/usr/bin/xdotool", "type", "--window", str(wid), "--delay", "250", text]
+    ).strip()
+    if output:
         print(output)
 
 
-def left_click(wid: str, x: int, y: int):
-    debug("/usr/bin/xdotool mousemove --window %s --sync %s %s" % (wid, x, y))
-    output = subprocess.check_output(
+def left_click(wid: str, x: int, y: int) -> None:
+    mousemove_output = run_cmd(
         [
             "/usr/bin/xdotool",
             "mousemove",
@@ -164,28 +162,26 @@ def left_click(wid: str, x: int, y: int):
             "--sync",
             str(x),
             str(y),
-        ],
-        stderr=subprocess.STDOUT,
-    )
-    if output is not None and output != "":
-        print(output)
-    debug("/usr/bin/xdotool click --window %s --delay 50 1" % (wid))
-    output = subprocess.check_output(
-        ["/usr/bin/xdotool", "click", "--window", str(wid), "--delay", "50", "1"],
-        stderr=subprocess.STDOUT,
-    )
-    if output is not None and output != "":
-        print(output)
+        ]
+    ).strip()
+    if mousemove_output:
+        print(mousemove_output)
+
+    click_output = run_cmd(
+        ["/usr/bin/xdotool", "click", "--window", str(wid), "--delay", "50", "1"]
+    ).strip()
+    if click_output:
+        print(click_output)
 
 
 class ScreenReader:
     """Reads pixels in the screen."""
 
     def __init__(
-            self,
-            tibia_wid: int = None,
-            screen: Xlib.protocol.display.Screen = None,
-            display: Xlib.display.Display = None
+        self,
+        tibia_wid: int = None,
+        screen: Xlib.protocol.display.Screen = None,
+        display: Xlib.display.Display = None,
     ):
         self.screen = screen
         self.display = display
@@ -197,8 +193,7 @@ class ScreenReader:
         self.screen = self.display.screen()
         if self.tibia_wid:
             self.tibia_window = Xlib.xobject.drawable.Window(
-                self.display.display,
-                self.tibia_wid
+                self.display.display, self.tibia_wid
             )
 
     def close(self):
@@ -209,9 +204,7 @@ class ScreenReader:
 
     def get_pixel_rgb_bytes_xlib(self, x: int, y: int):
         window = self.tibia_window or self.screen.root
-        return window.get_image(
-            x, y, 1, 1, Xlib.X.ZPixmap, 0xFFFFFFFF
-        )
+        return window.get_image(x, y, 1, 1, Xlib.X.ZPixmap, 0xFFFFFFFF)
 
     def get_pixel_color(self, x: int, y: int):
         pixel_rgb_res = self.get_pixel_rgb_bytes_xlib(x, y)
