@@ -11,6 +11,8 @@ from tibia_terminator.reader.window_utils import (get_tibia_wid, focus_tibia,
                                                   send_key, send_text,
                                                   left_click,
                                                   get_pixel_color_slow, Key)
+from tibia_terminator.schemas.reader.login_screen_schema import LoginScreenSpec
+from tibia_terminator.schemas.reader.common import CoordColor, Coord
 
 parser = argparse.ArgumentParser(description='Tibia reconnector')
 parser.add_argument('pid', help='The PID of Tibia.')
@@ -36,19 +38,30 @@ parser.add_argument('--max_wait',
                     dest='max_wait_minutes',
                     default=120)
 
+"""
+Expected 43fd55 (Coord(x=480, y=310)) but found 4e75ae
+Expected a9684c (Coord(x=1531, y=713)) but found a5eefd
+Expected b85955 (Coord(x=482, y=546)) but found 3a5b90
+Expected 84a3b7 (Coord(x=1132, y=316)) but found 142131
+"""
 DEBUG_LEVEL = 0
-SCREEN_SPECS = {"logged_out": ["84a3b7", "a9684c", "4f3d55", "b85955"]}
-SCREEN_COORDS = [(1132, 316), (1531, 713), (480, 310), (482, 546)]
+# TODO: Make these configurable through JSON
+LOGIN_SCREEN_SPEC = LoginScreenSpec(
+    north=CoordColor(Coord(480, 310),"4e75ae"),
+    south=CoordColor(Coord(1531,713),"a5eefd"),
+    left=CoordColor(Coord(482, 546), "3a5b90"),
+    right=CoordColor(Coord(1132, 316), "142131"),
+    email_field=Coord(989, 477),
+    password_field=Coord(973, 506),
+    login_btn=Coord(1040, 610),
+    char_list_ok_btn=Coord(1226, 725)
+)
 CREDENTIALS_SCHEMA = CredentialsSchema()
 LOGGED_IN_EXIT_STATUS = 0
 LOGGED_OUT_EXIT_STATUS = 2
 FAILURE_EXIT_STATUS = 1
 # Login screen coordinates
-# TODO: Make these configurable through JSON
-EMAIL_FIELD_XY = (989, 477)
-PASSWD_FIELD_XY = (973, 506)
-LOGIN_BTN_XY =  (1040, 610)
-CHAR_LIST_OK_BTN_XY = (1226, 725)
+
 
 
 def debug(msg, debug_level=0):
@@ -57,22 +70,23 @@ def debug(msg, debug_level=0):
 
 
 class IntroScreenReader():
-    def is_screen(self, tibia_wid: str, name: str) -> bool:
-        def get_color(xy):
-            return get_pixel_color_slow(tibia_wid, xy[0], xy[1])
+    def get_color(self, tibia_wid, coord: Coord) -> str:
+            return get_pixel_color_slow(tibia_wid, coord.x, coord.y)
 
-        pixels = list(map(get_color, SCREEN_COORDS))
+    def is_logged_out_screen(self, tibia_wid) -> bool:
         match = True
-        for i in range(0, 4):
-            if pixels[i] != SCREEN_SPECS[name][i]:
-                debug(
-                    '%s (%s) is not equal to %s' %
-                    (pixels[i], i, SCREEN_SPECS[name][i]), 1)
+        for spec in [
+                LOGIN_SCREEN_SPEC.north,
+                LOGIN_SCREEN_SPEC.south,
+                LOGIN_SCREEN_SPEC.left,
+                LOGIN_SCREEN_SPEC.right
+        ]:
+            actual_color = self.get_color(tibia_wid, spec.coord)
+            if actual_color != spec.color:
+                debug(f'Expected {spec.color} ({spec.coord}) but found {actual_color}')
                 match = False
-        return match
 
-    def is_logged_out_screen(self, tibia_wid):
-        return self.is_screen(tibia_wid, 'logged_out')
+        return match
 
 
 def check_ingame(tibia_wid: str) -> bool:
@@ -105,8 +119,8 @@ def clear_text_field(tibia_wid, x: int, y: int):
     time.sleep(0.25)
 
 
-def overwrite_text_field(tibia_wid, x: int, y: int, new_text: str):
-    clear_text_field(tibia_wid, x, y)
+def overwrite_text_field(tibia_wid, coord: Coord, new_text: str):
+    clear_text_field(tibia_wid, coord.x, coord.y)
     send_text(tibia_wid, new_text)
     time.sleep(0.1)
 
@@ -119,18 +133,26 @@ def login(tibia_wid, credential: Credential):
     time.sleep(0.25)
     # fill-in email field
     overwrite_text_field(
-        tibia_wid, EMAIL_FIELD_XY[0], EMAIL_FIELD_XY[1], credential.user
+        tibia_wid, LOGIN_SCREEN_SPEC.email_field , credential.user
     )
     # fill-in password
     overwrite_text_field(
-        tibia_wid, PASSWD_FIELD_XY[0], PASSWD_FIELD_XY[1], credential.password
+        tibia_wid, LOGIN_SCREEN_SPEC.password_field, credential.password
     )
     # Click [Login] button
-    left_click(tibia_wid, LOGIN_BTN_XY[0], LOGIN_BTN_XY[1])
+    left_click(
+        tibia_wid,
+        LOGIN_SCREEN_SPEC.login_btn.x,
+        LOGIN_SCREEN_SPEC.login_btn.y
+    )
     time.sleep(5)
     #   - Focus should be on the 1st char on the list.
     # Click [OK] in char menu
-    left_click(tibia_wid, CHAR_LIST_OK_BTN_XY[0], CHAR_LIST_OK_BTN_XY[1])
+    left_click(
+        tibia_wid,
+        LOGIN_SCREEN_SPEC.char_list_ok_btn.x,
+        LOGIN_SCREEN_SPEC.char_list_ok_btn.y
+    )
     #   - Spin-wait for 30 seconds waiting for character to be in-game
     for _ in range(1, 30):
         if check_ingame(tibia_wid):
