@@ -61,13 +61,13 @@ EMERGENCY_ACTION_BAR_AMULET_COORDS = [
 
 EQUIPPED_AMULET_COORDS = [
     # upper pixel
-    (1768, 259),
+    (1768, 281),
     # lower pixel
-    (1768, 272),
+    (1768, 294),
     # left pixel
-    (1758, 261),
+    (1758, 283),
     # right pixel
-    (1779, 261)
+    (1779, 283)
 ]
 
 EMERGENCY_ACTION_BAR_RING_CENTER_X = 1215
@@ -89,13 +89,13 @@ EMERGENCY_ACTION_BAR_RING_COORDS = [
 
 EQUIPPED_RING_COORDS = [
     # upper pixel
-    (1768, 333),
+    (1768, 355),
     # lower pixel
-    (1768, 338),
+    (1768, 360),
     # left pixel
-    (1765, 337),
+    (1765, 359),
     # right pixel
-    (1770, 337)
+    (1770, 359)
 ]
 
 MAGIC_SHIELD_SPEC = {
