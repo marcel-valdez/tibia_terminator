@@ -1,0 +1,110 @@
+{
+    "action_bar": {
+        "square_len": 55,
+        "amulet": { "x": 10, "y": 11 },
+        "ring": { "x": 12, "y": 13 },
+        "emergency_amulet": { "x": 14, "y": 15 },
+        "emergency_ring": { "x": 16, "y": 17 },
+        "magic_shield": {
+            "coord": { "x": 18, "y": 19 },
+            "recently_cast_color": ["000"],
+            "off_cooldown_color": ["111"]
+        }
+    },
+    "char_equipment": {
+        "amulet": {
+            "north": { "x": 20, "y": 21 },
+            "south": { "x": 22, "y": 23 },
+            "left": { "x": 24, "y": 25 },
+            "right": { "x": 26, "y": 27 }
+        },
+        "ring": {
+            "north": { "x": 28, "y": 29 },
+            "south": { "x": 30, "y": 31 },
+            "left": { "x": 32, "y": 33 },
+            "right": { "x": 34, "y": 35 }
+        }
+    },
+    "item_repository": {
+        "rings": [
+            {
+                "name": "might.ring",
+                "equipped_colors": [
+                    {
+                        "north": "000",
+                        "south": "000",
+                        "left": "000",
+                        "right": "000"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "000",
+                        "south": "000",
+                        "left": "000",
+                        "right": "000"
+                    }
+                ]
+            },
+            {
+                "name": "EMPTY",
+                "equipped_colors": [
+                    {
+                        "north": "CCC"
+                        "south": "CCC",
+                        "left": "CCC",
+                        "right": "CCC"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "CCC",
+                        "south": "CCC",
+                        "left": "CCC",
+                        "right": "CCC"
+                    }
+                ]
+            }
+        ],
+        "amulets": [
+            {
+                "name": "SSA",
+                "equipped_colors": [
+                    {
+                        "north": "000",
+                        "south": "000",
+                        "left": "000",
+                        "right": "000"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "000",
+                        "south": "000",
+                        "left": "000",
+                        "right": "000"
+                    }
+                ]
+            },
+            {
+                "name": "EMPTY",
+                "equipped_colors": [
+                    {
+                        "north": "CCC"
+                        "south": "CCC",
+                        "left": "CCC",
+                        "right": "CCC"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "CCC",
+                        "south": "CCC",
+                        "left": "CCC",
+                        "right": "CCC"
+                    }
+                ]
+            }
+        ]
+    }
+}

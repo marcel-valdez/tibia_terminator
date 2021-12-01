@@ -4,20 +4,26 @@ Requires python-xlib, python-imaging and imagemagick
 """
 
 import subprocess
+import os
+
+from typing import Union, List, Tuple, Iterable
+
 import Xlib.display  # python-xlib
 import PIL.Image  # python-imaging
 import PIL.ImageStat  # python-imaging
-import os
 
-from typing import Union, List
+from tibia_terminator.schemas.reader.common import Coord
+
+
+XY = Tuple[int, int]
 
 
 def get_debug_level():
     level = os.environ.get("DEBUG")
     if level is not None and isinstance(level, str) and level.isdigit():
         return int(level)
-    else:
-        return -1
+
+    return -1
 
 
 def debug(msg, debug_level=0):
@@ -101,15 +107,15 @@ def get_pixel_rgb_bytes_imagemagick(wid: str, x: int, y: int):
         "8",
         "rgba:-",
     ]
-    pixel_snapshot_proc = subprocess.Popen(
+    with subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-    pixel_rgb_bytes, stderr = pixel_snapshot_proc.communicate()
-    if pixel_snapshot_proc.returncode != 0:
-        print(str(stderr) + "\nUnable to fetch window snapshot.")
-        raise Exception(str(stderr) + "\nUnable to fetch window snapshot.")
+    ) as pixel_snapshot_proc:
+        pixel_rgb_bytes, stderr = pixel_snapshot_proc.communicate()
+        if pixel_snapshot_proc.returncode != 0:
+            print(str(stderr) + "\nUnable to fetch window snapshot.")
+            raise Exception(str(stderr) + "\nUnable to fetch window snapshot.")
 
-    return pixel_rgb_bytes
+        return pixel_rgb_bytes
 
 
 def get_pixel_color_slow(wid: str, x: int, y: int) -> str:
@@ -123,9 +129,9 @@ def get_pixel_color_slow(wid: str, x: int, y: int) -> str:
         pixel_rgb_image.close()
 
 
-def matches_screen_slow(wid, coords, color_spec) -> bool:
-    def get_pixel_fn(coords):
-        return get_pixel_color_slow(wid, *coords)
+def matches_screen_slow(wid, coords: Iterable[XY], color_spec: List[str]) -> bool:
+    def get_pixel_fn(coord: XY):
+        return get_pixel_color_slow(wid, *coord)
 
     pixels = list(map(get_pixel_fn, coords))
     match = True
@@ -206,6 +212,9 @@ class ScreenReader:
         window = self.tibia_window or self.screen.root
         return window.get_image(x, y, 1, 1, Xlib.X.ZPixmap, 0xFFFFFFFF)
 
+    def get_coord_color(self, coord: Coord) -> str:
+        return self.get_pixel_color(coord.x, coord.y)
+
     def get_pixel_color(self, x: int, y: int):
         pixel_rgb_res = self.get_pixel_rgb_bytes_xlib(x, y)
 
@@ -222,28 +231,31 @@ class ScreenReader:
         pixel_rgb_color = PIL.ImageStat.Stat(pixel_rgb_image).mean
         return rgb_color_to_hex_str(pixel_rgb_color).lower()
 
-    def get_pixel_color_slow(self, wid, x, y):
+    def get_pixel_color_slow(self, x: int, y: int) -> str:
         # We do not offset this, since it uses values relative to the
         # window.
-        return get_pixel_color_slow(wid, x, y)
+        return get_pixel_color_slow(self.tibia_wid, x, y)
 
-    def get_pixels_slow(self, wid, coords):
-        def get_pixel(coord):
-            return self.get_pixel_color_slow(wid, *coord)
+    def get_coord_color_slow(self, coord: Coord) -> str:
+        return self.get_pixel_color_slow(self.tibia_wid, coord.x, coord.y)
+
+    def get_pixels_slow(self, coords: Iterable[XY]) -> List[str]:
+        def get_pixel(coord: XY) -> str:
+            return self.get_pixel_color_slow(*coord)
 
         return list(map(get_pixel, coords))
 
-    def get_pixels(self, coords):
-        def get_pixel(coord):
+    def get_pixels(self, coords: Iterable[XY]) -> List[str]:
+        def get_pixel(coord: XY) -> str:
             return self.get_pixel_color(*coord)
 
         return list(map(get_pixel, coords))
 
-    def pixels_match(self, pixels_a, pixels_b):
+    def pixels_match(self, pixels_a: List[str], pixels_b: List[str]) -> bool:
         match = True
         for i in range(0, len(pixels_a)):
             match &= str(pixels_a[i]).lower() == str(pixels_b[i]).lower()
         return match
 
-    def matches_screen(self, coords, color_spec):
+    def matches_screen(self, coords: Iterable[XY], color_spec: List[str]) -> bool:
         return self.pixels_match(self.get_pixels(coords), color_spec)
