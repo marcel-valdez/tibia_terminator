@@ -5,15 +5,15 @@ import sys
 
 from tibia_terminator.schemas.common import FactorySchema
 
-def main(schema: FactorySchema,config_file: str) -> None:
+def main(schema: FactorySchema, config_file: str) -> None:
     if not os.path.exists(config_file):
         sys.stderr.writelines([f"File {config_file} does not exist."])
         sys.exit(1)
 
-        spec: FactorySchema = schema.loadf(config_file)
-        print(spec)
-        sys.stderr.writelines(["Successfully parsed the config file."])
-        sys.exit(0)
+    spec = schema.loadf(config_file)
+    print(spec)
+    sys.stderr.writelines(["Successfully parsed the config file."])
+    sys.exit(0)
 
 def parse_args(schema: FactorySchema):
     parser = argparse.ArgumentParser(
@@ -26,5 +26,5 @@ def parse_args(schema: FactorySchema):
         type=str
     )
     args = parser.parse_args()
-    main(args.config_file)
+    main(schema, args.config_file)
 
