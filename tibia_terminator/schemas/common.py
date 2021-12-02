@@ -6,7 +6,7 @@ from string import Formatter
 from uuid import uuid1
 
 from marshmallow import Schema, fields, ValidationError, post_load, pre_load
-from typing import TypeVar, Generic, Callable, Dict, Any
+from typing import TypeVar, Generic, Callable, Dict, Any, NamedTuple
 
 T = TypeVar("T")
 
@@ -118,3 +118,29 @@ class ResolvableField(Generic[K], fields.Field, ResolvableMixin):
             raise TypeError(f"Type error while deserializing {value} for field {attr}", e)
         finally:
             self.pop_context(data)
+
+
+def isnamedtupleinstance(x):
+    _type = type(x)
+    bases = _type.__bases__
+    if len(bases) != 1 or bases[0] != tuple:
+        return False
+
+    _fields = getattr(_type, '_fields', None)
+    if not isinstance(_fields, tuple):
+        return False
+
+    return all(type(i) == str for i in _fields)
+
+
+def to_dict(obj: NamedTuple) -> Any:
+    if isinstance(obj, dict):
+        return {key: to_dict(value) for key, value in obj.items()}
+    if isinstance(obj, list):
+        return [to_dict(value) for value in obj]
+    if isnamedtupleinstance(obj):
+        return {key: to_dict(value) for key, value in obj._asdict().items()}
+    if isinstance(obj, tuple):
+        return tuple(to_dict(value) for value in obj)
+
+    return obj

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3.8
 
+from typing import NamedTuple, List
 from marshmallow import fields
-from typing import Optional, NamedTuple, List, Union, Dict, Any
 from tibia_terminator.schemas.common import FactorySchema
 from tibia_terminator.schemas.reader.common import Coord, CoordSchema
 
 # POPOs
+
 
 class MagicShieldSpec(NamedTuple):
     coord: Coord
@@ -41,6 +42,7 @@ class ItemEntry(NamedTuple):
     equipped_colors: List[ItemColors]
     action_bar_colors: List[ItemColors]
 
+
 class ItemRepositorySpec(NamedTuple):
     rings: List[ItemEntry]
     amulets: List[ItemEntry]
@@ -58,6 +60,7 @@ class TibiaWindowSpec(NamedTuple):
 
 
 # marshmallow spec
+
 
 class MagicShieldSpecSchema(FactorySchema[MagicShieldSpec]):
     ctor = MagicShieldSpec
