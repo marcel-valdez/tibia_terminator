@@ -3,7 +3,7 @@
 import sys
 import time
 
-from typing import Tuple, Dict, Any, Callable, Iterable, List, Union
+from typing import Tuple, Dict, Any, Callable, Iterable, List, Union, NamedTuple
 
 from tibia_terminator.common.lazy_evaluator import immediate, FutureValue, TaskLoop
 from tibia_terminator.reader.color_spec import (
@@ -37,134 +37,7 @@ class MagicShieldStatus:
 UNKNOWN_ITEM = ItemEntry(
     name="unknown",
     equipped_colors=ItemColors("FFF", "FFF", "FFF", "FFF"),
-    action_bar_colors=ItemColors("FFF", "FFF", "FFF", "FFF")
-)
-
-
-# Playable area set at Y: 696 (698 on laptop) with 2 cols on left and 2 cols
-# on right.
-# resolution: 1920 x 1080
-TIBIA_WINDOW_SPEC = TibiaWindowSpec(
-    action_bar=ActionBarSpec(
-        square_len=36,
-        amulet_center=Coord(1214, 755),  # TODO: Determine x,y of this
-        ring_center=Coord(1179, 758),  # TODO: Determine x,y of this
-        emergency_amulet_center=Coord(1178, 719),
-        emergency_ring_center=Coord(1215, 722),
-        magic_shield=MagicShieldSpec(
-            coord=Coord(1285, 760),
-            recently_cast_color=["3730a"],
-            off_cooldown_color=["b9a022"],
-        ),
-    ),
-    char_equipment=CharEquipmentCoords(
-        amulet=EquipmentCoords(
-            north=Coord(1768, 281),
-            south=Coord(1768, 294),
-            left=Coord(1758, 283),
-            right=Coord(1779, 283),
-        ),
-        ring=EquipmentCoords(
-            north=Coord(1768, 355),
-            south=Coord(1768, 360),
-            left=Coord(1765, 359),
-            right=Coord(1770, 359),
-        ),
-    ),
-    item_repository=ItemRepositorySpec(
-        rings=[
-            ItemEntry(
-                name="might.ring",
-                equipped_colors=[
-                    ItemColors(north="e0bc4a", south="000", left="faed75", right="000")
-                ],
-                action_bar_colors=[
-                    ItemColors(
-                        north="9b8132", south="d1af44", left="faed75", right="d5b246"
-                    )
-                ],
-            ),
-            ItemEntry(
-                name="empty.ring",
-                equipped_colors=[
-                    ItemColors(
-                        north="3c3f42", south="222528", left="2d3033", right="424548"
-                    )
-                ],
-                action_bar_colors=[
-                    ItemColors(north="FFF", south="FFF", left="FFF", right="FFF")
-                ],
-            ),
-        ],
-        amulets=[
-            ItemEntry(
-                name="ssa.amulet",
-                equipped_colors=[
-                    ItemColors(
-                        north="252625", south="3c3c3c", left="202020", right="202020"
-                    )
-                ],
-                action_bar_colors=[
-                    ItemColors(
-                        north="b9935f", south="3c3c3c", left="444444", right="454545"
-                    )
-                ],
-            ),
-            ItemEntry(
-                name="glooth.amulet",
-                equipped_colors=[
-                    ItemColors(north="252625", south="000", left="595647", right="000")
-                ],
-                action_bar_colors=[
-                    ItemColors(north="000", south="404040", left="736f5c", right="000")
-                ],
-            ),
-            ItemEntry(
-                name="sta.amulet",
-                equipped_colors=[
-                    ItemColors(
-                        north="252626", south="1b42c", left="252626", right="a3f19"
-                    )
-                ],
-                action_bar_colors=[
-                    ItemColors(
-                        north="4d170", south="1ad552", left="d421d", right="93215"
-                    )
-                ],
-            ),
-            ItemEntry(
-                name="leviathan.amulet",
-                equipped_colors=[ItemColors("252626", "262627", "252626", "232424")],
-                action_bar_colors=[ItemColors("b4e2f0", "032c1", "444444", "454545")],
-            ),
-            ItemEntry(
-                name="shockwave.amulet",
-                equipped_colors=[
-                    ItemColors("252626", "60719", "91d28", "232424"),
-                    ItemColors("252626", "6891a", "7e61b", "232424"),
-                    ItemColors("252626", "5a517", "87b26", "232424"),
-                    ItemColors("252626", "60719", "91d28", "232424"),
-                ],
-                action_bar_colors=[
-                    ItemColors("61719", "404040", "89d27", "54312"),
-                    ItemColors("59515", "404040", "6f519", "5d616"),
-                    ItemColors("68a1f", "404040", "7da24", "5e719"),
-                    ItemColors("57311", "404040", "7b81c", "5c514"),
-                ],
-            ),
-            ItemEntry(
-                name="empty.amulet",
-                equipped_colors=[
-                    ItemColors(
-                        north="252625", south="46484a", left="1f2225", right="4a4c4e"
-                    )
-                ],
-                action_bar_colors=[
-                    ItemColors(north="FFF", south="FFF", left="FFF", right="FFF")
-                ],
-            ),
-        ],
-    ),
+    action_bar_colors=ItemColors("FFF", "FFF", "FFF", "FFF"),
 )
 
 
@@ -222,8 +95,8 @@ NOOP: Callable[[str], None] = lambda x: None
 class EquipmentReader(ScreenReader):
     def __init__(
         self,
-        tibia_wid: int = None,
-        tibia_window_spec: TibiaWindowSpec = TIBIA_WINDOW_SPEC,
+        tibia_wid: int,
+        tibia_window_spec: TibiaWindowSpec
     ):
         super().__init__(tibia_wid=tibia_wid)
         self.tibia_window_spec = tibia_window_spec
@@ -292,7 +165,7 @@ class EquipmentReader(ScreenReader):
             north=Coord(center.x, center.y - delta),
             south=Coord(center.x, center.y + delta),
             left=Coord(center.x - delta, center.y),
-            right=Coord(center.x + delta, center.y)
+            right=Coord(center.x + delta, center.y),
         )
 
     def matches_screen_item(
@@ -391,13 +264,13 @@ class EquipmentReader(ScreenReader):
             self.gen_action_bar_ring_coords(
                 self.tibia_window_spec.action_bar.emergency_ring_center
             ),
-            self.lookup_ring_by_name(name).action_bar_colors
+            self.lookup_ring_by_name(name).action_bar_colors,
         )
 
     def is_ring(self, name: ItemName) -> bool:
         return self.matches_screen_item(
             self.tibia_window_spec.char_equipment.ring,
-            self.lookup_ring_by_name(name).equipped_colors
+            self.lookup_ring_by_name(name).equipped_colors,
         )
 
     def is_ring_empty(self):
@@ -435,13 +308,13 @@ class EquipmentReader(ScreenReader):
             self.gen_action_bar_amulet_coords(
                 self.tibia_window_spec.action_bar.emergency_amulet_center
             ),
-            self.lookup_amulet_by_name(name).action_bar_colors
+            self.lookup_amulet_by_name(name).action_bar_colors,
         )
 
     def is_amulet(self, name: ItemName):
         return self.matches_screen_item(
             self.tibia_window_spec.char_equipment.amulet,
-            self.lookup_amulet_by_name(name).equipped_colors
+            self.lookup_amulet_by_name(name).equipped_colors,
         )
 
     def is_amulet_empty(self) -> bool:
@@ -462,129 +335,13 @@ class EquipmentReader(ScreenReader):
         return MagicShieldStatus.ON_COOLDOWN
 
 
-class EquipmentReaderSlow(EquipmentReader):
-    def __init__(self, tibia_wid: int):
-        super().__init__(tibia_wid=tibia_wid)
-
-    def get_pixels(self, coords: Iterable[XY]) -> List[str]:
-        return self.get_pixels_slow(coords)
-
-
-def time_perf(title: str, fn: Callable):
-    start = time.time() * 1000
-    value = fn()
-    end = time.time() * 1000
-    elapsed = end - start
-    print(title)
-    print(f"  Result: {value}")
-    print(f"  Elapsed time: {elapsed} ms")
-
-
-def check_specs(tibia_wid: int):
-    eq_reader = EquipmentReader(tibia_wid)
-    eq_reader.open()
-    try:
-        print("###############\n" "Action bar amulet color spec\n" "###############\n")
-        time_perf(
-            "eq_reader.read_action_bar_emergency_amulet_colors",
-            eq_reader.read_action_bar_emergency_amulet_colors
-        )
-        for amulet in TIBIA_WINDOW_SPEC.item_repository.amulets:
-            def is_action_amulet():
-                return eq_reader.is_emergency_action_bar_amulet(amulet.name)
-            time_perf(f"\nis_emergency_action_bar_amulet({amulet.name})", is_action_amulet)
-
-        time_perf(
-            "\nget_emergency_action_bar_amulet_name",
-            eq_reader.get_emergency_action_bar_amulet_name
-        )
-
-        print("\n###############\n" "Action bar ring color spec\n" "###############\n")
-        time_perf(
-            "\neq_reader.read_action_bar_emergency_ring_colors",
-            eq_reader.read_action_bar_emergency_ring_colors
-        )
-        for ring in TIBIA_WINDOW_SPEC.item_repository.rings:
-            def is_action_ring() -> bool:
-                return eq_reader.is_emergency_action_bar_ring(ring.name)
-            time_perf(f"\nis_emergency_action_bar_ring({ring.name})", is_action_ring)
-
-        time_perf(
-            "\nget_emergency_action_bar_ring_name",
-            eq_reader.get_emergency_action_bar_ring_name
-        )
-
-        print("\n###############\n" "Amulet color spec\n" "###############\n")
-        time_perf(
-            "eq_reader.read_equipped_amulet_colors",
-            eq_reader.read_equipped_amulet_colors
-        )
-        for amulet in TIBIA_WINDOW_SPEC.item_repository.amulets:
-            def is_amulet():
-                return eq_reader.is_amulet(amulet.name)
-            time_perf(f"\nis_amulet({amulet.name})", is_amulet)
-
-        time_perf(
-            "\nget_equipped_amulet_name",
-            eq_reader.get_equipped_amulet_name
-        )
-
-        print("\n###############\n" "Ring color spec\n" "###############\n")
-        time_perf(
-            "eq_reader.read_equipped_ring_colors",
-            eq_reader.read_equipped_ring_colors
-        )
-        for ring in TIBIA_WINDOW_SPEC.item_repository.rings:
-            def is_ring():
-                return eq_reader.is_ring(ring.name)
-            time_perf(f"\nis_ring({ring.name})", is_ring)
-
-        time_perf(
-            "\nget_equipped_ring_name",
-            eq_reader.get_equipped_ring_name
-        )
-
-        print("\n###############\n" "Magic shield spec\n" "###############\n")
-        time_perf(
-            f"eq_reader.get_coord_color({TIBIA_WINDOW_SPEC.action_bar.magic_shield.coord})",
-            lambda: eq_reader.get_coord_color(TIBIA_WINDOW_SPEC.action_bar.magic_shield.coord)
-        )
-        time_perf("\nget_magic_shield_status()", eq_reader.get_magic_shield_status)
-    finally:
-        eq_reader.close()
-
-
-def check_slot_empty(tibia_wid: int, slot):
-    eq_reader = EquipmentReaderSlow(tibia_wid)
-    if slot == "ring":
-        return eq_reader.is_ring_empty()
-    elif slot == "amulet":
-        return eq_reader.is_amulet_empty()
-    else:
-        raise Exception("Unknown slot: {}".format(slot))
-
-
-def check_magic_shield_status(tibia_wid: int):
-    eq_reader = EquipmentReaderSlow(tibia_wid)
-    print(eq_reader.get_magic_shield_status())
-
-
-def check_equipment_status(tibia_wid: int):
-    eq_reader = EquipmentReader(tibia_wid=tibia_wid)
-    eq_reader.open()
-
-    def read():
-        return f"{eq_reader.get_equipment_status()}"
-
-    try:
-        time_perf("check_equipment_status", read)
-    finally:
-        eq_reader.close()
-
 if __name__ == "__main__":
     import argparse
     import json
 
+    from tibia_terminator.schemas.reader.interface_config_schema import (
+        TibiaWindowSpecSchema,
+    )
 
     parser = argparse.ArgumentParser(
         description="Reads equipment status for the Tibia window"
@@ -596,9 +353,10 @@ if __name__ == "__main__":
         action="store_true",
     )
     parser.add_argument(
-        "--print_config",
-        help="Prints the hardcoded configuration file as a big JSON",
-        action="store_true"
+        "--tibia_window_config_path",
+        help="Path to the tibia window config JSON file",
+        type=str,
+        required=True,
     )
     wid_group = parser.add_argument_group()
     wid_group.add_argument("tibia_wid", help="Window id of the tibia client.", type=int)
@@ -610,27 +368,157 @@ if __name__ == "__main__":
     )
     wid_group_options.add_argument(
         "--check_slot_empty",
-        help=("Returns exit code 0 if it is empty, 1 otherwise.\n" "Options: ring, amulet"),
+        help=(
+            "Returns exit code 0 if it is empty, 1 otherwise.\n" "Options: ring, amulet"
+        ),
         type=str,
         default=None,
     )
     wid_group_options.add_argument(
-        "--magic_shield_status", help="Prints the magic shield status.", action="store_true"
+        "--magic_shield_status",
+        help="Prints the magic shield status.",
+        action="store_true",
     )
 
+    class EquipmentReaderSlow(EquipmentReader):
+        def __init__(self, tibia_wid: int, tibia_window_spec: TibiaWindowSpec):
+            super().__init__(tibia_wid, tibia_window_spec)
+
+        def get_pixels(self, coords: Iterable[XY]) -> List[str]:
+            return self.get_pixels_slow(coords)
+
+    def time_perf(title: str, fn: Callable) -> None:
+        start = time.time() * 1000
+        value = fn()
+        end = time.time() * 1000
+        elapsed = end - start
+        print(title)
+        print(f"  Result: {value}")
+        print(f"  Elapsed time: {elapsed} ms")
+
+    def check_specs(tibia_wid: int, tibia_window_spec: TibiaWindowSpec) -> None:
+        eq_reader = EquipmentReader(tibia_wid, tibia_window_spec)
+        eq_reader.open()
+        try:
+            print(
+                "###############\n" "Action bar amulet color spec\n" "###############\n"
+            )
+            time_perf(
+                "eq_reader.read_action_bar_emergency_amulet_colors",
+                eq_reader.read_action_bar_emergency_amulet_colors,
+            )
+            for amulet in tibia_window_spec.item_repository.amulets:
+
+                def is_action_amulet():
+                    return eq_reader.is_emergency_action_bar_amulet(amulet.name)
+
+                time_perf(
+                    f"\nis_emergency_action_bar_amulet({amulet.name})", is_action_amulet
+                )
+
+            time_perf(
+                "\nget_emergency_action_bar_amulet_name",
+                eq_reader.get_emergency_action_bar_amulet_name,
+            )
+
+            print(
+                "\n###############\n" "Action bar ring color spec\n" "###############\n"
+            )
+            time_perf(
+                "\neq_reader.read_action_bar_emergency_ring_colors",
+                eq_reader.read_action_bar_emergency_ring_colors,
+            )
+            for ring in tibia_window_spec.item_repository.rings:
+
+                def is_action_ring() -> bool:
+                    return eq_reader.is_emergency_action_bar_ring(ring.name)
+
+                time_perf(
+                    f"\nis_emergency_action_bar_ring({ring.name})", is_action_ring
+                )
+
+            time_perf(
+                "\nget_emergency_action_bar_ring_name",
+                eq_reader.get_emergency_action_bar_ring_name,
+            )
+
+            print("\n###############\n" "Amulet color spec\n" "###############\n")
+            time_perf(
+                "eq_reader.read_equipped_amulet_colors",
+                eq_reader.read_equipped_amulet_colors,
+            )
+            for amulet in tibia_window_spec.item_repository.amulets:
+
+                def is_amulet():
+                    return eq_reader.is_amulet(amulet.name)
+
+                time_perf(f"\nis_amulet({amulet.name})", is_amulet)
+
+            time_perf("\nget_equipped_amulet_name", eq_reader.get_equipped_amulet_name)
+
+            print("\n###############\n" "Ring color spec\n" "###############\n")
+            time_perf(
+                "eq_reader.read_equipped_ring_colors",
+                eq_reader.read_equipped_ring_colors,
+            )
+            for ring in tibia_window_spec.item_repository.rings:
+
+                def is_ring():
+                    return eq_reader.is_ring(ring.name)
+
+                time_perf(f"\nis_ring({ring.name})", is_ring)
+
+            time_perf("\nget_equipped_ring_name", eq_reader.get_equipped_ring_name)
+
+            print("\n###############\n" "Magic shield spec\n" "###############\n")
+            time_perf(
+                f"eq_reader.get_coord_color({tibia_window_spec.action_bar.magic_shield.coord})",
+                lambda: eq_reader.get_coord_color(
+                    tibia_window_spec.action_bar.magic_shield.coord
+                ),
+            )
+            time_perf("\nget_magic_shield_status()", eq_reader.get_magic_shield_status)
+        finally:
+            eq_reader.close()
+
+    def check_slot_empty(tibia_wid: int, tibia_window_spec: TibiaWindowSpec, slot):
+        eq_reader = EquipmentReaderSlow(tibia_wid, tibia_window_spec)
+        if slot == "ring":
+            return eq_reader.is_ring_empty()
+        if slot == "amulet":
+            return eq_reader.is_amulet_empty()
+
+        raise Exception("Unknown slot: {}".format(slot))
+
+    def check_magic_shield_status(tibia_wid: int, tibia_window_spec: TibiaWindowSpec):
+        eq_reader = EquipmentReaderSlow(tibia_wid, tibia_window_spec)
+        print(eq_reader.get_magic_shield_status())
+
+    def check_equipment_status(tibia_wid: int, tibia_window_spec: TibiaWindowSpec):
+        eq_reader = EquipmentReader(tibia_wid, tibia_window_spec)
+        eq_reader.open()
+
+        def read():
+            return f"{eq_reader.get_equipment_status()}"
+
+        try:
+            time_perf("check_equipment_status", read)
+        finally:
+            eq_reader.close()
+
     def main(args):
+        schema = TibiaWindowSpecSchema()
+        spec = schema.loadf(args.tibia_window_config_path)
         if args.check_specs is True:
-            check_specs(args.tibia_wid)
+            check_specs(args.tibia_wid, spec)
         elif args.check_slot_empty is not None:
-            if check_slot_empty(args.tibia_wid, args.check_slot_empty):
+            if check_slot_empty(args.tibia_wid, spec, args.check_slot_empty):
                 sys.exit(0)
             else:
                 sys.exit(1)
         elif args.magic_shield_status:
-            check_magic_shield_status(args.tibia_wid)
+            check_magic_shield_status(args.tibia_wid, spec)
         elif args.equipment_status:
-            check_equipment_status(args.tibia_wid)
-        elif args.print_config:
-            json.dump(TIBIA_WINDOW_SPEC, indent=2)
+            check_equipment_status(args.tibia_wid, spec)
 
     main(parser.parse_args())

@@ -10,6 +10,9 @@ from collections import deque
 from typing import List, Iterable, NamedTuple, Optional
 
 from tibia_terminator.char_configs.char_config_loader import load_configs
+from tibia_terminator.schemas.reader.interface_config_schema import (
+    TibiaWindowSpec, TibiaWindowSpecSchema
+)
 from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfigSchema
 from tibia_terminator.schemas.char_config_schema import BattleConfig, CharConfig
 from tibia_terminator.schemas.app_config_schema import AppConfigsSchema, AppConfig
@@ -100,6 +103,15 @@ def build_parser(src_parser: Optional[ArgumentParser] = None) -> ArgumentParser:
         type=int,
         default=0,
         required=False
+    )
+    parser.add_argument(
+        "--tibia_window_config_path",
+        help=(
+            "File with the configuration for the tibia window interface. See:"
+            "char_configs/tibia_window_config.json for an example"
+        ),
+        type=str,
+        required=True
     )
     return parser
 
@@ -460,16 +472,17 @@ class TibiaTerminator:
 
 
 def curses_main(
-    cliwin,
-    pid,
-    app_config_path: str,
-    char_configs_path: str,
-    enable_mana: bool,
-    enable_hp: bool,
-    enable_magic_shield: bool,
-    enable_speed: bool,
-    only_monitor: bool,
-    x_offset: int = 0
+        cliwin,
+        pid,
+        app_config_path: str,
+        char_configs_path: str,
+        tibia_window_config_path: str,
+        enable_mana: bool,
+        enable_hp: bool,
+        enable_magic_shield: bool,
+        enable_speed: bool,
+        only_monitor: bool,
+        x_offset: int = 0
 ):
     if pid is None or pid == "":
         raise Exception(
@@ -501,8 +514,10 @@ def curses_main(
     char_configs = list(load_configs(char_configs_path))
     if len(char_configs) == 0:
         raise Exception(
-            f"No .charconfig files found in {char_configs_path}", file=sys.stderr
+            f"No .charconfig files found in {char_configs_path}"
         )
+    tibia_window_spec_schema = TibiaWindowSpecSchema()
+    tibia_window_spec = tibia_window_spec_schema.loadf(tibia_window_config_path)
     xdotool_proc = XdotoolProcess()
     xdotool_proc.start()
     try:
@@ -514,7 +529,10 @@ def curses_main(
             client, char_configs[0], char_configs[0].battle_configs[0], hotkeys_config
         )
         char_reader = CharReader(MemoryReader(pid, print_async))
-        eq_reader = EquipmentReader(tibia_wid=int(tibia_wid))
+        eq_reader = EquipmentReader(
+            tibia_wid=int(tibia_wid),
+            tibia_window_spec=tibia_window_spec
+        )
         loot_macro = LootMacro(client, hotkeys_config, x_offset)
         tibia_terminator = TibiaTerminator(
             tibia_wid,
@@ -548,6 +566,7 @@ def main(args: Namespace):
         args.pid,
         args.app_config_path,
         args.char_configs_path,
+        args.tibia_window_config_path,
         enable_mana=not args.no_mana,
         enable_hp=not args.no_hp,
         enable_magic_shield=not args.no_magic_shield,
