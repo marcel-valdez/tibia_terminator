@@ -129,7 +129,7 @@ def print_item_spec(
     amulet_name: Optional[str],
     is_emergency: bool,
 ) -> None:
-    tibia_wid = int(get_tibia_wid(tibia_pid))
+    tibia_wid = int(get_tibia_wid(tibia_pid, 0))
     schema = TibiaWindowSpecSchema()
     tibia_window_spec = schema.loadf(tibia_window_config_path)
     repository_spec = generate_repository_spec(

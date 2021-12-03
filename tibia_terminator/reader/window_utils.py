@@ -27,7 +27,7 @@ def get_debug_level():
 
 
 def debug(msg, debug_level=0):
-    if get_debug_level() <= debug_level:
+    if get_debug_level() >= debug_level:
         print(msg)
 
 
@@ -77,10 +77,10 @@ def get_window_geometry(wid: Union[str, int]) -> WindowGeometry:
     return parse_bash_variables_to_object(WindowGeometry(), geometry_str)
 
 
-def get_tibia_wid(pid: Union[str, int]) -> str:
+def get_tibia_wid(pid: Union[str, int], debug_level=1) -> str:
     """Get the Tibia window id belonging to the process with PID."""
     return run_cmd(
-        ["/usr/bin/xdotool", "search", "--pid", str(pid)], debug_level=1
+        ["/usr/bin/xdotool", "search", "--pid", str(pid)], debug_level
     ).strip()
 
 
