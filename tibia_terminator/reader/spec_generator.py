@@ -67,8 +67,8 @@ def generate_repository_spec(
             amulets = [
                 ItemEntry(
                     name=amulet_name,
-                    equipped_colors=[equipped_amulet_colors],
-                    action_bar_colors=[action_amulet_colors],
+                    equipped_colors=equipped_amulet_colors,
+                    action_bar_colors=action_amulet_colors,
                 )
             ]
 
@@ -91,8 +91,8 @@ def generate_repository_spec(
             rings = [
                 ItemEntry(
                     name=ring_name,
-                    equipped_colors=[equipped_ring_colors],
-                    action_bar_colors=[action_ring_colors],
+                    equipped_colors=equipped_ring_colors,
+                    action_bar_colors=action_ring_colors,
                 )
             ]
 
