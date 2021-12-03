@@ -16,41 +16,45 @@
     "action_bar": {
         // Length of one side of the action squares
         "square_len": 36,
-        // x,y coordinate of the center of the amulet square
+        // x,y coordinate of the center of the amulet action bar square
         "amulet_center": {
             "x": 1214,
             "y": 755
         },
-        // x,y coordinate of the center of the ring square
+        // x,y coordinate of the center of the ring action bar square
         // Preferably use the center of the ring itself, rather than
         // the center of the action bar square.
-        //
         "ring_center": {
             "x": 1179,
             "y": 758
         },
-        // x,y coordinate of the center of the emergency amulet square
+        // x,y coordinate of the center of the emergency amulet action bar
+        // square
         "emergency_amulet_center": {
             "x": 1178,
             "y": 719
         },
-        // x,y coordinate of the center of the emergency ring square
+        // x,y coordinate of the center of the emergency ring action bar square
         "emergency_ring_center": {
             "x": 1215,
             "y": 722
         },
-        // Configuration for the magic shield action square in the action bar
+        // Configuration for the magic shield action bar square
         "magic_shield": {
             // x,y coordinate of a pixel in the magic shield action bar square
+            //
+            // Preferably use a pixel that is near the north section of the
+            // action bar square, such that it remains dark close the end of
+            // of the spells' cooldown.
             "coord": {
                 "x": 1285,
                 "y": 760
             },
             // Color of the pixel of the magic shield spell in the action bar
             // while it is in cooldown.
-            // Preferably use a pixel that is near the north section of the
-            // action bar square, such that it remains dark close the end of
-            // of the spells' cooldown.
+            //
+            // Note: Make sure to enable the cooldown animation in the Tibia
+            // client settings: Settings > Action Bars > Show Graphical Cooldown
             "recently_cast_color": [
                 "3730a"
             ],
