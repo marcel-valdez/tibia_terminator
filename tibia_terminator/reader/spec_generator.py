@@ -105,7 +105,23 @@ def generate_repository_spec(
 
 
 def print_repository_spec(spec: ItemRepositorySpec) -> None:
-    json.dump(to_dict(spec), fp=sys.stdout, indent=2)
+    if len(spec.amulets) > 0:
+        print(
+            ("// Copy-paste this into item_repository > amulets in your Tibia "
+             "window config JSON file"),
+            file=sys.stderr
+        )
+        json.dump(to_dict(spec.amulets[0]), fp=sys.stdout, indent=2)
+        print("")
+
+    if len(spec.rings) > 0:
+        print(
+            ("// Copy-paste this into item_repository > amulets in your Tibia "
+             "window config JSON file"),
+            file=sys.stderr
+        )
+        json.dump(to_dict(spec.rings[0]), fp=sys.stdout, indent=2)
+        print("")
 
 
 def print_item_spec(
