@@ -104,11 +104,10 @@ def generate_repository_spec(
         eq_reader.close()
 
 
-def print_repository_spec(spec: ItemRepositorySpec) -> None:
+def print_repository_spec(spec: ItemRepositorySpec, config_path: str) -> None:
     if len(spec.amulets) > 0:
         print(
-            ("// Copy-paste this into item_repository > amulets in your Tibia "
-             "window config JSON file"),
+            f"// Copy-paste this into item_repository > amulets in {config_path}",
             file=sys.stderr
         )
         json.dump(to_dict(spec.amulets[0]), fp=sys.stdout, indent=2)
@@ -116,8 +115,7 @@ def print_repository_spec(spec: ItemRepositorySpec) -> None:
 
     if len(spec.rings) > 0:
         print(
-            ("// Copy-paste this into item_repository > amulets in your Tibia "
-             "window config JSON file"),
+            f"// Copy-paste this into item_repository > rings in {config_path}",
             file=sys.stderr
         )
         json.dump(to_dict(spec.rings[0]), fp=sys.stdout, indent=2)
@@ -126,18 +124,18 @@ def print_repository_spec(spec: ItemRepositorySpec) -> None:
 
 def print_item_spec(
     tibia_pid: int,
-    tibia_window_config_file: str,
+    tibia_window_config_path: str,
     ring_name: Optional[str],
     amulet_name: Optional[str],
     is_emergency: bool,
 ) -> None:
     tibia_wid = int(get_tibia_wid(tibia_pid))
     schema = TibiaWindowSpecSchema()
-    tibia_window_spec = schema.loadf(tibia_window_config_file)
+    tibia_window_spec = schema.loadf(tibia_window_config_path)
     repository_spec = generate_repository_spec(
         tibia_wid, tibia_window_spec, ring_name, amulet_name, is_emergency
     )
-    print_repository_spec(repository_spec)
+    print_repository_spec(repository_spec, tibia_window_config_path)
 
 
 if __name__ == "__main__":
