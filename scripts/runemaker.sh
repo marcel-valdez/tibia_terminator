@@ -11,6 +11,7 @@ EQUIPMENT_READER_BIN="${SCRIPT_PATH}/equipment_reader.sh"
 RECONNECTOR_BIN="${SCRIPT_PATH}/reconnector.sh"
 APP_CONFIG_PATH="${TERMINATOR_PATH}/app_config.json"
 CREDENTIALS_PATH="${TERMINATOR_PATH}/credentials.json"
+TIBIA_WINDOW_CONFIG_PATH="$(dirname ${SCRIPT_PATH})/char_configs/tibia_window_config.json"
 
 # Interface interaction cofiguration values
 CAST_RUNE_SPELL_KEY='XF86Tools'  # F13
@@ -210,7 +211,9 @@ function is_out_of_souls_or_mana() {
 
 function is_ring_slot_empty() {
   local tibia_wid="$1"
-  "${EQUIPMENT_READER_BIN}" --check_slot_empty 'ring' "${tibia_wid}"
+  "${EQUIPMENT_READER_BIN}" --tibia_window_config_path "${TIBIA_WINDOW_CONFIG_PATH}" \
+                            --check_slot_empty 'ring' \
+                            "${tibia_wid}"
 }
 
 potions_seq_counter=0
@@ -447,7 +450,7 @@ function make_rune() {
 }
 
 function wait_for_mana() {
-  local tibia_wid=$1
+  local tibia_wid="$1"
   local total_sit_seconds=$(random ${min_wait_per_turn} ${max_wait_per_turn})
   # only if using mana potions
   echo
@@ -494,7 +497,7 @@ function login {
 }
 
 function manasit() {
-  local tibia_wid=$(get_tibia_wid)
+  local tibia_wid="$(get_tibia_wid)"
   local start_timestamp_ms=0
   while true; do
     if [[ "${credentials_profile}" ]] && is_logged_out; then
@@ -520,7 +523,7 @@ function manasit() {
 
     # focus tibia window
     if [[ "${refocus_tibia_to_make_rune}" ]]; then
-      focus_window ${tibia_wid}
+      focus_window "${tibia_wid}"
     fi
     sleep "0.$(random 210 550)s"
 
@@ -568,7 +571,7 @@ function manasit() {
       echo "We were disconnected. We will attempt login after 3-5 minutes."
       sleep "$(random 180 300)s"
       login
-      if [[ ${refill_char} ]]; then
+      if [[ "${refill_char}" ]]; then
         reopen_depot "${tibia_wid}"
       fi
     fi
@@ -664,7 +667,8 @@ function parse_args() {
       refill_char=1
       ;;
     *)
-      break
+        echo "Unknown parameter $1" >&2
+        exit 1
       ;;
     esac
     shift
