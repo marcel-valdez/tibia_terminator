@@ -157,10 +157,16 @@
                 // bar.
                 "action_bar_colors": [
                     {
-                        "north": "fff",
-                        "south": "fff",
-                        "left": "fff",
-                        "right": "fff"
+                        "north": "444444",
+                        "south": "94a2a7",
+                        "left": "747d88",
+                        "right": "444444"
+                    },
+                    {
+                        "north": "2c2d2d",
+                        "south": "242424",
+                        "left": "585b5e",
+                        "right": "585b5e"
                     }
                 ]
             },
@@ -181,6 +187,93 @@
                         "south": "d1af44",
                         "left": "faed75",
                         "right": "d5b246"
+                    }
+                ]
+            },
+            {
+                "name": "ring_of_healing.ring",
+                "equipped_colors": [
+                        {
+                            "north": "e0584a",
+                            "south": "000",
+                            "left": "fa9276",
+                            "right": "000"
+                        },
+                        {
+                            "north": "fbf36d",
+                            "south": "000",
+                            "left": "fa9276",
+                            "right": "000"
+                        }
+                ],
+                "action_bar_colors": [
+                        {
+                            "north": "9b3d33",
+                            "south": "d25144",
+                            "left": "fa9276",
+                            "right": "d65446"
+                        }
+                ]
+            },
+            {
+                "name": "butterfly.ring",
+                "equipped_colors": [
+                    {
+                        "north": "9bb6cc",
+                        "south": "000",
+                        "left": "798faa",
+                        "right": "2d3453"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "000",
+                        "south": "c9ecf7",
+                        "left": "798faa",
+                        "right": "000"
+                    }
+                ]
+            },
+            {
+                "name": "prismatic.ring",
+                "equipped_colors": [
+                    {
+                        "north": "66320",
+                        "south": "181919",
+                        "left": "ededce",
+                        "right": "353636"
+                    },
+                    {
+                        "north": "66320",
+                        "south": "181919",
+                        "left": "cc8fa",
+                        "right": "ffffab"
+                    },
+                    {
+                        "north": "ededce",
+                        "south": "181919",
+                        "left": "cc8fa",
+                        "right": "353636"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "000",
+                        "south": "454545",
+                        "left": "cc8fa",
+                        "right": "474747"
+                    },
+                    {
+                        "north": "000",
+                        "south": "454545",
+                        "left": "cc8fa",
+                        "right": "474747"
+                    },
+                    {
+                        "north": "000",
+                        "south": "454545",
+                        "left": "ededce",
+                        "right": "ededce"
                     }
                 ]
             }
@@ -321,6 +414,169 @@
                 ]
             },
             {
+                "name": "magma.amulet",
+                "equipped_colors": [
+                    {
+                        "north": "252625",
+                        "south": "51ee",
+                        "left": "964a0",
+                        "right": "000"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "4f4f4f",
+                        "south": "42f12",
+                        "left": "444444",
+                        "right": "454545"
+                    }
+                ]
+            },
+            {
+                "name": "theurgic.amulet",
+                "equipped_colors": [
+                    {
+                        "north": "252625",
+                        "south": "86fd87",
+                        "left": "000",
+                        "right": "202020"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "532b13",
+                        "south": "119d13",
+                        "left": "444444",
+                        "right": "7a614e"
+                    },
+                    {
+                        "north": "532b13",
+                        "south": "119d13",
+                        "left": "444444",
+                        "right": "7a614e"
+                    }
+                ]
+            },
+            {
+                "name": "terra.amulet",
+                "equipped_colors": [
+                    {
+                        "north": "252625",
+                        "south": "562a28",
+                        "left": "202020",
+                        "right": "202020"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "000",
+                        "south": "6b352e",
+                        "left": "444444",
+                        "right": "454545"
+                    }
+                ]
+            },
+            {
+                "name": "lightning.amulet",
+                "equipped_colors": [
+                    {
+                        "north": "252625",
+                        "south": "5e2763",
+                        "left": "000",
+                        "right": "000"
+                    },
+                    {
+                        "north": "252625",
+                        "south": "633ca3",
+                        "left": "000",
+                        "right": "000"
+                    },
+                    {
+                        "north": "252625",
+                        "south": "f9f6ff",
+                        "left": "000",
+                        "right": "000"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "000",
+                        "south": "826999",
+                        "left": "444444",
+                        "right": "454545"
+                    },
+                    {
+                        "north": "000",
+                        "south": "4a214a",
+                        "left": "444444",
+                        "right": "454545"
+                    },
+                    {
+                        "north": "000",
+                        "south": "4d275b",
+                        "left": "444444",
+                        "right": "454545"
+                    }
+                ]
+            },
+            {
+                "name": "werewolf.amulet",
+                "equipped_colors": [
+                    {
+                        "north": "252625",
+                        "south": "a111b",
+                        "left": "202020",
+                        "right": "202020"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "1b1a0",
+                        "south": "a111b",
+                        "left": "444444",
+                        "right": "1b1a0"
+                    }
+                ]
+            },
+            {
+                "name": "glacier.amulet",
+                "equipped_colors": [
+                    {
+                        "north": "252625",
+                        "south": "313131",
+                        "left": "202020",
+                        "right": "202020"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "4f4f4f",
+                        "south": "4d4d4d",
+                        "left": "444444",
+                        "right": "2f3fb0"
+                    }
+                ]
+            },
+            {
+                "name": "rainbow.amulet",
+                "equipped_colors": [
+                    {
+                        "north": "252625",
+                        "south": "11a91",
+                        "left": "202020",
+                        "right": "202020"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "1d11f",
+                        "south": "11a91",
+                        "left": "444444",
+                        "right": "1d11f"
+                    }
+                ]
+            },
+            {
                 "name": "empty.amulet",
                 "equipped_colors": [
                     {
@@ -332,10 +588,10 @@
                 ],
                 "action_bar_colors": [
                     {
-                        "north": "fff",
-                        "south": "fff",
-                        "left": "fff",
-                        "right": "fff"
+                        "north": "303030",
+                        "south": "1e1e1f",
+                        "left": "222223",
+                        "right": "26292c"
                     }
                 ]
             }
