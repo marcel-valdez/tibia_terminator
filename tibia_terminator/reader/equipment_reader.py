@@ -15,6 +15,9 @@ from tibia_terminator.reader.color_spec import (
 )
 from tibia_terminator.reader.window_utils import ScreenReader
 from tibia_terminator.schemas.reader.common import Coord
+from tibia_terminator.reader.item_repository_container import (
+    ItemRepositoryContainer
+)
 from tibia_terminator.schemas.reader.interface_config_schema import (
     TibiaWindowSpec,
     EquipmentCoords,
@@ -94,6 +97,9 @@ class EquipmentReader(ScreenReader):
     ):
         super().__init__(tibia_wid=tibia_wid)
         self.tibia_window_spec = tibia_window_spec
+        self.item_repository = ItemRepositoryContainer(
+            tibia_window_spec.item_repository
+        )
         self.task_loop = TaskLoop()
 
     def open(self):
@@ -175,56 +181,24 @@ class EquipmentReader(ScreenReader):
     # start: item lookup methods
 
     def lookup_ring_by_name(self, name: Union[str, ItemName]) -> ItemEntry:
-        rings = self.tibia_window_spec.item_repository.rings
-        ring_matches = tuple(filter(lambda r: r.name == str(name), rings))
-        if len(ring_matches) == 0:
-            raise Exception(f"Ring {name} has no specification in the configuration!")
-        if len(ring_matches) > 1:
-            raise Exception(
-                f"Ring {name} has multiple specification in the configuration!"
-            )
-        return ring_matches[0]
+        return self.item_repository.lookup_ring_by_name(name)
 
     def lookup_amulet_by_name(self, name: Union[str, ItemName]) -> ItemEntry:
-        amulets = self.tibia_window_spec.item_repository.amulets
-        amulet_matches = tuple(filter(lambda a: a.name == str(name), amulets))
-        if len(amulet_matches) == 0:
-            raise Exception(f"Amulet {name} has no specification in the configuration!")
-        if len(amulet_matches) > 1:
-            raise Exception(
-                f"Amulet {name} has multiple specification in the configuration!"
-            )
-        return amulet_matches[0]
+        return self.item_repository.lookup_amulet_by_name(name)
 
     def lookup_amulet_by_action_bar_colors(
-        self, actual_colors: ItemColors
+        self, colors: ItemColors
     ) -> ItemEntry:
-        for amulet in self.tibia_window_spec.item_repository.amulets:
-            for spec_colors in amulet.action_bar_colors:
-                if spec_colors == actual_colors:
-                    return amulet
-        return UNKNOWN_ITEM
+        return self.item_repository.lookup_amulet_by_action_bar_colors(colors)
 
-    def lookup_ring_by_action_bar_colors(self, actual_colors: ItemColors) -> ItemEntry:
-        for ring in self.tibia_window_spec.item_repository.rings:
-            for spec_colors in ring.action_bar_colors:
-                if spec_colors == actual_colors:
-                    return ring
-        return UNKNOWN_ITEM
+    def lookup_ring_by_action_bar_colors(self, colors: ItemColors) -> ItemEntry:
+        return self.item_repository.lookup_ring_by_action_bar_colors(colors)
 
-    def lookup_ring_by_equipped_colors(self, actual_colors: ItemColors) -> ItemEntry:
-        for ring in self.tibia_window_spec.item_repository.rings:
-            for spec_colors in ring.equipped_colors:
-                if spec_colors == actual_colors:
-                    return ring
-        return UNKNOWN_ITEM
+    def lookup_ring_by_equipped_colors(self, colors: ItemColors) -> ItemEntry:
+        return self.item_repository.lookup_ring_by_equipped_colors(colors)
 
-    def lookup_amulet_by_equipped_colors(self, actual_colors: ItemColors) -> ItemEntry:
-        for amulet in self.tibia_window_spec.item_repository.amulets:
-            for spec_colors in amulet.equipped_colors:
-                if spec_colors == actual_colors:
-                    return amulet
-        return UNKNOWN_ITEM
+    def lookup_amulet_by_equipped_colors(self, colors: ItemColors) -> ItemEntry:
+        return self.item_repository.lookup_amulet_by_equipped_colors(colors)
 
     # end: item lookup methods
 
