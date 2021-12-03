@@ -3,25 +3,23 @@
 import sys
 import time
 
-from typing import Tuple, Dict, Any, Callable, Iterable, List, Union, NamedTuple
+from typing import Tuple, Dict, Any, Callable, Iterable, List, Union
 
-from tibia_terminator.common.lazy_evaluator import immediate, FutureValue, TaskLoop
+from tibia_terminator.common.lazy_evaluator import (
+    immediate, FutureValue, TaskLoop
+)
 from tibia_terminator.reader.color_spec import (
     ItemName,
     AmuletName,
     RingName,
 )
-from tibia_terminator.reader.window_utils import ScreenReader, matches_screen_slow
+from tibia_terminator.reader.window_utils import ScreenReader
 from tibia_terminator.schemas.reader.common import Coord
 from tibia_terminator.schemas.reader.interface_config_schema import (
     TibiaWindowSpec,
     EquipmentCoords,
     ItemEntry,
     ItemColors,
-    ItemRepositorySpec,
-    ActionBarSpec,
-    MagicShieldSpec,
-    CharEquipmentCoords,
 )
 
 
@@ -41,7 +39,7 @@ UNKNOWN_ITEM = ItemEntry(
 )
 
 
-class EquipmentStatus:
+class EquipmentStatus(dict):
     @property
     def emergency_action_amulet(self):
         return self["emergency_action_amulet"]
@@ -72,10 +70,6 @@ class EquipmentStatus:
             f"  magic_shield_status: {self['magic_shield_status']}\n"
             "}\n"
         )
-
-
-class DictEquipmentStatus(dict, EquipmentStatus):
-    pass
 
 
 class FutureEquipmentStatus(EquipmentStatus):
@@ -235,6 +229,19 @@ class EquipmentReader(ScreenReader):
     # end: item lookup methods
 
     # start: read ring methods
+    def read_action_bar_ring_colors(self) -> ItemColors:
+        return self.read_equipment_colors(
+            self.gen_action_bar_ring_coords(
+                self.tibia_window_spec.action_bar.ring_center
+            )
+        )
+
+    def read_action_bar_amulet_colors(self) -> ItemColors:
+        return self.read_equipment_colors(
+            self.gen_action_bar_amulet_coords(
+                self.tibia_window_spec.action_bar.amulet_center
+            )
+        )
 
     def gen_action_bar_ring_coords(self, center: Coord) -> EquipmentCoords:
         return self.gen_square_coords(center, 3)

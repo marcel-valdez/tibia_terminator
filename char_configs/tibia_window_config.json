@@ -1,0 +1,344 @@
+// Use this file to specify the pixel coordinates and colors for the different
+// areas of the Tibia client.
+{
+    // This configuration was used for a Tibia Window setup with:
+    // - 2 columns left
+    // - 2 columns right
+    // - 3 action bars south
+    // - Top position mana & hp bars, with default style
+    // - Show XP bar and (1) skill bar
+    // - Resolution: 1920x1080
+    // - Full screen Tibia Window
+    // - Playable area height: 620 (south boundary at y=695)
+    //
+    // Action bar configuration
+    //
+    "action_bar": {
+        // Length of one side of the action squares
+        "square_len": 36,
+        // x,y coordinate of the center of the amulet square
+        "amulet_center": {
+            "x": 1214,
+            "y": 755
+        },
+        // x,y coordinate of the center of the ring square
+        // Preferably use the center of the ring itself, rather than
+        // the center of the action bar square.
+        //
+        "ring_center": {
+            "x": 1179,
+            "y": 758
+        },
+        // x,y coordinate of the center of the emergency amulet square
+        "emergency_amulet_center": {
+            "x": 1178,
+            "y": 719
+        },
+        // x,y coordinate of the center of the emergency ring square
+        "emergency_ring_center": {
+            "x": 1215,
+            "y": 722
+        },
+        // Configuration for the magic shield action square in the action bar
+        "magic_shield": {
+            // x,y coordinate of a pixel in the magic shield action bar square
+            "coord": {
+                "x": 1285,
+                "y": 760
+            },
+            // Color of the pixel of the magic shield spell in the action bar
+            // while it is in cooldown.
+            // Preferably use a pixel that is near the north section of the
+            // action bar square, such that it remains dark close the end of
+            // of the spells' cooldown.
+            "recently_cast_color": [
+                "3730a"
+            ],
+            // Color of the pixel of the magic shield spell in the action bar
+            // while it is off cooldown.
+            "off_cooldown_color": [
+                "b9a022"
+            ]
+        }
+    },
+    // Configuration for the pixels on the char equipment section (where the
+    // Tibia window shows the equipment you have on the char).
+    "char_equipment": {
+        // Four pixels on the amulet square in the char equipment section
+        // Preferably use pixels within the amulet square such that they cover
+        // a part of the amulet (rather than empty space within the amulet
+        // square).
+        "amulet": {
+            "north": {
+                "x": 1768,
+                "y": 281
+            },
+            "south": {
+                "x": 1768,
+                "y": 294
+            },
+            "left": {
+                "x": 1758,
+                "y": 283
+            },
+            "right": {
+                "x": 1779,
+                "y": 283
+            }
+        },
+        // Four pixels on the ring square in the char equipment section
+        // Preferably use pixels within the ring square such that they cover
+        // a part of the amulet (rather than empty space within the ring
+        // square).
+        "ring": {
+            "north": {
+                "x": 1768,
+                "y": 355
+            },
+            "south": {
+                "x": 1768,
+                "y": 360
+            },
+            "left": {
+                "x": 1765,
+                "y": 359
+            },
+            "right": {
+                "x": 1770,
+                "y": 359
+            }
+        }
+    },
+    // A repository of color profiles for the different items you'd like to
+    // you'd like to automatically equip / unequip.
+    //
+    // To generate the profile for an amulet / ring pair that are your emergency
+    // rings and amulets (e.g. might ring and ssa), run the following command:
+    // scripts/generate_color_profile.sh --tibia_pid <tibia PID> \
+    //     --ring_name <ring_name> --amulet_name <amulet_name> \
+    //     --tibia_window_config_file <path_to/tibia_window_config.json> \
+    //     --is_emergency
+    //
+    // If these are normal items (non-emergency), then use:
+    // scripts/generate_color_profile.sh --tibia_pid <tibia PID> \
+    //     --ring_name <ring_name> --amulet_name <amulet_name> \
+    //     --tibia_window_config_file <path_to/tibia_window_config.json>
+    //
+    // Example command to generate for the might ring and SSA duo:
+    // scripts/generate_color_profile.sh --tibia_pid 12345 \
+    //     --ring_name might.ring --amulet_name ssa.amulet \
+    //     --tibia_window_config_file "char_configs/tibia_window_config.json" \
+    //      --is_emergency
+    "item_repository": {
+        // The color profile for ring items you'd like automatically equip /
+        // unequip.
+        "rings": [
+            // empty.ring is a NECESSARY entry. To determine the color profile
+            // for the ring, execute the following command:
+            // scripts/generate_color_profile.sh <tibia PID> "empty.ring"
+            {
+                "name": "empty.ring",
+                // These are the colors for the pixels at the positions defined
+                // above  in char_equipment.ring.
+                // These colors represent the colors of the item when you equip
+                // them on your char.
+                "equipped_colors": [
+                    {
+                        "north": "3c3f42",
+                        "south": "222528",
+                        "left": "2d3033",
+                        "right": "424548"
+                    }
+                ],
+                // These are the colors for 4 pixels around the positions
+                // the pixel defined above in action_bar.emergency_ring_center
+                // or action_bar.ring_center
+                // These colors represent the colors of the item on the action
+                // bar.
+                "action_bar_colors": [
+                    {
+                        "north": "fff",
+                        "south": "fff",
+                        "left": "fff",
+                        "right": "fff"
+                    }
+                ]
+            },
+            {
+                // Name to identify the item
+                "name": "might.ring",
+                "equipped_colors": [
+                    {
+                        "north": "e0bc4a",
+                        "south": "000",
+                        "left": "faed75",
+                        "right": "000"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "9b8132",
+                        "south": "d1af44",
+                        "left": "faed75",
+                        "right": "d5b246"
+                    }
+                ]
+            }
+        ],
+        "amulets": [
+            {
+                "name": "ssa.amulet",
+                "equipped_colors": [
+                    {
+                        "north": "252625",
+                        "south": "3c3c3c",
+                        "left": "202020",
+                        "right": "202020"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "b9935f",
+                        "south": "3c3c3c",
+                        "left": "444444",
+                        "right": "454545"
+                    }
+                ]
+            },
+            {
+                "name": "glooth.amulet",
+                "equipped_colors": [
+                    {
+                        "north": "252625",
+                        "south": "000",
+                        "left": "595647",
+                        "right": "000"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "000",
+                        "south": "404040",
+                        "left": "736f5c",
+                        "right": "000"
+                    }
+                ]
+            },
+            {
+                "name": "sta.amulet",
+                "equipped_colors": [
+                    {
+                        "north": "252626",
+                        "south": "1b42c",
+                        "left": "252626",
+                        "right": "a3f19"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "4d170",
+                        "south": "1ad552",
+                        "left": "d421d",
+                        "right": "93215"
+                    }
+                ]
+            },
+            {
+                "name": "leviathan.amulet",
+                "equipped_colors": [
+                    {
+                        "north": "252626",
+                        "south": "262627",
+                        "left": "252626",
+                        "right": "232424"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "b4e2f0",
+                        "south": "032c1",
+                        "left": "444444",
+                        "right": "454545"
+                    }
+                ]
+            },
+            {
+                "name": "shockwave.amulet",
+                // You may specify multiple color profiles for items that have
+                // an animation while equipped or in the action bar (e.g.
+                // shockwave amulet, theurgic amulet, etc)
+                "equipped_colors": [
+                    {
+                        "north": "252626",
+                        "south": "60719",
+                        "left": "91d28",
+                        "right": "232424"
+                    },
+                    {
+                        "north": "252626",
+                        "south": "6891a",
+                        "left": "7e61b",
+                        "right": "232424"
+                    },
+                    {
+                        "north": "252626",
+                        "south": "5a517",
+                        "left": "87b26",
+                        "right": "232424"
+                    },
+                    {
+                        "north": "252626",
+                        "south": "60719",
+                        "left": "91d28",
+                        "right": "232424"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "61719",
+                        "south": "404040",
+                        "left": "89d27",
+                        "right": "54312"
+                    },
+                    {
+                        "north": "59515",
+                        "south": "404040",
+                        "left": "6f519",
+                        "right": "5d616"
+                    },
+                    {
+                        "north": "68a1f",
+                        "south": "404040",
+                        "left": "7da24",
+                        "right": "5e719"
+                    },
+                    {
+                        "north": "57311",
+                        "south": "404040",
+                        "left": "7b81c",
+                        "right": "5c514"
+                    }
+                ]
+            },
+            {
+                "name": "empty.amulet",
+                "equipped_colors": [
+                    {
+                        "north": "252625",
+                        "south": "46484a",
+                        "left": "1f2225",
+                        "right": "4a4c4e"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "fff",
+                        "south": "fff",
+                        "left": "fff",
+                        "right": "fff"
+                    }
+                ]
+            }
+        ]
+    }
+}
