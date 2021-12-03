@@ -1,12 +1,14 @@
 #!/usr/bin/env python3.8
 
-import commentjson as json
 import os
 from string import Formatter
 from uuid import uuid1
 
+from typing import TypeVar, Generic, Callable, Dict, Any, NamedTuple, Optional
+
+import commentjson as json
+
 from marshmallow import Schema, fields, ValidationError, post_load, pre_load
-from typing import TypeVar, Generic, Callable, Dict, Any, NamedTuple
 
 T = TypeVar("T")
 
@@ -56,7 +58,7 @@ class FactorySchema(Generic[T], Schema, ResolvableMixin):
         if not os.path.isfile(path):
             raise Exception(f"Path {path} does not exist.")
         data = None
-        with open(path, 'r') as file:
+        with open(path, 'r', encoding="utf-8") as file:
             data = json.load(file)
         return self.load(data)
 
@@ -67,7 +69,6 @@ K = TypeVar("K")
 
 
 class ResolvableField(Generic[K], fields.Field, ResolvableMixin):
-    cast_fn: Callable[[str], K]
 
     def __init__(self, cast_fn: Callable[[str], K], *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -81,22 +82,24 @@ class ResolvableField(Generic[K], fields.Field, ResolvableMixin):
     def resolve_str(self, value: str, context: Dict[str, Any]) -> str:
         value = eval(f'f"{value}"', {}, context)
         has_refs = any(
-            [tup[1] for tup in FORMATTER.parse(value) if tup[1] is not None])
+            tup[1] for tup in FORMATTER.parse(value) if tup[1] is not None
+        )
         if has_refs:
             return self.resolve_str(value, context)
-        else:
-            return value
 
-    def resolve_t(self, value_str: str, ref_str: str, field_name: str) -> K:
+        return value
+
+    def resolve_t(
+            self, value_str: str, ref_str: str, field_name: str
+    ) -> Optional[K]:
         value_str = value_str.strip()
         if self.cast_fn is not str and value_str == "None":
             if not self.allow_none:
                 raise ValidationError(f"Field {field_name} can't be null, but "
                                       f"{ref_str} resolves to null.")
-            else:
-                return None
-        else:
-            return self.cast_fn(value_str)
+            return None
+
+        return self.cast_fn(value_str)
 
     def _deserialize(self, value, attr, data, **kwargs):
         self.push_context(data)
@@ -104,16 +107,15 @@ class ResolvableField(Generic[K], fields.Field, ResolvableMixin):
             if value is None:
                 if not self.allow_none:
                     raise ValidationError("Field {attr} cannot be null.")
-                else:
-                    return value
+                return value
 
             if not isinstance(value, str):
                 return value
-            else:
-                value_str = self.resolve_str(value, self.gen_full_context())
-                resolved_value = self.resolve_t(value_str, value, attr)
-                data[attr] = resolved_value
-                return resolved_value
+
+            value_str = self.resolve_str(value, self.gen_full_context())
+            resolved_value = self.resolve_t(value_str, value, attr)
+            data[attr] = resolved_value
+            return resolved_value
         except TypeError as e:
             raise TypeError(f"Type error while deserializing {value} for field {attr}", e)
         finally:
