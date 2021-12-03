@@ -462,12 +462,18 @@ if __name__ == "__main__":
         finally:
             eq_reader.close()
 
-    def check_slot_empty(tibia_wid: int, tibia_window_spec: TibiaWindowSpec, slot):
-        eq_reader = EquipmentReaderSlow(tibia_wid, tibia_window_spec)
-        if slot == "ring":
-            return eq_reader.is_ring_empty()
-        if slot == "amulet":
-            return eq_reader.is_amulet_empty()
+    def check_slot_empty(
+            tibia_wid: int, tibia_window_spec: TibiaWindowSpec, slot: str
+    ) -> bool:
+        eq_reader = EquipmentReader(tibia_wid, tibia_window_spec)
+        eq_reader.open()
+        try:
+            if slot == "ring":
+                return eq_reader.is_ring_empty()
+            if slot == "amulet":
+                return eq_reader.is_amulet_empty()
+        finally:
+            eq_reader.close()
 
         raise Exception("Unknown slot: {}".format(slot))
 
