@@ -6,7 +6,7 @@ import curses
 from queue import Queue
 from threading import Thread, Lock
 from time import sleep
-from typing import List, Any, Callable
+from typing import List, Any, Callable, Optional
 
 from tibia_terminator.common.char_status import CharStatus
 from tibia_terminator.common.logger import get_debug_level
@@ -117,8 +117,8 @@ class ViewRenderer(Thread):
     def __init__(self, cliwin, cli_screen: CliScreen = None):
         super().__init__(daemon=True)
         self.cli_screen = cli_screen or CliScreen(cliwin)
-        self.view = None
-        self.next_view = None
+        self.view: Optional[View] = None
+        self.next_view: Optional[View] = None
         self.stopped = False
         self.transition = False
         self.lock = Lock()
@@ -129,30 +129,24 @@ class ViewRenderer(Thread):
     def run(self):
         while not self.stopped:
             if self.transition:
-                self.lock.acquire()
-                try:
+                with self.lock:
                     self.view = self.next_view
                     self.next_view = None
                     self.transition = False
-                finally:
-                    self.lock.release()
             self.render()
             # sleep 50 ms
             sleep(0.05)
 
     def change_views(self, view: View):
-        self.lock.acquire()
-        try:
+        with self.lock:
             self.transition = True
             self.next_view = view
-            if self.view is not None:
+            if self.view:
                 self.view.unset_modes(self.cli_screen)
             self.next_view.set_modes(self.cli_screen)
-        finally:
-            self.lock.release()
 
     def render(self):
-        if self.view is not None:
+        if self.view:
             self.view.render(self.cli_screen)
 
 
