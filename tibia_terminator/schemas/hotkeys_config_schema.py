@@ -30,6 +30,9 @@ class HotkeysConfig(NamedTuple):
     lower_left: str
     lower_right: str
     loot_button: str = "right"
+    potion_minor_heal: Optional[str] = None
+    potion_medium_heal: Optional[str] = None
+    potion_greater_heal: Optional[str] = None
     loot_modifier: Optional[str] = None
 
 
@@ -38,6 +41,9 @@ class HotkeysConfigSchema(FactorySchema[HotkeysConfig]):
     minor_heal = fields.Str(required=True)
     medium_heal = fields.Str(required=True)
     greater_heal = fields.Str(required=True)
+    potion_minor_heal = fields.Str(required=False, allow_none=True)
+    potion_medium_heal = fields.Str(required=False, allow_none=True)
+    potion_greater_heal = fields.Str(required=False, allow_none=True)
     haste = fields.Str(required=True)
     equip_ring = fields.Str(required=True)
     equip_amulet = fields.Str(required=True)

@@ -428,6 +428,48 @@ class ClientInterface:
             throttle_behavior=throttle_behavior,
         )
 
+    def drink_greater_heal(
+        self,
+        throttle_ms: int,
+        throttle_behavior: ThrottleBehavior = ThrottleBehavior.DROP,
+    ):
+        self.logger.log_action(2, f"drink_greater_heal {throttle_ms} ms")
+        self.send_keystroke_async(
+            CommandType.USE_ITEM,
+            throttle_ms,
+            self.hotkeys_config.potion_greater_heal,
+            cmd_id="DRINK_GREATER_HEAL",
+            throttle_behavior=throttle_behavior,
+        )
+
+    def drink_medium_heal(
+        self,
+        throttle_ms: int,
+        throttle_behavior: ThrottleBehavior = ThrottleBehavior.DROP,
+    ):
+        self.logger.log_action(2, f"drink_medium_heal {throttle_ms} ms")
+        self.send_keystroke_async(
+            CommandType.USE_ITEM,
+            throttle_ms,
+            self.hotkeys_config.potion_medium_heal,
+            cmd_id="DRINK_MEDIUM_HEAL",
+            throttle_behavior=throttle_behavior,
+        )
+
+    def drink_minor_heal(
+        self,
+        throttle_ms: int,
+        throttle_behavior: ThrottleBehavior = ThrottleBehavior.DROP,
+    ):
+        self.logger.log_action(2, f"drink_minor_heal {throttle_ms} ms")
+        self.send_keystroke_async(
+            CommandType.USE_ITEM,
+            throttle_ms,
+            self.hotkeys_config.potion_minor_heal,
+            cmd_id="DRINK_MINOR_HEAL",
+            throttle_behavior=throttle_behavior,
+        )
+
     def cast_haste(
         self,
         throttle_ms: int,

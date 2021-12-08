@@ -18,48 +18,69 @@ from tibia_terminator.schemas.directional_macro_config_schema import (
 
 class BattleConfig(NamedTuple):
     config_name: str
+
     hasted_speed: int
-    heal_at_missing: int
-    downtime_heal_at_missing: int
+
+    downtime_mana: int
     mana_hi: int
     mana_lo: int
     critical_mana: int
-    downtime_mana: int
+
+    heal_at_missing: int
+    downtime_heal_at_missing: int
     minor_heal: int
     medium_heal: int
     greater_heal: int
     emergency_hp_threshold: int
+
+    vocation: Optional[str] = None
+    potion_hp_hi: Optional[int] = None
+    potion_hp_lo: Optional[int] = None
+    potion_hp_critical: Optional[int] = None
+
     base: str = None
     hidden: bool = False
+
+    should_eat_food: bool = True
     should_equip_amulet: bool = True
     should_equip_ring: bool = True
-    should_eat_food: bool = True
+
     magic_shield_type: Optional[str] = "emergency"
     magic_shield_threshold: Optional[int] = None
-    equip_amulet_secs: Optional[int] = 1
-    equip_ring_secs: Optional[int] = 1
+
     item_crosshair_macros: Optional[List[ItemCrosshairMacroConfig]] = []
     directional_macros: Optional[List[DirectionalMacroConfig]] = []
+    equip_amulet_secs: Optional[int] = 1
+    equip_ring_secs: Optional[int] = 1
 
 
 class BattleConfigSchema(FactorySchema[BattleConfig]):
     ctor = BattleConfig
+    base = fields.Str(required=False)
     config_name = fields.Str(required=True)
     hidden = fields.Boolean(required=False, default=False)
+    vocation = fields.Str(required=False)
+
     hasted_speed = ResolvableField(float, required=True)
-    heal_at_missing = ResolvableField(float, required=True)
-    downtime_heal_at_missing = ResolvableField(float, required=True)
+    should_eat_food = fields.Boolean(default=True, required=False)
+
+    downtime_mana = ResolvableField(float, required=True)
     mana_hi = ResolvableField(float, required=True)
     mana_lo = ResolvableField(float, required=True)
     critical_mana = ResolvableField(float, required=True)
-    downtime_mana = ResolvableField(float, required=True)
+
+    downtime_heal_at_missing = ResolvableField(float, required=True)
+    heal_at_missing = ResolvableField(float, required=True)
     minor_heal = ResolvableField(float, required=True)
     medium_heal = ResolvableField(float, required=True)
     greater_heal = ResolvableField(float, required=True)
-    base = fields.Str(required=False)
+    potion_hp_hi = ResolvableField(float, required=False)
+    potion_hp_lo = ResolvableField(float, required=False)
+    potion_hp_critical = ResolvableField(float, required=False)
+
     should_equip_amulet = fields.Boolean(default=True, required=False)
     should_equip_ring = fields.Boolean(default=True, required=False)
-    should_eat_food = fields.Boolean(default=True, required=False)
+
     magic_shield_type = fields.Str(default="emergency", required=False, allow_none=True)
     magic_shield_threshold = ResolvableField(float, required=False)
     emergency_hp_threshold = ResolvableField(float, required=True)
