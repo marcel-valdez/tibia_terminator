@@ -27,6 +27,7 @@ DOWNTIME_HEAL_AT_MISING = 2
 MINOR_HEAL = 10
 MEDIUM_HEAL = 20
 GREATER_HEAL = 40
+EMERGENCY_HP_THRESHOLD = TOTAL_HP * 0.5
 CRITICAL_MANA = 10
 MANA_HI = TOTAL_MANA - 50
 MANA_LO = TOTAL_MANA - 25
@@ -300,7 +301,7 @@ class TestCharKeeper(TestCase):
         # given
         speed = BASE_SPEED - 10
         mana = TOTAL_MANA
-        hp = TOTAL_HP - MEDIUM_HEAL
+        hp = EMERGENCY_HP_THRESHOLD
         target = self.make_target()
         # when
         target.handle_speed_change(status(hp, mana, speed))
@@ -445,7 +446,7 @@ class TestCharKeeper(TestCase):
                          should_equip_amulet=True,
                          should_equip_ring=True,
                          should_eat_food=True,
-                         emergency_hp_threshold=TOTAL_HP * 0.5):
+                         emergency_hp_threshold=EMERGENCY_HP_THRESHOLD):
         return CharConfig(**{
             'char_name': 'test_char',
             'strong_hasted_speed': 500,
