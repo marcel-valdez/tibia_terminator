@@ -1,21 +1,35 @@
 """Keeps health points at healthy levels."""
 
+
 from tibia_terminator.keeper.emergency_reporter import EmergencyReporter
+from tibia_terminator.common.char_status import CharStatus
+from tibia_terminator.interface.client_interface import ClientInterface
 
 
 class HpKeeper:
-    def __init__(self, client, emergency_reporter: EmergencyReporter, total_hp,
-                 heal_at_missing, minor_heal, medium_heal,
-                 downtime_heal_at_missing):
+    def __init__(
+        self,
+        client: ClientInterface,
+        emergency_reporter: EmergencyReporter,
+        total_hp: int,
+        heal_at_missing: int,
+        minor_heal: int,
+        medium_heal: int,
+        greater_heal: int,
+        downtime_heal_at_missing: int,
+        emergency_hp_threshold: int,
+    ):
         self.client = client
         self.emergency_reporter = emergency_reporter
         self.total_hp = total_hp
         self.heal_at_missing = heal_at_missing
         self.minor_heal_threshold = minor_heal
         self.medium_heal_threshold = medium_heal
+        self.greater_heal_threshold = greater_heal
+        self.emergency_hp_threshold = emergency_hp_threshold
         self.downtime_heal_at_missing = downtime_heal_at_missing
 
-    def handle_status_change(self, char_status, is_downtime):
+    def handle_status_change(self, char_status: CharStatus, is_downtime: bool):
         self.update_max(char_status)
         missing_hp = self.get_missing_hp(char_status.hp)
         if missing_hp >= self.heal_at_missing:
@@ -37,13 +51,11 @@ class HpKeeper:
         if char_status.hp > self.total_hp:
             self.total_hp = char_status.hp
 
-    def get_missing_hp(self, hp):
-        return self.total_hp - hp
+    def get_missing_hp(self, current_hp: int) -> int:
+        return self.total_hp - current_hp
 
-    def is_healthy_hp(self, hp):
-        missing_hp = self.get_missing_hp(hp)
-        return missing_hp < self.heal_at_missing
+    def is_healthy_hp(self, current_hp: int) -> bool:
+        return self.get_missing_hp(current_hp) < self.heal_at_missing
 
-    def is_critical_hp(self, hp):
-        missing_hp = self.get_missing_hp(hp)
-        return missing_hp >= self.medium_heal_threshold
+    def is_critical_hp(self, current_hp: int) -> bool:
+        return current_hp <= self.emergency_hp_threshold
