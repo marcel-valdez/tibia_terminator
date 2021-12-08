@@ -211,9 +211,10 @@ function is_out_of_souls_or_mana() {
 
 function is_ring_slot_empty() {
   local tibia_wid="$1"
-  "${EQUIPMENT_READER_BIN}" --tibia_window_config_path "${TIBIA_WINDOW_CONFIG_PATH}" \
-                            --check_slot_empty 'ring' \
-                            "${tibia_wid}"
+  "${EQUIPMENT_READER_BIN}" \
+      --tibia_window_config_path "${TIBIA_WINDOW_CONFIG_PATH}" \
+      --check_slot_empty 'ring' \
+      "${tibia_wid}"
 }
 
 potions_seq_counter=0

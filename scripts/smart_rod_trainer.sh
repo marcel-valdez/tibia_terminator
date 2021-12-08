@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # requirements: xdotool
 
+
 SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 TERMINATOR_PATH="$(dirname ${SCRIPT_PATH})/tibia_terminator"
 PYTHONPATH="${PYTHONPATH}:${TERMINATOR_PATH}"
@@ -10,6 +11,7 @@ EQUIPMENT_READER_BIN="${SCRIPT_PATH}/equipment_reader.sh"
 APP_CONFIG_PATH="${TERMINATOR_PATH}/app_config.json"
 RECONNECTOR_BIN="${SCRIPT_PATH}/reconnector.sh"
 CREDENTIALS_PATH="${TERMINATOR_PATH}/credentials.json"
+TIBIA_WINDOW_CONFIG_PATH="$(dirname ${SCRIPT_PATH})/char_configs/tibia_window_config.json"
 
 # Interface interaction cofiguration values
 CAST_RUNE_SPELL_KEY='XF86Tools'  # F13
@@ -129,7 +131,10 @@ function equip_regen_ring() {
 }
 
 function is_ring_slot_empty() {
-  "${EQUIPMENT_READER_BIN}" --check_slot_empty 'ring' "${tibia_window}"
+    "${EQUIPMENT_READER_BIN}" \
+     --tibia_window_config_path "${TIBIA_WINDOW_CONFIG_PATH}" \
+     --check_slot_empty 'ring' \
+     "${tibia_window}"
 }
 
 function equip_soft_boots() {
