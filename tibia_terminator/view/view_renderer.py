@@ -12,11 +12,12 @@ from tibia_terminator.common.char_status import CharStatus
 from tibia_terminator.common.logger import get_debug_level
 
 parser = argparse.ArgumentParser(
-    description='Maually test the Tibia Terminator renderer.')
-parser.add_argument('--layout', help='Options: run, selection.')
+    description="Maually test the Tibia Terminator renderer."
+)
+parser.add_argument("--layout", help="Options: run, selection.")
 
 
-class CliScreen():
+class CliScreen:
     def __init__(self, cli):
         self.cli = cli
         self.lines = []
@@ -43,11 +44,11 @@ class CliScreen():
 
     def __resize(self, lines: List[str], new_len: int):
         while len(lines) < new_len:
-            lines.append('')
+            lines.append("")
 
     def print(self, line: str, row: int, col: int = 0):
         """Efficiently prints the line. It will only print the diff of what was
-           previously printed on that particular row."""
+        previously printed on that particular row."""
         if row >= len(self.lines):
             self.__resize(self.lines, row + 1)
 
@@ -83,15 +84,15 @@ class CliScreen():
             return -1
 
 
-class View():
+class View:
     TITLE_ROW = 0
     MAIN_OPTIONS_ROW = TITLE_ROW + 1
     ERRORS_ROW = MAIN_OPTIONS_ROW + 1
 
     def __init__(self):
-        self.title = ''
-        self.main_options = ''
-        self.error = ''
+        self.title = ""
+        self.main_options = ""
+        self.error = ""
 
     def render_header(self, cli_screen: CliScreen):
         cli_screen.print(self.title, View.TITLE_ROW)
@@ -153,13 +154,14 @@ class ViewRenderer(Thread):
 class ConfigSelectionView(View):
     CONFIG_SELECTION_ROW = View.ERRORS_ROW + 1
 
-    def __init__(self, config_options: List[str],
-                 input_cb: Callable[[View, int], None]):
+    def __init__(
+        self, config_options: List[str], input_cb: Callable[[View, int], None]
+    ):
         super().__init__()
         self.config_options = config_options
         self.input_cb = input_cb
         self.selection_title = "Type the number of the char config to load: "
-        self.user_input = ''
+        self.user_input = ""
         self.error_count = 0
 
     def set_modes(self, cli_screen: CliScreen):
@@ -184,8 +186,9 @@ class ConfigSelectionView(View):
     def render_content(self, cli_screen, subtitle):
         i = 0
         for config in self.config_options:
-            cli_screen.print(f"{i}: {config}",
-                             ConfigSelectionView.CONFIG_SELECTION_ROW + i + 1)
+            cli_screen.print(
+                f"{i}: {config}", ConfigSelectionView.CONFIG_SELECTION_ROW + i + 1
+            )
             i += 1
         cli_screen.print(subtitle, ConfigSelectionView.CONFIG_SELECTION_ROW)
 
@@ -204,32 +207,42 @@ class RunView(View):
     HP_ROW = MANA_ROW + 1
     SPEED_ROW = HP_ROW + 1
     MAGIC_SHIELD_ROW = SPEED_ROW + 1
-    EMERGENCY_ACTION_AMULET_ROW = MAGIC_SHIELD_ROW + 1
+    NORMAL_ACTION_AMULET_ROW = MAGIC_SHIELD_ROW + 1
+    NORMAL_ACTION_RING_ROW = NORMAL_ACTION_AMULET_ROW + 1
+    EMERGENCY_ACTION_AMULET_ROW = NORMAL_ACTION_RING_ROW + 1
     EMERGENCY_ACTION_RING_ROW = EMERGENCY_ACTION_AMULET_ROW + 1
-    EQUIPPED_AMULET_ROW = EMERGENCY_ACTION_RING_ROW + 1
+    TANK_ACTION_AMULET_ROW = EMERGENCY_ACTION_RING_ROW + 1
+    TANK_ACTION_RING_ROW = TANK_ACTION_AMULET_ROW + 1
+    EQUIPPED_AMULET_ROW = TANK_ACTION_RING_ROW + 1
     EQUIPPED_RING_ROW = EQUIPPED_AMULET_ROW + 1
     MAGIC_SHIELD_STATUS_ROW = EQUIPPED_RING_ROW + 1
     EMERGENCY_STATUS_ROW = MAGIC_SHIELD_STATUS_ROW + 1
-    DEBUG_ROW_1 = EMERGENCY_STATUS_ROW + 1
+    TANK_MODE_STATUS_ROW = EMERGENCY_STATUS_ROW + 1
+    DEBUG_ROW_1 = TANK_MODE_STATUS_ROW + 1
     DEBUG_ROW_2 = DEBUG_ROW_1 + 1
     LOG_ROW = DEBUG_ROW_2 + 1
     MAX_LOG_BUFFER = 10
 
     def __init__(self):
         super().__init__()
-        self.title = 'N/A'
-        self.mana = 'N/A'
-        self.hp = 'N/A'
-        self.speed = 'N/A'
-        self.magic_shield_level = 'N/A'
-        self.emergency_action_amulet = 'N/A'
-        self.emergency_action_ring = 'N/A'
-        self.equipped_amulet = 'N/A'
-        self.equipped_ring = 'N/A'
-        self.magic_shield_status = 'N/A'
-        self.emergency_status = 'N/A'
-        self.debug_line_1 = ''
-        self.debug_line_2 = ''
+        self.title = "N/A"
+        self.mana = "N/A"
+        self.hp = "N/A"
+        self.speed = "N/A"
+        self.magic_shield_level = "N/A"
+        self.normal_action_amulet = "N/A"
+        self.normal_action_ring = "N/A"
+        self.emergency_action_amulet = "N/A"
+        self.emergency_action_ring = "N/A"
+        self.tank_action_amulet = "N/A"
+        self.tank_action_ring = "N/A"
+        self.equipped_amulet = "N/A"
+        self.equipped_ring = "N/A"
+        self.magic_shield_status = "N/A"
+        self.emergency_status = "N/A"
+        self.tank_mode_status = "N/A"
+        self.debug_line_1 = ""
+        self.debug_line_2 = ""
         self.action_log_queue = Queue()
         self.log_entries = []
         self.lock = Lock()
@@ -238,13 +251,13 @@ class RunView(View):
         if debug_level <= get_debug_level():
             self.action_log_queue.put_nowait(log)
 
-    def set_debug_line(self, debug_line: str = ''):
+    def set_debug_line(self, debug_line: str = ""):
         self.set_debug_line_1(debug_line)
 
-    def set_debug_line_1(self, debug_line: str = ''):
+    def set_debug_line_1(self, debug_line: str = ""):
         self.debug_line_1 = debug_line
 
-    def set_debug_line_2(self, debug_line: str = ''):
+    def set_debug_line_2(self, debug_line: str = ""):
         self.debug_line_2 = debug_line
 
     def set_char_stats(self, char_status: CharStatus):
@@ -253,19 +266,31 @@ class RunView(View):
         self.speed = char_status.speed
         self.magic_shield_level = char_status.magic_shield_level
 
-    def set_emergency_action_amulet(self, value: Any = 'N/A'):
+    def set_normal_action_amulet(self, value: Any = "N/A"):
+        self.normal_action_amulet = str(value)
+
+    def set_normal_action_ring(self, value: Any = "N/A"):
+        self.normal_action_ring = str(value)
+
+    def set_emergency_action_amulet(self, value: Any = "N/A"):
         self.emergency_action_amulet = str(value)
 
-    def set_emergency_action_ring(self, value: Any = 'N/A'):
+    def set_emergency_action_ring(self, value: Any = "N/A"):
         self.emergency_action_ring = str(value)
 
-    def set_equipped_ring(self, value: Any = 'N/A'):
+    def set_tank_action_amulet(self, value: Any = "N/A"):
+        self.tank_action_amulet = str(value)
+
+    def set_tank_action_ring(self, value: Any = "N/A"):
+        self.tank_action_ring = str(value)
+
+    def set_equipped_ring(self, value: Any = "N/A"):
         self.equipped_ring = str(value)
 
-    def set_equipped_amulet(self, value: Any = 'N/A'):
+    def set_equipped_amulet(self, value: Any = "N/A"):
         self.equipped_amulet = str(value)
 
-    def set_magic_shield_status(self, value: Any = 'N/A'):
+    def set_magic_shield_status(self, value: Any = "N/A"):
         self.magic_shield_status = str(value)
 
     def render(self, cli_screen: CliScreen):
@@ -277,8 +302,10 @@ class RunView(View):
 
     def drain_log_queue(self):
         new_logs = []
-        while (self.action_log_queue.qsize() > 0
-               and len(new_logs) <= RunView.MAX_LOG_BUFFER):
+        while (
+            self.action_log_queue.qsize() > 0
+            and len(new_logs) <= RunView.MAX_LOG_BUFFER
+        ):
             new_logs.append(self.action_log_queue.get_nowait())
 
         carryon = RunView.MAX_LOG_BUFFER - len(new_logs)
@@ -288,7 +315,7 @@ class RunView(View):
         self.log_entries = new_logs
 
     def render_logs(self, cli_screen: CliScreen):
-        cli_screen.print('Log Entries', RunView.LOG_ROW)
+        cli_screen.print("Log Entries", RunView.LOG_ROW)
         if self.action_log_queue.qsize() > 0:
             self.drain_log_queue()
 
@@ -306,22 +333,48 @@ class RunView(View):
         cli_screen.print(f"Mana: {self.mana}", RunView.MANA_ROW)
         cli_screen.print(f"HP: {self.hp}", RunView.HP_ROW)
         cli_screen.print(f"Speed: {self.speed}", RunView.SPEED_ROW)
-        cli_screen.print(f"Magic Shield: {self.magic_shield_level}",
-                         RunView.MAGIC_SHIELD_ROW)
+        cli_screen.print(
+            f"Magic Shield: {self.magic_shield_level}", RunView.MAGIC_SHIELD_ROW
+        )
+        cli_screen.print(
+            f"Normal Action Amulet: {self.normal_action_amulet}",
+            RunView.NORMAL_ACTION_AMULET_ROW,
+        )
+        cli_screen.print(
+            f"Normal Action Ring: {self.normal_action_ring}",
+            RunView.NORMAL_ACTION_RING_ROW,
+        )
         cli_screen.print(
             f"Emergency Action Amulet: {self.emergency_action_amulet}",
-            RunView.EMERGENCY_ACTION_AMULET_ROW)
+            RunView.EMERGENCY_ACTION_AMULET_ROW,
+        )
         cli_screen.print(
             f"Emergency Action Ring: {self.emergency_action_ring}",
-            RunView.EMERGENCY_ACTION_RING_ROW)
-        cli_screen.print(f"Equipped Amulet: {self.equipped_amulet}",
-                         RunView.EQUIPPED_AMULET_ROW)
-        cli_screen.print(f"Equipped Ring: {self.equipped_ring}",
-                         RunView.EQUIPPED_RING_ROW)
-        cli_screen.print(f"Magic Shield Status: {self.magic_shield_status}",
-                         RunView.MAGIC_SHIELD_STATUS_ROW)
-        cli_screen.print(f"Emergency Status: {self.emergency_status}",
-                         RunView.EMERGENCY_STATUS_ROW)
+            RunView.EMERGENCY_ACTION_RING_ROW,
+        )
+        cli_screen.print(
+            f"Tank Action Amulet: {self.tank_action_amulet}",
+            RunView.TANK_ACTION_AMULET_ROW,
+        )
+        cli_screen.print(
+            f"Tank Action Ring: {self.tank_action_ring}", RunView.TANK_ACTION_RING_ROW
+        )
+        cli_screen.print(
+            f"Equipped Amulet: {self.equipped_amulet}", RunView.EQUIPPED_AMULET_ROW
+        )
+        cli_screen.print(
+            f"Equipped Ring: {self.equipped_ring}", RunView.EQUIPPED_RING_ROW
+        )
+        cli_screen.print(
+            f"Magic Shield Status: {self.magic_shield_status}",
+            RunView.MAGIC_SHIELD_STATUS_ROW,
+        )
+        cli_screen.print(
+            f"Emergency Status: {self.emergency_status}", RunView.EMERGENCY_STATUS_ROW
+        )
+        cli_screen.print(
+            f"Tank Status: {self.tank_mode_status}", RunView.TANK_MODE_STATUS_ROW
+        )
 
     def render_debug_lines(self, cli_screen: CliScreen):
         cli_screen.print(self.debug_line_1, RunView.DEBUG_ROW_1)
@@ -331,34 +384,43 @@ class RunView(View):
 def stress_run_view(cliwin):
     # set the view's state
     int_rotation = [111, 22, 3333, 4, 55555]
-    str_rotation = ['first', 'second', 'third', 'fourth', 'fifth']
-    char_status = CharStatus(hp=int_rotation[0],
-                             speed=int_rotation[1],
-                             mana=int_rotation[2],
-                             magic_shield_level=int_rotation[3],
-                             equipment_status={
-                                 'emergency_action_amulet': str_rotation[0],
-                                 'emergency_action_ring': str_rotation[1],
-                                 'equipped_ring': str_rotation[2],
-                                 'equipped_amulet': str_rotation[3],
-                                 'magic_shield_status': str_rotation[4],
-                             })
+    str_rotation = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eigth", "ninth"]
+    char_status = CharStatus(
+        hp=int_rotation[0],
+        speed=int_rotation[1],
+        mana=int_rotation[2],
+        magic_shield_level=int_rotation[3],
+        equipment_status={
+            "normal_action_amulet": str_rotation[0],
+            "normal_action_ring": str_rotation[1],
+            "emergency_action_amulet": str_rotation[2],
+            "emergency_action_ring": str_rotation[3],
+            "tank_action_amulet": str_rotation[4],
+            "tank_action_ring": str_rotation[5],
+            "equipped_ring": str_rotation[6],
+            "equipped_amulet": str_rotation[7],
+            "magic_shield_status": str_rotation[8],
+        },
+    )
 
     def update_status(char_status, idx):
         char_status.hp = int_rotation[idx % len(int_rotation)]
         char_status.speed = int_rotation[(idx + 1) % len(int_rotation)]
         char_status.mana = int_rotation[(idx + 2) % len(int_rotation)]
-        char_status.magic_shield_level = \
-            int_rotation[(idx + 3) % len(int_rotation)]
-        char_status.emergency_action_amulet = \
-            str_rotation[(idx + 0) % len(str_rotation)]
-        char_status.emergency_action_ring = \
-            str_rotation[(idx + 1) % len(str_rotation)]
-        char_status.equipped_ring = str_rotation[(idx + 2) % len(str_rotation)]
-        char_status.equipped_amulet = \
-            str_rotation[(idx + 3) % len(str_rotation)]
-        char_status.magic_shield_status = \
-            str_rotation[(idx + 4) % len(str_rotation)]
+        char_status.magic_shield_level = int_rotation[(idx + 3) % len(int_rotation)]
+        char_status.normal_action_amulet = str_rotation[
+            (idx + 0) % len(str_rotation)
+        ]
+        char_status.normal_action_ring = str_rotation[(idx + 1) % len(str_rotation)]
+        char_status.emergency_action_amulet = str_rotation[
+            (idx + 2) % len(str_rotation)
+        ]
+        char_status.emergency_action_ring = str_rotation[(idx + 3) % len(str_rotation)]
+        char_status.tank_action_amulet = str_rotation[(idx + 4) % len(str_rotation)]
+        char_status.tank_action_ring = str_rotation[(idx + 5) % len(str_rotation)]
+        char_status.equipped_ring = str_rotation[(idx + 6) % len(str_rotation)]
+        char_status.equipped_amulet = str_rotation[(idx + 7) % len(str_rotation)]
+        char_status.magic_shield_status = str_rotation[(idx + 8) % len(str_rotation)]
 
     view = RunView()
     view.title = "This is a stress test of the RunView."
@@ -376,12 +438,13 @@ def stress_run_view(cliwin):
             view.set_magic_shield_status(char_status.magic_shield_status)
             view.set_equipped_ring(char_status.equipped_ring)
             view.set_equipped_amulet(char_status.equipped_amulet)
-            view.set_emergency_action_amulet(
-                char_status.emergency_action_amulet)
+            view.set_emergency_action_amulet(char_status.emergency_action_amulet)
             view.set_emergency_action_ring(char_status.emergency_action_ring)
+            view.set_tank_action_amulet(char_status.tank_action_amulet)
+            view.set_tank_action_ring(char_status.tank_action_ring)
             view.add_log(
-                f"This is log #{i} and it is very very long. Let us see.",
-                -100)
+                f"This is log #{i} and it is very very long. Let us see.", -100
+            )
             view.error = f"Number of log entries: {i}"
             i += 1
             update_status(char_status, i)
@@ -395,13 +458,13 @@ def stress_config_selection_view(cliwin):
         if keycode >= 48 and keycode <= 57:
             config_view.user_input += str(keycode - 48)
         elif keycode == curses.KEY_BACKSPACE:
-            config_view.user_input = \
-                config_view.user_input[:len(config_view.user_input) - 1]
+            config_view.user_input = config_view.user_input[
+                : len(config_view.user_input) - 1
+            ]
         else:
             config_view.signal_error()
 
-    view = ConfigSelectionView(['one', 'two', 'three', 'four', 'five'],
-                               update_cb)
+    view = ConfigSelectionView(["one", "two", "three", "four", "five"], update_cb)
     view.title = "This is a stress test of the ConfigSelectionView."
     view.main_options = "These are the main options of the ConfigSelectionView."
     view.error = "This is the error row of the RunView."
@@ -418,15 +481,14 @@ def stress_config_selection_view(cliwin):
 
 
 def main(cliwin, layout):
-    if layout == 'run':
+    if layout == "run":
         stress_run_view(cliwin)
-    elif layout == 'selection':
+    elif layout == "selection":
         stress_config_selection_view(cliwin)
     else:
-        raise Exception(
-            f'Unknown layout <{layout}>. Please specify a valid layout.')
+        raise Exception(f"Unknown layout <{layout}>. Please specify a valid layout.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     args = parser.parse_args()
     curses.wrapper(main, args.layout)
