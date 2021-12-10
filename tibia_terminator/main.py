@@ -57,54 +57,52 @@ from tibia_terminator.schemas.app_status_schema import (
 #    access program memory pages.
 
 
-def build_parser(src_parser: Optional[ArgumentParser] = None) -> ArgumentParser:
+def build_parser(
+        src_parser: Optional[ArgumentParser] = None) -> ArgumentParser:
     parser = src_parser or ArgumentParser(description="Tibia terminator")
     parser.add_argument("pid", help="The PID of Tibia")
-    parser.add_argument(
-        "--no_mana", help="Do not automatically recover mana.", action="store_true"
-    )
-    parser.add_argument(
-        "--no_hp", help="Do not automatically recover hp.", action="store_true"
-    )
+    parser.add_argument("--no_mana",
+                        help="Do not automatically recover mana.",
+                        action="store_true")
+    parser.add_argument("--no_hp",
+                        help="Do not automatically recover hp.",
+                        action="store_true")
     parser.add_argument(
         "--no_magic_shield",
         help="Do not automatically cast magic shield.",
         action="store_true",
     )
-    parser.add_argument("--no_speed", help="Do not monitor speed.", action="store_true")
+    parser.add_argument("--no_speed",
+                        help="Do not monitor speed.",
+                        action="store_true")
     parser.add_argument(
         "--only_monitor",
         help="Only print stat changes, no action taken",
         action="store_true",
     )
-    parser.add_argument(
-        "--app_config_path", help="Path to memory configuration vnalues", required=True
-    )
+    parser.add_argument("--app_config_path",
+                        help="Path to memory configuration vnalues",
+                        required=True)
     parser.add_argument(
         "--char_configs_path",
-        help=(
-            "Path to the char configs directory, where the "
-            ".charconfig files are stored."
-        ),
+        help=("Path to the char configs directory, where the "
+              ".charconfig files are stored."),
         required=True,
     )
     parser.add_argument(
         "--debug_level",
-        help=(
-            "Set the debug level for debug log messages, "
-            "higher values result in more verbose output."
-        ),
+        help=("Set the debug level for debug log messages, "
+              "higher values result in more verbose output."),
         type=int,
         default=-1,
     )
     parser.add_argument(
         "--x_offset",
-        help=(
-            "X value offset for the Tibia window. This is useful for dual monitor"
-            " setups, wher you have the Tibia window on the right screen."
-            "e.g. If you have 1920x1080 setup, and Tibia is on the monitor to the"
-            " right, then this value should be 1920"
-        ),
+        help=
+        ("X value offset for the Tibia window. This is useful for dual monitor"
+         " setups, wher you have the Tibia window on the right screen."
+         "e.g. If you have 1920x1080 setup, and Tibia is on the monitor to the"
+         " right, then this value should be 1920"),
         type=int,
         default=0,
         required=False,
@@ -113,8 +111,7 @@ def build_parser(src_parser: Optional[ArgumentParser] = None) -> ArgumentParser:
         "--tibia_window_config_path",
         help=(
             "File with the configuration for the tibia window interface. See:"
-            "char_configs/tibia_window_config.json for an example"
-        ),
+            "char_configs/tibia_window_config.json for an example"),
         type=str,
         required=True,
     )
@@ -129,11 +126,9 @@ LOOP_FREQ_MS = 50
 AVG_LOOP_TIME_SAMPLE_SIZE = 50
 
 RUNNING_STATE_MAIN_OPTIONS_MSG = (
-    "[Space]: Pause, [Esc]: Exit, [Enter]: Config selection."
-)
+    "[Space]: Pause, [Esc]: Exit, [Enter]: Config selection.")
 PAUSED_STATE_MAIN_OPTIONS_MSG = (
-    "[Space]: Resume, [Esc]: Exit, [Enter]: Config selection."
-)
+    "[Space]: Resume, [Esc]: Exit, [Enter]: Config selection.")
 CONFIG_SELECTION_MAIN_OPTIONS_MSG = "[Esc]: Exit, [Enter]: Back to paused state."
 CONFIG_SELECTION_TITLE = "Type the number of the char config to load: "
 
@@ -188,9 +183,8 @@ class TibiaTerminator:
         self.app_status_file = app_status_file
         app_status = self.load_app_status()
         self.app_state = app_status.state or AppState.CONFIG_SELECTION
-        self.selected_config_name = (
-            app_status.selected_config_name or self.char_config_entries[0].name
-        )
+        self.selected_config_name = (app_status.selected_config_name
+                                     or self.char_config_entries[0].name)
         if not self.load_config(self.selected_config_name):
             self.selected_config_name = self.char_config_entries[0].name
 
@@ -206,17 +200,14 @@ class TibiaTerminator:
     def load_config(self, config_name: str) -> bool:
         for config in self.char_config_entries:
             if config.name == config_name:
-                self.char_keeper.load_char_config(
-                    config.char_config, config.battle_config
-                )
+                self.char_keeper.load_char_config(config.char_config,
+                                                  config.battle_config)
                 return True
         return False
 
     def load_app_status(self) -> AppStatus:
-        if (
-            os.path.isfile(self.app_status_file)
-            and os.path.getsize(self.app_status_file) > 0
-        ):
+        if (os.path.isfile(self.app_status_file)
+                and os.path.getsize(self.app_status_file) > 0):
             app_status_schema = AppStatusSchema()
             return app_status_schema.loadf(self.app_status_file)
         else:
@@ -227,10 +218,9 @@ class TibiaTerminator:
 
     def write_app_status(self):
         app_status_schema = AppStatusSchema()
-        app_status = AppStatus(
-            state=self.app_state, selected_config_name=self.selected_config_name
-        )
-        with open(self.app_status_file, "w") as f:
+        app_status = AppStatus(state=self.app_state,
+                               selected_config_name=self.selected_config_name)
+        with open(self.app_status_file, "w", encoding="utf-8") as f:
             f.write(app_status_schema.dumps(app_status))
 
     def monitor_char(self):
@@ -256,7 +246,8 @@ class TibiaTerminator:
             speed_address = None
 
         if self.app_config.magic_shield_memory_address is not None:
-            magic_shield_address = int(self.app_config.magic_shield_memory_address, 16)
+            magic_shield_address = int(
+                self.app_config.magic_shield_memory_address, 16)
         else:
             magic_shield_address = None
 
@@ -370,7 +361,8 @@ class TibiaTerminator:
         return CharStatusAsync(
             self.char_reader.get_stats(),
             self.equipment_reader.get_equipment_status(
-                emergency_action_amulet_cb=self.view.set_emergency_action_amulet,
+                emergency_action_amulet_cb=self.view.
+                set_emergency_action_amulet,
                 emergency_action_ring_cb=self.view.set_emergency_action_ring,
                 tank_action_amulet_cb=self.view.set_tank_action_amulet,
                 tank_action_ring_cb=self.view.set_tank_action_ring,
@@ -401,7 +393,8 @@ class TibiaTerminator:
         self.loop_times_sum += elapsed_ms - self.loop_times[0]
         self.loop_times.append(elapsed_ms)
         self.avg_loop_time_ms = self.loop_times_sum / len(self.loop_times)
-        self.view.set_debug_line(f"Avg loop time: {int(self.avg_loop_time_ms)} ms")
+        self.view.set_debug_line(
+            f"Avg loop time: {int(self.avg_loop_time_ms)} ms")
 
     def exit_running_state(self):
         self.stats_logger.run_view = None
@@ -435,21 +428,20 @@ class TibiaTerminator:
                 else:
                     selected = self.char_config_entries[selection]
                     self.selected_config_name = selected.name
-                    self.char_keeper.load_char_config(
-                        selected.char_config, selected.battle_config
-                    )
+                    self.char_keeper.load_char_config(selected.char_config,
+                                                      selected.battle_config)
                     self.enter_next_app_state(AppState.PAUSED)
         elif keycode == EXIT_KEYCODE:
             self.app_state = AppState.EXIT
         elif keycode == curses.KEY_BACKSPACE:
             if len(view.user_input) > 0:
-                view.user_input = view.user_input[: len(view.user_input) - 1]
+                view.user_input = view.user_input[:len(view.user_input) - 1]
         else:
             view.signal_error()
 
     def gen_config_entries(
-        self, char_configs: List[CharConfig]
-    ) -> Iterable[CharConfigMenuEntry]:
+            self,
+            char_configs: List[CharConfig]) -> Iterable[CharConfigMenuEntry]:
         for char_config in char_configs:
             for battle_config in char_config.battle_configs:
                 if not battle_config.hidden:
@@ -472,12 +464,8 @@ class TibiaTerminator:
             time.sleep(0.01)
 
     def gen_title(self):
-        return (
-            "Tibia Terminator. WID: "
-            + str(self.tibia_wid)
-            + " Active config: "
-            + self.selected_config_name
-        )
+        return ("Tibia Terminator. WID: " + str(self.tibia_wid) +
+                " Active config: " + self.selected_config_name)
 
 
 def curses_main(
@@ -498,6 +486,7 @@ def curses_main(
     window_geometry = get_window_geometry(tibia_wid)
     x_offset = x_offset or window_geometry.x
     stats_logger = StatsLogger()
+
     def print_async(obj: Any) -> None:
         stats_logger.log_action(2, str(obj))
 
@@ -512,13 +501,12 @@ def curses_main(
             cmd_processor=cmd_processor,
             keystroke_sender=XdotoolKeystrokeSender(xdotool_proc, tibia_wid),
         )
-        char_keeper = CharKeeper(
-            client, char_configs[0], char_configs[0].battle_configs[0], hotkeys_config
-        )
+        char_keeper = CharKeeper(client, char_configs[0],
+                                 char_configs[0].battle_configs[0],
+                                 hotkeys_config)
         char_reader = CharReader(MemoryReader(pid, print_async))
-        eq_reader = EquipmentReader(
-            tibia_wid=int(tibia_wid), tibia_window_spec=tibia_window_spec
-        )
+        eq_reader = EquipmentReader(tibia_wid=int(tibia_wid),
+                                    tibia_window_spec=tibia_window_spec)
         loot_macro = LootMacro(client, hotkeys_config, x_offset)
         tibia_terminator = TibiaTerminator(
             tibia_wid,
@@ -549,26 +537,24 @@ def main(args: Namespace):
         print(args)
 
     if not args.pid:
-        raise Exception(
-            "PID is required, you may use psgrep -a -l bin/Tibia "
-            "to find the process id"
-        )
+        raise Exception("PID is required, you may use psgrep -a -l bin/Tibia "
+                        "to find the process id")
     app_configs_schema = AppConfigsSchema()
     app_configs = app_configs_schema.loadf(args.app_config_path)
     app_config = app_configs[str(args.pid)]
     if not app_configs[str(args.pid)]:
         raise Exception(
             f"App config for PID: {args.pid} not configured. Available"
-            f" PIDs: {[c.pid for c in app_configs]}"
-        )
+            f" PIDs: {[c.pid for c in app_configs]}")
     hotkeys_config = HotkeysConfigSchema().loadf(
-        os.path.join(args.char_configs_path, "hotkeys_config.json")
-    )
+        os.path.join(args.char_configs_path, "hotkeys_config.json"))
     char_configs = list(load_configs(args.char_configs_path))
     if len(char_configs) == 0:
-        raise Exception(f"No .charconfig files found in {args.char_configs_path}")
+        raise Exception(
+            f"No .charconfig files found in {args.char_configs_path}")
     tibia_window_spec_schema = TibiaWindowSpecSchema()
-    tibia_window_spec = tibia_window_spec_schema.loadf(args.tibia_window_config_path)
+    tibia_window_spec = tibia_window_spec_schema.loadf(
+        args.tibia_window_config_path)
 
     curses.wrapper(
         curses_main,
