@@ -1,40 +1,54 @@
 """Keeps the character healthy in every way."""
 
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 
+from tibia_terminator.interface.client_interface import ClientInterface
 from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfig
 from tibia_terminator.schemas.char_config_schema import CharConfig, BattleConfig
 from tibia_terminator.common.char_status import CharStatus
-from tibia_terminator.interface.macro.cancel_emergency_macro import CancelEmergencyMacro
+from tibia_terminator.interface.macro.cancel_emergency_macro import (
+    CancelEmergencyMacro, CancelTankModeMacro
+)
 from tibia_terminator.interface.macro.item_crosshair_macro import ItemCrosshairMacro
 from tibia_terminator.interface.macro.directional_macro import DirectionalMacro
 from tibia_terminator.interface.macro.macro import Macro
-from tibia_terminator.interface.macro.start_emergency_macro import StartEmergencyMacro
+from tibia_terminator.interface.macro.start_emergency_macro import (
+    StartEmergencyMacro, StartTankModeMacro
+)
+from tibia_terminator.reader.equipment_reader import MagicShieldStatus
+from tibia_terminator.keeper.emergency_reporter import (
+    EmergencyReporter,
+    TankModeReporter,
+)
+from tibia_terminator.keeper.equipment_keeper import EquipmentKeeper
+from tibia_terminator.keeper.hp_keeper import HpKeeper
 from tibia_terminator.keeper.emergency_magic_shield_keeper import (
     EmergencyMagicShieldKeeper,
 )
-from tibia_terminator.reader.equipment_reader import MagicShieldStatus
-from tibia_terminator.keeper.emergency_reporter import EmergencyReporter
-from tibia_terminator.keeper.equipment_keeper import EquipmentKeeper
-from tibia_terminator.keeper.hp_keeper import HpKeeper
 from tibia_terminator.keeper.magic_shield_keeper import MagicShieldKeeper
+from tibia_terminator.keeper.protector_keeper import (
+    ProtectorKeeper,
+    EmergencyProtectorKeeper,
+)
 from tibia_terminator.keeper.mana_keeper import ManaKeeper
+from tibia_terminator.keeper.knight_potion_keeper import KnightPotionKeeper
 from tibia_terminator.keeper.speed_keeper import SpeedKeeper
 
 
 class CharKeeper:
     def __init__(
         self,
-        client,
+        client: ClientInterface,
         char_config: CharConfig,
         battle_config: BattleConfig,
         hotkeys_config: HotkeysConfig,
         emergency_reporter: Optional[EmergencyReporter] = None,
-        mana_keeper: Optional[ManaKeeper] = None,
+        tank_mode_reporter: Optional[TankModeReporter] = None,
+        mana_keeper: Optional[Union[ManaKeeper, KnightPotionKeeper]] = None,
         hp_keeper: Optional[HpKeeper] = None,
         speed_keeper: Optional[SpeedKeeper] = None,
         equipment_keeper: Optional[EquipmentKeeper] = None,
-        magic_shield_keeper: Optional[MagicShieldKeeper] = None,
+        magic_shield_keeper: Optional[Union[MagicShieldKeeper, ProtectorKeeper]] = None,
         item_crosshair_macros: Optional[List[ItemCrosshairMacro]] = None,
         core_macros: Optional[List[Macro]] = None,
     ):
@@ -45,6 +59,7 @@ class CharKeeper:
         self.hotkeys_config = hotkeys_config
         # load the first battle config from the first char config
         self.init_emergency_reporter(char_config, battle_config, emergency_reporter)
+        self.init_tank_mode_reporter(tank_mode_reporter)
         self.init_mana_keeper(client, char_config, battle_config, mana_keeper)
         self.init_hp_keeper(client, char_config, battle_config, hp_keeper)
         self.init_speed_keeper(client, char_config, battle_config, speed_keeper)
@@ -77,7 +92,7 @@ class CharKeeper:
         self,
         char_config: CharConfig,
         battle_config: BattleConfig,
-        emergency_reporter=None,
+        emergency_reporter: EmergencyReporter = None,
     ):
         if emergency_reporter is None:
             self.emergency_reporter = EmergencyReporter(
@@ -88,22 +103,40 @@ class CharKeeper:
         else:
             self.emergency_reporter = emergency_reporter
 
+    def init_tank_mode_reporter(
+        self,
+        tank_mode_reporter: TankModeReporter = None,
+    ):
+        if tank_mode_reporter is None:
+            self.tank_mode_reporter = TankModeReporter()
+        else:
+            self.tank_mode_reporter = tank_mode_reporter
+
     def init_mana_keeper(
         self,
         client,
         char_config: CharConfig,
         battle_config: BattleConfig,
-        mana_keeper=None,
+        mana_keeper: Union[ManaKeeper, KnightPotionKeeper] = None,
     ):
         if mana_keeper is None:
-            self.mana_keeper = ManaKeeper(
-                client,
-                battle_config.mana_hi,
-                battle_config.mana_lo,
-                battle_config.critical_mana,
-                battle_config.downtime_mana,
-                char_config.total_mana,
-            )
+            if char_config.vocation == "mage" or not char_config.vocation:
+                self.mana_keeper = ManaKeeper(
+                    client,
+                    battle_config.mana_hi,
+                    battle_config.mana_lo,
+                    battle_config.critical_mana,
+                    battle_config.downtime_mana,
+                    char_config.total_mana,
+                )
+            elif char_config.vocation == "knight":
+                self.mana_keeper = KnightPotionKeeper(
+                    client=client,
+                    battle_config=battle_config,
+                    total_hp=char_config.total_hp
+                )
+            else:
+                raise Exception(f"Unsupported vocation: {char_config.vocation}")
         else:
             self.mana_keeper = mana_keeper
 
@@ -153,11 +186,12 @@ class CharKeeper:
             self.equipment_keeper = EquipmentKeeper(
                 client,
                 self.emergency_reporter,
+                self.tank_mode_reporter,
                 battle_config.should_equip_amulet,
                 battle_config.should_equip_ring,
                 battle_config.should_eat_food,
-                battle_config.equip_amulet_secs or 1,
-                battle_config.equip_ring_secs or 1,
+                battle_config.equip_amulet_secs,
+                battle_config.equip_ring_secs,
             )
         else:
             self.equipment_keeper = equipment_keeper
@@ -167,28 +201,40 @@ class CharKeeper:
         client,
         char_config: CharConfig,
         battle_config: BattleConfig,
-        magic_shield_keeper: MagicShieldKeeper = None,
+        magic_shield_keeper: Union[MagicShieldKeeper, ProtectorKeeper] = None,
     ):
         magic_shield_type = battle_config.magic_shield_type
         if magic_shield_keeper is not None:
             self.magic_shield_keeper = magic_shield_keeper
 
         if magic_shield_type == "permanent":
-            self.magic_shield_keeper = MagicShieldKeeper(
-                client, char_config.total_hp, battle_config.magic_shield_threshold
-            )
+            if char_config.vocation is None or char_config.vocation == "mage":
+                self.magic_shield_keeper = MagicShieldKeeper(
+                    client, char_config.total_hp, battle_config.magic_shield_threshold
+                )
+            elif char_config.vocation == "knight":
+                self.magic_shield_keeper = ProtectorKeeper(client)
+            else:
+                raise Exception(f"Unsupported vocation: {char_config.vocation}")
         elif magic_shield_type == "emergency":
-            self.magic_shield_keeper = EmergencyMagicShieldKeeper(
-                client,
-                self.emergency_reporter,
-                char_config.total_hp,
-                battle_config.mana_lo,
-                battle_config.magic_shield_threshold,
-            )
-        elif magic_shield_type is None:
-            self.magic_shield_keeper = NoopKeeper()
-        elif magic_shield_type is not None:
+            if char_config.vocation is None or char_config.vocation == "mage":
+                self.magic_shield_keeper = EmergencyMagicShieldKeeper(
+                    client,
+                    self.emergency_reporter,
+                    self.tank_mode_reporter,
+                    char_config.total_hp,
+                    battle_config.magic_shield_threshold,
+                )
+            elif char_config.vocation == "knight":
+                self.magic_shield_keeper = EmergencyProtectorKeeper(
+                    client, self.emergency_reporter, self.tank_mode_reporter
+                )
+            else:
+                raise Exception(f"Unsupported vocation: {char_config.vocation}")
+        elif magic_shield_type:
             raise Exception(f"Unknown magic shield type {magic_shield_type}")
+        else:  # None or empty
+            self.magic_shield_keeper = NoopKeeper()
 
     def init_item_crosshair_macros(
         self,
@@ -233,15 +279,24 @@ class CharKeeper:
             self.core_macros = core_macros
         else:
             cancel_emergency_key = hotkeys_config.cancel_emergency
-            if cancel_emergency_key is not None:
+            if cancel_emergency_key:
                 self.core_macros.append(
                     CancelEmergencyMacro(self.emergency_reporter, cancel_emergency_key)
                 )
-
             start_emergency_key = hotkeys_config.start_emergency
-            if start_emergency_key is not None:
+            if start_emergency_key:
                 self.core_macros.append(
                     StartEmergencyMacro(self.emergency_reporter, start_emergency_key)
+                )
+            cancel_tank_mode_key = hotkeys_config.cancel_tank_mode
+            if cancel_tank_mode_key:
+                self.core_macros.append(
+                    CancelTankModeMacro(self.tank_mode_reporter, cancel_tank_mode_key)
+                )
+            start_tank_mode_key = hotkeys_config.start_tank_mode
+            if start_tank_mode_key:
+                self.core_macros.append(
+                    StartTankModeMacro(self.tank_mode_reporter, start_tank_mode_key)
                 )
 
     def unload_core_macros(self):

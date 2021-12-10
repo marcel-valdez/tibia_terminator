@@ -112,9 +112,9 @@ class KnightPotionKeeper:
 
     def __init__(
         self,
-        total_hp: int,
         client: ClientInterface,
         battle_config: BattleConfig,
+        total_hp: int
     ):
         self.priorities_strategy = KnightPrioritiesStrategy(
             mana_config=StatConfig(

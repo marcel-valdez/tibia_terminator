@@ -3,7 +3,7 @@
 import argparse
 
 from collections import OrderedDict
-from marshmallow import fields, pre_load, ValidationError
+from marshmallow import fields, pre_load, ValidationError, validate
 from typing import Optional, NamedTuple, List, Dict, Any
 from tibia_terminator.schemas.item_crosshair_macro_config_schema import (
     ItemCrosshairMacroConfig,
@@ -33,13 +33,12 @@ class BattleConfig(NamedTuple):
     greater_heal: int
     emergency_hp_threshold: int
 
-    vocation: Optional[str] = None
+    base: str = None
+    hidden: bool = False
+
     potion_hp_hi: Optional[int] = None
     potion_hp_lo: Optional[int] = None
     potion_hp_critical: Optional[int] = None
-
-    base: str = None
-    hidden: bool = False
 
     should_eat_food: bool = True
     should_equip_amulet: bool = True
@@ -94,6 +93,7 @@ class BattleConfigSchema(FactorySchema[BattleConfig]):
 
 class CharConfig(NamedTuple):
     char_name: str
+    vocation: str
     total_hp: int
     total_mana: int
     base_speed: int
@@ -105,6 +105,7 @@ class CharConfig(NamedTuple):
 class CharConfigSchema(FactorySchema[CharConfig]):
     ctor = CharConfig
     char_name = fields.Str(required=True)
+    vocation = fields.Str(required=True, validate=validate.OneOf(["mage", "knight"]))
     total_hp = fields.Int(required=True)
     total_mana = fields.Int(required=True)
     base_speed = fields.Int(required=True)

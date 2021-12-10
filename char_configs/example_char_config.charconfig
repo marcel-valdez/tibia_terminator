@@ -1,6 +1,8 @@
 {
   // This configuration was used for a level 390 ED.
   "char_name": "example_char",
+  // options: knight, mage
+  "vocation": "mage",
   "total_hp": 2300,
   "total_mana": 12780,
   // This is used to determine if the char is paralized
@@ -126,10 +128,10 @@
           "spell_key_rotation": ["8"],
           "rotation_threshold_secs": 4,
           "direction_pairs": [
-            // Assumes f,e,s,d for moving around
+            // Assumes w,a,s,d for moving around
             // Assumes ctrl key to rotate character.
-            ["ctrl+f", null],
-            ["ctrl+e", null],
+            ["ctrl+w", null],
+            ["ctrl+a", null],
             ["ctrl+s", null],
             ["ctrl+d", null]
           ]

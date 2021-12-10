@@ -7,13 +7,17 @@ import sys
 
 from argparse import ArgumentParser, Namespace
 from collections import deque
-from typing import List, Iterable, NamedTuple, Optional
+from typing import List, Iterable, NamedTuple, Optional, Any
 
 from tibia_terminator.char_configs.char_config_loader import load_configs
 from tibia_terminator.schemas.reader.interface_config_schema import (
-    TibiaWindowSpec, TibiaWindowSpecSchema
+    TibiaWindowSpec,
+    TibiaWindowSpecSchema,
 )
-from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfigSchema
+from tibia_terminator.schemas.hotkeys_config_schema import (
+    HotkeysConfigSchema,
+    HotkeysConfig,
+)
 from tibia_terminator.schemas.char_config_schema import BattleConfig, CharConfig
 from tibia_terminator.schemas.app_config_schema import AppConfigsSchema, AppConfig
 from tibia_terminator.common.char_status import CharStatus, CharStatusAsync
@@ -23,14 +27,15 @@ from tibia_terminator.interface.client_interface import (
     CommandProcessor,
 )
 from tibia_terminator.interface.keystroke_sender import (
-    XdotoolProcess, XdotoolKeystrokeSender
+    XdotoolProcess,
+    XdotoolKeystrokeSender,
 )
 from tibia_terminator.interface.macro.loot_macro import LootMacro
 from tibia_terminator.keeper.char_keeper import CharKeeper
 from tibia_terminator.reader.char_reader38 import CharReader38 as CharReader
 from tibia_terminator.reader.equipment_reader import EquipmentReader
 from tibia_terminator.reader.memory_reader38 import MemoryReader38 as MemoryReader
-from tibia_terminator.reader.window_utils import (get_tibia_wid, get_window_geometry)
+from tibia_terminator.reader.window_utils import get_tibia_wid, get_window_geometry
 from tibia_terminator.view.view_renderer import (
     ViewRenderer,
     PausedView,
@@ -102,7 +107,7 @@ def build_parser(src_parser: Optional[ArgumentParser] = None) -> ArgumentParser:
         ),
         type=int,
         default=0,
-        required=False
+        required=False,
     )
     parser.add_argument(
         "--tibia_window_config_path",
@@ -111,7 +116,7 @@ def build_parser(src_parser: Optional[ArgumentParser] = None) -> ArgumentParser:
             "char_configs/tibia_window_config.json for an example"
         ),
         type=str,
-        required=True
+        required=True,
     )
     return parser
 
@@ -367,9 +372,13 @@ class TibiaTerminator:
             self.equipment_reader.get_equipment_status(
                 emergency_action_amulet_cb=self.view.set_emergency_action_amulet,
                 emergency_action_ring_cb=self.view.set_emergency_action_ring,
+                tank_action_amulet_cb=self.view.set_tank_action_amulet,
+                tank_action_ring_cb=self.view.set_tank_action_ring,
                 equipped_amulet_cb=self.view.set_equipped_amulet,
                 equipped_ring_cb=self.view.set_equipped_ring,
                 magic_shield_status_cb=self.view.set_magic_shield_status,
+                normal_action_amulet_cb=self.view.set_normal_action_amulet,
+                normal_action_ring_cb=self.view.set_normal_action_ring,
             ),
         )
 
@@ -381,10 +390,10 @@ class TibiaTerminator:
         # implicitly waits for all FutureValue objects, since it
         # tries to fetch all values in order to print to screen
         self.view.set_char_stats(char_status)
-        if self.char_keeper.emergency_reporter.in_emergency:
-            self.view.emergency_status = "ON"
-        else:
-            self.view.emergency_status = "OFF"
+        is_in_emergency = self.char_keeper.emergency_reporter.is_in_emergency()
+        self.view.emergency_status = "ON" if is_in_emergency else "OFF"
+        is_tank_mode_on = self.char_keeper.tank_mode_reporter.is_tank_mode_on()
+        self.view.tank_mode_status = "ON" if is_tank_mode_on else "OFF"
         end_ms = time.time() * 1000
         self.add_elapsed_loop_time(end_ms - start_ms)
 
@@ -472,66 +481,43 @@ class TibiaTerminator:
 
 
 def curses_main(
-        cliwin,
-        pid,
-        app_config_path: str,
-        char_configs_path: str,
-        tibia_window_config_path: str,
-        enable_mana: bool,
-        enable_hp: bool,
-        enable_magic_shield: bool,
-        enable_speed: bool,
-        only_monitor: bool,
-        x_offset: int = 0
+    cliwin,
+    pid,
+    app_config: AppConfig,
+    char_configs: List[CharConfig],
+    tibia_window_spec: TibiaWindowSpec,
+    hotkeys_config: HotkeysConfig,
+    enable_mana: bool,
+    enable_hp: bool,
+    enable_magic_shield: bool,
+    enable_speed: bool,
+    only_monitor: bool,
+    x_offset: int = 0,
 ):
-    if pid is None or pid == "":
-        raise Exception(
-            "PID is required, you may use psgrep -a -l bin/Tibia "
-            "to find the process id"
-        )
-    app_configs_schema = AppConfigsSchema()
-    app_configs = app_configs_schema.loadf(app_config_path)
-    if not app_configs[str(pid)]:
-        raise Exception(
-            f"App config for PID: {pid} not configured. Available"
-            f" PIDs: {[c.pid for c in app_configs]}"
-        )
-
-    app_config = app_configs[str(pid)]
     tibia_wid = get_tibia_wid(pid)
     window_geometry = get_window_geometry(tibia_wid)
     x_offset = x_offset or window_geometry.x
     stats_logger = StatsLogger()
-
-    def print_async(msg):
-        stats_logger.log_action(2, msg)
+    def print_async(obj: Any) -> None:
+        stats_logger.log_action(2, str(obj))
 
     view_renderer = ViewRenderer(cliwin)
     cmd_processor = CommandProcessor(tibia_wid, stats_logger, only_monitor)
-    hotkeys_config = HotkeysConfigSchema().loadf(
-        os.path.join(char_configs_path, "hotkeys_config.json")
-    )
-    char_configs = list(load_configs(char_configs_path))
-    if len(char_configs) == 0:
-        raise Exception(
-            f"No .charconfig files found in {char_configs_path}"
-        )
-    tibia_window_spec_schema = TibiaWindowSpecSchema()
-    tibia_window_spec = tibia_window_spec_schema.loadf(tibia_window_config_path)
     xdotool_proc = XdotoolProcess()
     xdotool_proc.start()
     try:
         client = ClientInterface(
-            hotkeys_config, logger=stats_logger, cmd_processor=cmd_processor,
-            keystroke_sender=XdotoolKeystrokeSender(xdotool_proc, tibia_wid)
+            hotkeys_config,
+            logger=stats_logger,
+            cmd_processor=cmd_processor,
+            keystroke_sender=XdotoolKeystrokeSender(xdotool_proc, tibia_wid),
         )
         char_keeper = CharKeeper(
             client, char_configs[0], char_configs[0].battle_configs[0], hotkeys_config
         )
         char_reader = CharReader(MemoryReader(pid, print_async))
         eq_reader = EquipmentReader(
-            tibia_wid=int(tibia_wid),
-            tibia_window_spec=tibia_window_spec
+            tibia_wid=int(tibia_wid), tibia_window_spec=tibia_window_spec
         )
         loot_macro = LootMacro(client, hotkeys_config, x_offset)
         tibia_terminator = TibiaTerminator(
@@ -561,18 +547,42 @@ def main(args: Namespace):
     set_debug_level(args.debug_level)
     if args.debug_level > 1:
         print(args)
+
+    if not args.pid:
+        raise Exception(
+            "PID is required, you may use psgrep -a -l bin/Tibia "
+            "to find the process id"
+        )
+    app_configs_schema = AppConfigsSchema()
+    app_configs = app_configs_schema.loadf(args.app_config_path)
+    app_config = app_configs[str(args.pid)]
+    if not app_configs[str(args.pid)]:
+        raise Exception(
+            f"App config for PID: {args.pid} not configured. Available"
+            f" PIDs: {[c.pid for c in app_configs]}"
+        )
+    hotkeys_config = HotkeysConfigSchema().loadf(
+        os.path.join(args.char_configs_path, "hotkeys_config.json")
+    )
+    char_configs = list(load_configs(args.char_configs_path))
+    if len(char_configs) == 0:
+        raise Exception(f"No .charconfig files found in {args.char_configs_path}")
+    tibia_window_spec_schema = TibiaWindowSpecSchema()
+    tibia_window_spec = tibia_window_spec_schema.loadf(args.tibia_window_config_path)
+
     curses.wrapper(
         curses_main,
         args.pid,
-        args.app_config_path,
-        args.char_configs_path,
-        args.tibia_window_config_path,
+        app_config,
+        char_configs,
+        tibia_window_spec,
+        hotkeys_config,
         enable_mana=not args.no_mana,
         enable_hp=not args.no_hp,
         enable_magic_shield=not args.no_magic_shield,
         enable_speed=not args.no_speed,
         only_monitor=args.only_monitor,
-        x_offset=args.x_offset
+        x_offset=args.x_offset,
     )
 
 
