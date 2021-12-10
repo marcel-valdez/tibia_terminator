@@ -40,8 +40,8 @@ class ManaKeeper:
     def is_critical_mana(self, current_mana: int) -> bool:
         return current_mana <= self.critical_mana
 
-    def is_healthy_mana(self, current_mana: int) -> bool:
-        return current_mana > self.mana_lo
+    def is_healthy(self, char_status: CharStatus) -> bool:
+        return char_status.mana > self.mana_lo
 
     # Drink mana until high levels when HP is 100% and already hasted
     # with an interval of 2.5 seconds so it does not affect gameplay

@@ -54,8 +54,8 @@ class HpKeeper:
     def get_missing_hp(self, current_hp: int) -> int:
         return self.total_hp - current_hp
 
-    def is_healthy_hp(self, current_hp: int) -> bool:
-        return self.get_missing_hp(current_hp) < self.heal_at_missing
+    def is_healthy(self, char_status: CharStatus) -> bool:
+        return self.get_missing_hp(char_status.hp) < self.heal_at_missing
 
     def is_critical_hp(self, current_hp: int) -> bool:
         return current_hp <= self.emergency_hp_threshold

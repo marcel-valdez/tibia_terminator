@@ -3,7 +3,7 @@
 
 import time
 
-from typing import Callable
+from typing import Callable, Optional
 
 from tibia_terminator.interface.client_interface import ClientInterface
 from tibia_terminator.common.char_status import CharStatus
@@ -32,11 +32,14 @@ class ProtectorKeeper:
         self.last_cast_attempt_ts = self.last_cast_ts
         self.cast_count = 0
 
-    def hangle_status_change(self, _: CharStatus) -> None:
+    def handle_status_change(self, _: Optional[CharStatus] = None) -> None:
         if self.should_cast():
             self.cast_protector()
 
-    def should_cast(self) -> bool:
+    def is_healthy(self, _: CharStatus) -> bool:
+        return not self.should_cast(_)
+
+    def should_cast(self, _: Optional[CharStatus] = None) -> bool:
         now = self.timestamp_sec_fn()
         return now - self.last_cast_ts >= CAST_FREQUENCY_SEC and \
             self.cast_count < CAST_ATTEMPTS and \
@@ -65,7 +68,10 @@ class EmergencyProtectorKeeper(ProtectorKeeper):
         self.emergency_reporter = emergency_reporter
         self.tank_mode_reporter = tank_mode_reporter
 
-    def should_cast(self) -> bool:
+    def is_healthy(self, _: Optional[CharStatus] = None) -> bool:
+        return not self.should_cast(_)
+
+    def should_cast(self, _: Optional[CharStatus] = None) -> bool:
         return (
             self.emergency_reporter.is_in_emergency() or
             self.tank_mode_reporter.is_tank_mode_on()

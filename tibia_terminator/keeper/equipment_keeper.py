@@ -3,7 +3,7 @@
 
 import time
 
-from typing import Callable
+from typing import Callable, Optional
 
 from tibia_terminator.interface.client_interface import ClientInterface
 from tibia_terminator.common.char_status import CharStatus
@@ -34,8 +34,8 @@ class EquipmentKeeper:
         should_equip_amulet: bool,
         should_equip_ring: bool,
         should_eat_food: bool,
-        equip_amulet_secs: float = DEFAULT_EQUIP_FREQ,
-        equip_ring_secs: float = DEFAULT_EQUIP_FREQ,
+        equip_amulet_secs: Optional[float] = DEFAULT_EQUIP_FREQ,
+        equip_ring_secs: Optional[float] = DEFAULT_EQUIP_FREQ,
     ):
         self.client = client
         self.emergency_reporter = emergency_reporter
