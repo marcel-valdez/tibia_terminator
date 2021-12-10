@@ -19,14 +19,14 @@
         // x,y coordinate of the center of the emergency amulet action bar
         // square
         "emergency_amulet_center": {
-            "x": 1178,
+            "x": 1214,
             "y": 719
         },
         // x,y coordinate of the center of the emergency ring action bar square
         // Preferably use the center of the ring itself, rather than
         // the center of the action bar square.
         "emergency_ring_center": {
-            "x": 1215,
+            "x": 1179,
             "y": 722
         },
 

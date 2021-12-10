@@ -1,8 +1,8 @@
 // To get the min average heal of your character use:
 // http://www.tibia-stats.com/index.php?akcja=spellDmgCalc
 {
-    "toggle_emergency_amulet": "F1",
-    "toggle_emergency_ring": "F2",
+    "toggle_emergency_ring": "F1",
+    "toggle_emergency_amulet": "F2",
     "equip_ring": "F3",
     "equip_amulet": "F4",
     "toggle_tank_ring": "F5",
