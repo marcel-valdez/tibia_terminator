@@ -512,6 +512,25 @@ class ClientInterface:
             throttle_behavior=throttle_behavior,
         )
 
+    def toggle_tank_ring(
+        self,
+        throttle_ms: int = 250,
+        throttle_behavior: ThrottleBehavior = ThrottleBehavior.DROP,
+    ):
+        if self.hotkeys_config.toggle_tank_ring:
+            self.logger.log_action(2, f"toggle_tank_ring {throttle_ms} ms")
+            self.send_keystroke_async(
+                CommandType.EQUIP_ITEM,
+                throttle_ms,
+                self.hotkeys_config.toggle_tank_ring,
+                cmd_id="TOGGLE_TANK_RING",
+                throttle_behavior=throttle_behavior,
+            )
+        else:
+            self.toggle_emergency_ring(
+                throttle_ms, throttle_behavior
+            )
+
     def equip_amulet(
         self,
         throttle_ms: int = 250,
@@ -539,6 +558,25 @@ class ClientInterface:
             cmd_id="TOGGLE_EMERGENCY_AMULET",
             throttle_behavior=throttle_behavior,
         )
+
+    def toggle_tank_amulet(
+        self,
+        throttle_ms: int = 250,
+        throttle_behavior: ThrottleBehavior = ThrottleBehavior.DROP,
+    ):
+        if self.hotkeys_config.toggle_tank_amulet:
+            self.logger.log_action(2, f"toggle_tank_amulet {throttle_ms} ms")
+            self.send_keystroke_async(
+                CommandType.EQUIP_ITEM,
+                throttle_ms,
+                self.hotkeys_config.toggle_tank_amulet,
+                cmd_id="TOGGLE_TANK_AMULET",
+                throttle_behavior=throttle_behavior,
+            )
+        else:
+            self.toggle_emergency_amulet(
+                throttle_ms, throttle_behavior
+            )
 
     def eat_food(
         self,

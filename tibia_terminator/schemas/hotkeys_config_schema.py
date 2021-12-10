@@ -30,6 +30,12 @@ class HotkeysConfig(NamedTuple):
     lower_left: str
     lower_right: str
     loot_button: str = "right"
+
+    toggle_tank_amulet: Optional[str] = None
+    toggle_tank_ring: Optional[str] = None
+    start_tank_mode: Optional[str] = None
+    cancel_tank_mode: Optional[str] = None
+
     potion_minor_heal: Optional[str] = None
     potion_medium_heal: Optional[str] = None
     potion_greater_heal: Optional[str] = None
@@ -51,11 +57,19 @@ class HotkeysConfigSchema(FactorySchema[HotkeysConfig]):
     magic_shield = fields.Str(required=True)
     cancel_magic_shield = fields.Str(required=True)
     mana_potion = fields.Str(required=True)
+
     toggle_emergency_amulet = fields.Str(required=True)
     toggle_emergency_ring = fields.Str(required=True)
-    loot = fields.Str(required=True)
     start_emergency = fields.Str(required=True)
     cancel_emergency = fields.Str(required=True)
+
+    toggle_tank_amulet = fields.Str(required=False, allow_none=True)
+    toggle_tank_ring = fields.Str(required=False, allow_none=True)
+    start_tank_mode = fields.Str(required=False, allow_none=True)
+    cancel_tank_mode = fields.Str(required=False, allow_none=True)
+
+    loot = fields.Str(required=True)
+
     up = fields.Str(required=True, default="w")
     down = fields.Str(required=True, default="s")
     left = fields.Str(required=True, default="a")
