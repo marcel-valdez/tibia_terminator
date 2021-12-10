@@ -38,7 +38,10 @@ def fetch_config_files(dir_path: str) -> Iterable[str]:
 
 def main(dir_path: str):
     for char_config in load_configs(dir_path):
-        print(char_config)
+        try:
+            print(char_config)
+        except Exception as e:
+            sys.stderr.write(str(e) + '\n')
 
 
 if __name__ == "__main__":

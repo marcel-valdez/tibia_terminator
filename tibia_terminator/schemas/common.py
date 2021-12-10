@@ -57,10 +57,11 @@ class FactorySchema(Generic[T], Schema, ResolvableMixin):
     def loadf(self, path: str) -> T:
         if not os.path.isfile(path):
             raise Exception(f"Path {path} does not exist.")
-        data = None
-        with open(path, 'r', encoding="utf-8") as file:
-            data = json.load(file)
-        return self.load(data)
+        try:
+            with open(path, 'r', encoding="utf-8") as file:
+                return self.load(json.load(file))
+        except Exception as e:
+            raise Exception(f"Error while loading: {path}") from e
 
 
 FORMATTER = Formatter()
