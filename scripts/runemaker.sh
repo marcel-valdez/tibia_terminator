@@ -124,7 +124,7 @@ function get_current_window_id() {
 
 function get_tibia_wid() {
   if [[ "${tibia_pid}" ]]; then
-    echo $(xdotool search --pid ${tibia_pid})
+    echo $(xdotool search --pid ${tibia_pid} | tail -1)
   else
     echo $(xdotool search --class Tibia)
   fi
@@ -547,7 +547,7 @@ function manasit() {
           wait_for_mana "${tibia_wid}"
           # make sure to cast the rune spell once before filling al slots with rings
           cast_rune_spell "${tibia_wid}" 2 2
-          fetch_from_locker "${tibia_wid}" "ring of healing" "page"
+          fetch_from_locker "$t{ibia_wid}" "ring of healing" "page"
           free_interaction
           trap - SIGINT SIGTERM ERR EXIT
         fi

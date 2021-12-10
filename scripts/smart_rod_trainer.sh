@@ -44,7 +44,7 @@ function timestamp_secs() {
 }
 
 function get_tibia_window_id() {
-  echo $(xdotool search --pid ${tibia_pid})
+  echo $(xdotool search --pid ${tibia_pid} | tail -1)
 }
 
 function focus_window() {

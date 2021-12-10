@@ -81,7 +81,7 @@ def get_tibia_wid(pid: Union[str, int], debug_level=1) -> str:
     """Get the Tibia window id belonging to the process with PID."""
     return run_cmd(
         ["/usr/bin/xdotool", "search", "--pid", str(pid)], debug_level
-    ).strip()
+    ).strip().splitlines()[-1].strip()
 
 
 def focus_tibia(wid: str) -> str:
