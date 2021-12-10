@@ -28,7 +28,7 @@ class ProtectorKeeper:
     ):
         self.client = client
         self.timestamp_sec_fn = timestamp_sec_fn or time.time
-        self.last_cast_ts = time.time() - PROTECTOR_DURATION_SECS
+        self.last_cast_ts = self.timestamp_sec_fn() - PROTECTOR_DURATION_SECS
         self.last_cast_attempt_ts = self.last_cast_ts
         self.cast_count = 0
 
