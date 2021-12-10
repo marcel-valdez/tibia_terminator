@@ -129,21 +129,22 @@
     //
     // To generate the profile for an amulet / ring pair that are your emergency
     // rings and amulets (e.g. might ring and ssa), run the following command:
-    // scripts/generate_color_profile.sh --tibia_pid <tibia PID> \
+    // scripts/generate_color_profile.sh --pid <tibia PID> \
     //     --ring_name <ring_name> --amulet_name <amulet_name> \
-    //     --tibia_window_config_file <path_to/tibia_window_config.json> \
-    //     --is_emergency
+    //     --config_file <path_to/tibia_window_config.json> \
+    //     --type emergency
     //
     // If these are normal items (non-emergency), then use:
-    // scripts/generate_color_profile.sh --tibia_pid <tibia PID> \
+    // scripts/generate_color_profile.sh --pid <tibia PID> \
     //     --ring_name <ring_name> --amulet_name <amulet_name> \
-    //     --tibia_window_config_file <path_to/tibia_window_config.json>
+    //     --config_file <path_to/tibia_window_config.json> \
+    //     --type normal
     //
-    // Example command to generate for the might ring and SSA duo:
-    // scripts/generate_color_profile.sh --tibia_pid 12345 \
+    // Example command to generate for the might ring and SSA emergency duo:
+    // scripts/generate_color_profile.sh --pid 12345 \
     //     --ring_name might.ring --amulet_name ssa.amulet \
-    //     --tibia_window_config_file "char_configs/tibia_window_config.json" \
-    //      --is_emergency
+    //     --config_file "char_configs/tibia_window_config.json" \
+    //     --type emergency
     "item_repository": {
         // The color profile for ring items you'd like automatically equip /
         // unequip.
