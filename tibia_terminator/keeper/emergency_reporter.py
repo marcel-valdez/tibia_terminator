@@ -15,6 +15,9 @@ class EmergencyReporter():
             self.total_hp = char_status.hp
         return char_status.hp <= self.emergency_shield_hp_treshold
 
+    def is_in_emergency(self) -> bool:
+        return self.in_emergency or self.in_emergency_override
+
     def start_emergency(self):
         if not self.in_emergency:
             self.emergency_start_timestamp_sec = time()
@@ -54,3 +57,17 @@ class EmergencyReporter():
 
     def secs_since_start(self):
         return time() - self.emergency_start_timestamp_sec
+
+
+class TankModeReporter():
+    def __init__(self):
+        self.tank_mode_on = False
+
+    def is_tank_mode_on(self) -> bool:
+        return self.tank_mode_on
+
+    def start_tank_mode(self) -> None:
+        self.tank_mode_on = True
+
+    def stop_tank_mode(self) -> None:
+        self.tank_mode_on = False
