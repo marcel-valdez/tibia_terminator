@@ -286,4 +286,3 @@ class KnightPotionKeeper:
     def random_choice(self, prob_a: float, choice_a: T, choice_b: T) -> T:
         value = random.random()
         return choice_a if value <= prob_a else choice_b
-
