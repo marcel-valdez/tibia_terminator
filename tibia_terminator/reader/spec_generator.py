@@ -4,11 +4,10 @@ import json
 import time
 import sys
 
-from typing import NamedTuple, Callable, List, Optional
+from typing import Callable, List, Optional, Dict, Any
 from tibia_terminator.schemas.reader.interface_config_schema import (
     TibiaWindowSpec,
     TibiaWindowSpecSchema,
-    EquipmentCoords,
     ItemEntry,
     ItemColors,
     ItemRepositorySpec,
@@ -35,9 +34,9 @@ def read_equipment_colors(getter_fn: Callable[[], ItemColors]) -> List[ItemColor
 def generate_repository_spec(
     tibia_wid: int,
     tibia_window_spec: TibiaWindowSpec,
-    ring_name: Optional[str],
-    amulet_name: Optional[str],
-    is_emergency: bool,
+    equipment_type: str,
+    ring_name: Optional[str] = None,
+    amulet_name: Optional[str] = None,
 ) -> ItemRepositorySpec:
     eq_reader = EquipmentReader(tibia_wid, tibia_window_spec)
     eq_reader.open()
@@ -49,20 +48,21 @@ def generate_repository_spec(
         rings = []
         amulets = []
         if amulet_name:
-            print(
-                "Reading amulet colors, this will take 5 seconds...",
-                file=sys.stderr
-            )
+            print("Reading amulet colors, this will take 5 seconds...", file=sys.stderr)
             equipped_amulet_colors = read_equipment_colors(
                 eq_reader.read_equipped_amulet_colors
             )
-            if is_emergency:
+            if equipment_type == "emergency":
                 action_amulet_colors = read_equipment_colors(
                     eq_reader.read_action_bar_emergency_amulet_colors
                 )
+            elif equipment_type == "tank":
+                action_amulet_colors = read_equipment_colors(
+                    eq_reader.read_action_bar_tank_amulet_colors
+                )
             else:
                 action_amulet_colors = read_equipment_colors(
-                    eq_reader.read_action_bar_amulet_colors
+                    eq_reader.read_action_bar_normal_amulet_colors
                 )
             amulets = [
                 ItemEntry(
@@ -73,20 +73,21 @@ def generate_repository_spec(
             ]
 
         if ring_name:
-            print(
-                "Reading ring colors, this will take 5 seconds...",
-                file=sys.stderr
-            )
+            print("Reading ring colors, this will take 5 seconds...", file=sys.stderr)
             equipped_ring_colors = read_equipment_colors(
                 eq_reader.read_equipped_ring_colors
             )
-            if is_emergency:
+            if equipment_type == "emergency":
                 action_ring_colors = read_equipment_colors(
                     eq_reader.read_action_bar_emergency_ring_colors
                 )
+            elif equipment_type == "tank":
+                action_ring_colors = read_equipment_colors(
+                    eq_reader.read_action_bar_tank_ring_colors
+                )
             else:
                 action_ring_colors = read_equipment_colors(
-                    eq_reader.read_action_bar_ring_colors
+                    eq_reader.read_action_bar_normal_ring_colors
                 )
             rings = [
                 ItemEntry(
@@ -104,38 +105,112 @@ def generate_repository_spec(
         eq_reader.close()
 
 
-def print_repository_spec(spec: ItemRepositorySpec, config_path: str) -> None:
+def to_terminal_rgb(rgb: str) -> str:
+    clean_rgb = rgb
+    if len(rgb) == 4:
+        clean_rgb += "00"
+    if len(rgb) == 3:
+        clean_rgb = rgb[0] * 2 + rgb[1] * 2 + rgb[2] * 2
+
+    red = str(int(clean_rgb[0:2], 16))
+    green = str(int(clean_rgb[2:4], 16))
+    blue = str(int(clean_rgb[4:6], 16))
+
+    return "\033[38;2;{R};{G};{B}m{COLOR}\033[0;00m".format(
+        R=red, G=green, B=blue, COLOR=rgb
+    )
+
+
+def replace_colors(colors: ItemColors) -> ItemColors:
+    return ItemColors(
+        north=to_terminal_rgb(colors.north),
+        south=to_terminal_rgb(colors.south),
+        left=to_terminal_rgb(colors.left),
+        right=to_terminal_rgb(colors.right),
+    )
+
+
+def replace_all_colors(all_colors: List[ItemColors]) -> List[ItemColors]:
+    result = []
+    for colors in all_colors:
+        result.append(replace_colors(colors))
+    return result
+
+
+def replace_item_colors(item: ItemEntry) -> ItemEntry:
+    return ItemEntry(
+        name=item.name,
+        equipped_colors=replace_all_colors(item.equipped_colors),
+        action_bar_colors=replace_all_colors(item.action_bar_colors),
+    )
+
+
+def print_dict(obj: Dict[str, Any], indent=0, key=""):
+    prefix = f'"{key}": ' if key else ""
+    if isinstance(obj, list):
+        print((" " * indent) + f"{prefix}[")
+        for entry in obj:
+            print_dict(entry, indent + 2)
+        print((" " * indent) + "],")
+    elif isinstance(obj, dict):
+        print((" " * indent) + f"{prefix}{{")
+        for entry_key in obj:
+            print_dict(obj[entry_key], indent + 2, entry_key)
+        print((" " * indent) + "},")
+    elif isinstance(obj, tuple):
+        print((" " * indent) + f"{prefix}(")
+        for entry in obj:
+            print_dict(entry, indent + 2)
+        print((" " * indent) + "),")
+    elif isinstance(obj, str):
+        print((" " * indent) + f'{prefix}"{obj}",')
+    elif obj is None:
+        print((" " * indent) + f"{prefix}null,")
+    else:
+        print((" " * indent) + f"{prefix}{str(obj)},")
+
+
+def print_repository_spec(
+    spec: ItemRepositorySpec, config_path: str, colored_output: bool
+) -> None:
     if len(spec.amulets) > 0:
         print(
             f"// Copy-paste this into item_repository > amulets in {config_path}",
-            file=sys.stderr
+            file=sys.stderr,
         )
-        json.dump(to_dict(spec.amulets[0]), fp=sys.stdout, indent=2)
+        amulet = spec.amulets[0]
+        if colored_output:
+            amulet = replace_item_colors(amulet)
+        print_dict(to_dict(amulet))
         print("")
 
     if len(spec.rings) > 0:
         print(
             f"// Copy-paste this into item_repository > rings in {config_path}",
-            file=sys.stderr
+            file=sys.stderr,
         )
-        json.dump(to_dict(spec.rings[0]), fp=sys.stdout, indent=2)
+        ring = spec.rings[0]
+        if colored_output:
+            ring = replace_item_colors(ring)
+        print_dict(to_dict(ring))
         print("")
 
 
 def print_item_spec(
     tibia_pid: int,
     tibia_window_config_path: str,
+    equipment_type: str,
+    colored_output: bool,
     ring_name: Optional[str],
     amulet_name: Optional[str],
-    is_emergency: bool,
 ) -> None:
     tibia_wid = int(get_tibia_wid(tibia_pid, 0))
     schema = TibiaWindowSpecSchema()
     tibia_window_spec = schema.loadf(tibia_window_config_path)
     repository_spec = generate_repository_spec(
-        tibia_wid, tibia_window_spec, ring_name, amulet_name, is_emergency
+        tibia_wid, tibia_window_spec, equipment_type, ring_name, amulet_name
     )
-    print_repository_spec(repository_spec, tibia_window_config_path)
+    print_repository_spec(repository_spec, tibia_window_config_path, colored_output)
 
 
 if __name__ == "__main__":
@@ -151,23 +226,28 @@ if __name__ == "__main__":
     parser.add_argument("--tibia_pid", type=int, required=True)
     parser.add_argument("--ring_name", type=str, required=False)
     parser.add_argument("--amulet_name", type=str, required=False)
-    parser.add_argument("--is_emergency", action="store_true", required=False)
+    parser.add_argument(
+        "--colored_output", "-c", action="store_true", required=False, default=False
+    )
+    parser.add_argument(
+        "--type", type=str, choices=["normal", "emergency", "tank"], default="normal"
+    )
 
     def main():
         args = parser.parse_args()
         if not args.ring_name and not args.amulet_name:
             parser.exit(
                 status=1,
-                message=("One or both of ring_name or amulet_name must be"
-                         "specified.")
+                message=("One or both of ring_name or amulet_name must be specified."),
             )
 
         print_item_spec(
-            args.tibia_pid,
-            args.tibia_window_config_file,
-            args.ring_name,
-            args.amulet_name,
-            args.is_emergency
+            tibia_pid=args.tibia_pid,
+            tibia_window_config_path=args.tibia_window_config_file,
+            ring_name=args.ring_name,
+            colored_output=args.colored_output,
+            amulet_name=args.amulet_name,
+            equipment_type=args.type,
         )
 
     main()

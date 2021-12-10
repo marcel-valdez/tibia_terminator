@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.8
 
-from typing import NamedTuple, List
+from typing import NamedTuple, List, Optional
 from marshmallow import fields
 from tibia_terminator.schemas.common import FactorySchema
 from tibia_terminator.schemas.reader.common import Coord, CoordSchema
@@ -21,6 +21,8 @@ class ActionBarSpec(NamedTuple):
     emergency_amulet_center: Coord
     emergency_ring_center: Coord
     magic_shield: MagicShieldSpec
+    tank_amulet_center: Optional[Coord] = None
+    tank_ring_center: Optional[Coord] = None
 
 
 class EquipmentCoords(NamedTuple):
@@ -91,6 +93,8 @@ class ActionBarSpecSchema(FactorySchema[ActionBarSpec]):
     ring_center = fields.Nested(CoordSchema, required=True)
     emergency_amulet_center = fields.Nested(CoordSchema, required=True)
     emergency_ring_center = fields.Nested(CoordSchema, required=True)
+    tank_amulet_center = fields.Nested(CoordSchema, required=False, allow_none=True)
+    tank_ring_center = fields.Nested(CoordSchema, required=False, allow_none=True)
     magic_shield = fields.Nested(MagicShieldSpecSchema, required=True)
 
 

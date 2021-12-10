@@ -19,12 +19,24 @@ class CharStatus:
         self.speed = speed
         self.mana = mana
         self.magic_shield_level = magic_shield_level
+        self.normal_action_amulet = equipment_status.get(
+            "normal_action_amulet", "ERROR"
+        )
         self.emergency_action_amulet = equipment_status.get(
             "emergency_action_amulet", "ERROR"
         )
+        self.tank_action_amulet = equipment_status.get(
+            "tank_action_amulet", "ERROR"
+        )
         self.equipped_amulet = equipment_status.get("equipped_amulet", "ERROR")
+        self.normal_action_ring = equipment_status.get(
+            "normal_action_ring", "ERROR"
+        )
         self.emergency_action_ring = equipment_status.get(
             "emergency_action_ring", "ERROR"
+        )
+        self.tank_action_ring = equipment_status.get(
+            "tank_action_ring", "ERROR"
         )
         self.equipped_ring = equipment_status.get("equipped_ring", "ERROR")
         self.is_amulet_slot_empty = self.equipped_amulet == AmuletName.EMPTY
@@ -56,7 +68,9 @@ class CharStatus:
             equipment_status
             or {
                 "emergency_action_amulet": self.emergency_action_amulet,
+                "tank_action_amulet": self.tank_action_amulet,
                 "emergency_action_ring": self.emergency_action_ring,
+                "tank_action_ring": self.tank_action_ring,
                 "equipped_ring": self.equipped_ring,
                 "magic_shield_status": self.magic_shield_status,
             },
@@ -98,16 +112,32 @@ class CharStatusAsync(CharStatus):
         return self.__stats.get("magic_shield", -1)
 
     @property
+    def normal_action_amulet(self):
+        return self.__get_eq_status("normal_action_amulet", "ERROR")
+
+    @property
     def emergency_action_amulet(self):
         return self.__get_eq_status("emergency_action_amulet", "ERROR")
+
+    @property
+    def tank_action_amulet(self):
+        return self.__get_eq_status("tank_action_amulet", "ERROR")
 
     @property
     def equipped_amulet(self):
         return self.__get_eq_status("equipped_amulet", "ERROR")
 
     @property
+    def normal_action_ring(self):
+        return self.__get_eq_status("normal_action_ring", "ERROR")
+
+    @property
     def emergency_action_ring(self):
         return self.__get_eq_status("emergency_action_ring", "ERROR")
+
+    @property
+    def tank_action_ring(self):
+        return self.__get_eq_status("tank_action_ring", "ERROR")
 
     @property
     def equipped_ring(self):

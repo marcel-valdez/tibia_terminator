@@ -16,18 +16,6 @@
     "action_bar": {
         // Length of one side of the action squares
         "square_len": 36,
-        // x,y coordinate of the center of the amulet action bar square
-        "amulet_center": {
-            "x": 1214,
-            "y": 755
-        },
-        // x,y coordinate of the center of the ring action bar square
-        // Preferably use the center of the ring itself, rather than
-        // the center of the action bar square.
-        "ring_center": {
-            "x": 1179,
-            "y": 758
-        },
         // x,y coordinate of the center of the emergency amulet action bar
         // square
         "emergency_amulet_center": {
@@ -35,9 +23,32 @@
             "y": 719
         },
         // x,y coordinate of the center of the emergency ring action bar square
+        // Preferably use the center of the ring itself, rather than
+        // the center of the action bar square.
         "emergency_ring_center": {
             "x": 1215,
             "y": 722
+        },
+
+        // x,y coordinate of the center of the amulet action bar square
+        "amulet_center": {
+            "x": 1214,
+            "y": 755
+        },
+        // x,y coordinate of the center of the ring action bar square
+        "ring_center": {
+            "x": 1179,
+            "y": 758
+        },
+        // x,y coordinate of the center of the amulet action bar square
+        "tank_amulet_center": {
+            "x": 1214,
+            "y": 791
+        },
+        // x,y coordinate of the center of the ring action bar square
+        "tank_ring_center": {
+            "x": 1179,
+            "y": 794
         },
         // Configuration for the magic shield action bar square
         "magic_shield": {
@@ -278,6 +289,31 @@
                         "south": "454545",
                         "left": "ededce",
                         "right": "ededce"
+                    }
+                ]
+            },
+            {
+                "name": "time.ring",
+                "equipped_colors": [
+                    {
+                        "north": "4e4e4e",
+                        "south": "000",
+                        "left": "717171",
+                        "right": "000"
+                    },
+                    {
+                        "north": "fbf36d",
+                        "south": "000",
+                        "left": "717171",
+                        "right": "000"
+                    }
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "202020",
+                        "south": "444444",
+                        "left": "717171",
+                        "right": "474747"
                     }
                 ]
             }
@@ -579,6 +615,25 @@
                         "right": "1d11f"
                     }
                 ]
+            },
+            {
+                "name": "koeshi.amulet",
+                "equipped_colors": [
+                    {
+                        "north": "6a3f29",
+                        "south": "000",
+                        "left": "000",
+                        "right": "202020",
+                    },
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "4f4f4f",
+                        "south": "000",
+                        "left": "444444",
+                        "right": "ab7438",
+                    },
+                ],
             },
             {
                 "name": "empty.amulet",
