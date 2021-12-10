@@ -7,7 +7,7 @@ import sys
 
 from argparse import ArgumentParser, Namespace
 from collections import deque
-from typing import List, Iterable, NamedTuple, Optional, Any
+from typing import List, Iterable, NamedTuple, Optional, Any, Union
 
 from tibia_terminator.char_configs.char_config_loader import load_configs
 from tibia_terminator.schemas.reader.interface_config_schema import (
@@ -161,11 +161,11 @@ class TibiaTerminator:
         view_renderer: ViewRenderer,
         cmd_processor: CommandProcessor,
         app_status_file: str = DEFAULT_APP_STATUS_FILE,
-        enable_mana=True,
-        enable_hp=True,
-        enable_magic_shield=True,
-        enable_speed=True,
-        only_monitor=False,
+        enable_mana: bool = True,
+        enable_hp: bool = True,
+        enable_magic_shield: bool = True,
+        enable_speed: bool = True,
+        only_monitor: bool = False,
     ):
         self.tibia_wid = tibia_wid
         self.char_keeper = char_keeper
@@ -193,9 +193,12 @@ class TibiaTerminator:
         self.enable_hp = enable_hp
         self.enable_magic_shield = enable_magic_shield
         self.only_monitor = only_monitor
-        self.view = None
+        self.view: Union[
+            RunView, PausedView, ConfigSelectionView
+        ] = None  # type: ignore
         self.loop_times = deque([0], AVG_LOOP_TIME_SAMPLE_SIZE)
         self.loop_times_sum = 0
+        self.avg_loop_time_ms = 0
 
     def load_config(self, config_name: str) -> bool:
         for config in self.char_config_entries:
@@ -210,11 +213,11 @@ class TibiaTerminator:
                 and os.path.getsize(self.app_status_file) > 0):
             app_status_schema = AppStatusSchema()
             return app_status_schema.loadf(self.app_status_file)
-        else:
-            return AppStatus(
-                state=AppState.CONFIG_SELECTION,
-                selected_config_name=self.char_config_entries[0].name,
-            )
+
+        return AppStatus(
+            state=AppState.CONFIG_SELECTION,
+            selected_config_name=self.char_config_entries[0].name,
+        )
 
     def write_app_status(self):
         app_status_schema = AppStatusSchema()
@@ -282,10 +285,10 @@ class TibiaTerminator:
                 if self.app_state == AppState.EXIT:
                     self.handle_exit_state()
                     break
-                elif self.app_state == AppState.PAUSED:
+                if self.app_state == AppState.PAUSED:
                     self.handle_paused_state()
                 elif self.app_state == AppState.RUNNING:
-                    self.handle_running_state()
+                    self.handle_running_state(self.view)
                 elif self.app_state == AppState.CONFIG_SELECTION:
                     self.handle_config_selection_state()
 
@@ -357,44 +360,44 @@ class TibiaTerminator:
         self.stats_logger.run_view = self.view
         self.view_renderer.change_views(self.view)
 
-    def gen_char_status(self) -> CharStatus:
+    def gen_char_status(self, view: RunView) -> CharStatus:
         return CharStatusAsync(
             self.char_reader.get_stats(),
             self.equipment_reader.get_equipment_status(
-                emergency_action_amulet_cb=self.view.
+                emergency_action_amulet_cb=view.
                 set_emergency_action_amulet,
-                emergency_action_ring_cb=self.view.set_emergency_action_ring,
-                tank_action_amulet_cb=self.view.set_tank_action_amulet,
-                tank_action_ring_cb=self.view.set_tank_action_ring,
-                equipped_amulet_cb=self.view.set_equipped_amulet,
-                equipped_ring_cb=self.view.set_equipped_ring,
-                magic_shield_status_cb=self.view.set_magic_shield_status,
-                normal_action_amulet_cb=self.view.set_normal_action_amulet,
-                normal_action_ring_cb=self.view.set_normal_action_ring,
+                emergency_action_ring_cb=view.set_emergency_action_ring,
+                tank_action_amulet_cb=view.set_tank_action_amulet,
+                tank_action_ring_cb=view.set_tank_action_ring,
+                equipped_amulet_cb=view.set_equipped_amulet,
+                equipped_ring_cb=view.set_equipped_ring,
+                magic_shield_status_cb=view.set_magic_shield_status,
+                normal_action_amulet_cb=view.set_normal_action_amulet,
+                normal_action_ring_cb=view.set_normal_action_ring,
             ),
         )
 
-    def handle_running_state(self):
-        start_ms = time.time() * 1000
-        char_status = self.gen_char_status()
+    def handle_running_state(self, view: RunView):
+        start_ms = int(time.time() * 1000)
+        char_status = self.gen_char_status(view)
         self.char_keeper.handle_char_status(char_status)
         self.equipment_reader.cancel_pending_futures()
         # implicitly waits for all FutureValue objects, since it
         # tries to fetch all values in order to print to screen
-        self.view.set_char_stats(char_status)
+        view.set_char_stats(char_status)
         is_in_emergency = self.char_keeper.emergency_reporter.is_in_emergency()
-        self.view.emergency_status = "ON" if is_in_emergency else "OFF"
+        view.emergency_status = "ON" if is_in_emergency else "OFF"
         is_tank_mode_on = self.char_keeper.tank_mode_reporter.is_tank_mode_on()
-        self.view.tank_mode_status = "ON" if is_tank_mode_on else "OFF"
-        end_ms = time.time() * 1000
-        self.add_elapsed_loop_time(end_ms - start_ms)
+        view.tank_mode_status = "ON" if is_tank_mode_on else "OFF"
+        end_ms = int(time.time() * 1000)
+        self.add_elapsed_loop_time(view, end_ms - start_ms)
 
-    def add_elapsed_loop_time(self, elapsed_ms: int):
+    def add_elapsed_loop_time(self, view: RunView, elapsed_ms: int):
         self.loop_times_sum += elapsed_ms - self.loop_times[0]
         self.loop_times.append(elapsed_ms)
-        self.avg_loop_time_ms = self.loop_times_sum / len(self.loop_times)
-        self.view.set_debug_line(
-            f"Avg loop time: {int(self.avg_loop_time_ms)} ms")
+        self.avg_loop_time_ms = int(self.loop_times_sum / len(self.loop_times))
+        view.set_debug_line(
+            f"Avg loop time: {self.avg_loop_time_ms} ms")
 
     def exit_running_state(self):
         self.stats_logger.run_view = None
@@ -413,8 +416,8 @@ class TibiaTerminator:
     def handle_paused_state(self):
         pass
 
-    def config_input_cb(self, view: ConfigSelectionView, keycode):
-        if keycode >= 48 and keycode <= 57:
+    def config_input_cb(self, view: ConfigSelectionView, keycode: int):
+        if 48 <= keycode <= 57:
             view.user_input += str(keycode - 48)
         elif keycode == ENTER_KEYCODE:
             if view.user_input == "":
