@@ -1,6 +1,6 @@
 """Keeps mana at healthy levels."""
 
-from tibia_terminator.common.logger import debug
+
 from tibia_terminator.common.char_status import CharStatus
 from tibia_terminator.interface.client_interface import ClientInterface
 
@@ -51,10 +51,10 @@ class ManaKeeper:
         return is_downtime and char_status.mana <= self.downtime_mana
 
     def should_drink_mana_high_priority(self, current_mana: int) -> bool:
-        if current_mana > self.mana_lo:
-            self.should_drink_mana_hi_pri = False
-        elif current_mana <= self.mana_hi:
+        if current_mana <= self.mana_hi:
             self.should_drink_mana_hi_pri = True
+        elif current_mana > self.mana_lo:
+            self.should_drink_mana_hi_pri = False
 
         return self.should_drink_mana_hi_pri
 
