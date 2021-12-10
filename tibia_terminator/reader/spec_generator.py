@@ -17,7 +17,8 @@ from tibia_terminator.reader.window_utils import get_tibia_wid
 from tibia_terminator.reader.equipment_reader import EquipmentReader
 
 
-def read_equipment_colors(getter_fn: Callable[[], ItemColors]) -> List[ItemColors]:
+def read_equipment_colors(
+        getter_fn: Callable[[], ItemColors]) -> List[ItemColors]:
     start = time.time()  # seconds
     now = start
     result = []
@@ -48,22 +49,19 @@ def generate_repository_spec(
         rings = []
         amulets = []
         if amulet_name:
-            print("Reading amulet colors, this will take 5 seconds...", file=sys.stderr)
+            print("Reading amulet colors, this will take 5 seconds...",
+                  file=sys.stderr)
             equipped_amulet_colors = read_equipment_colors(
-                eq_reader.read_equipped_amulet_colors
-            )
+                eq_reader.read_equipped_amulet_colors)
             if equipment_type == "emergency":
                 action_amulet_colors = read_equipment_colors(
-                    eq_reader.read_action_bar_emergency_amulet_colors
-                )
+                    eq_reader.read_action_bar_emergency_amulet_colors)
             elif equipment_type == "tank":
                 action_amulet_colors = read_equipment_colors(
-                    eq_reader.read_action_bar_tank_amulet_colors
-                )
+                    eq_reader.read_action_bar_tank_amulet_colors)
             else:
                 action_amulet_colors = read_equipment_colors(
-                    eq_reader.read_action_bar_normal_amulet_colors
-                )
+                    eq_reader.read_action_bar_normal_amulet_colors)
             amulets = [
                 ItemEntry(
                     name=amulet_name,
@@ -73,22 +71,19 @@ def generate_repository_spec(
             ]
 
         if ring_name:
-            print("Reading ring colors, this will take 5 seconds...", file=sys.stderr)
+            print("Reading ring colors, this will take 5 seconds...",
+                  file=sys.stderr)
             equipped_ring_colors = read_equipment_colors(
-                eq_reader.read_equipped_ring_colors
-            )
+                eq_reader.read_equipped_ring_colors)
             if equipment_type == "emergency":
                 action_ring_colors = read_equipment_colors(
-                    eq_reader.read_action_bar_emergency_ring_colors
-                )
+                    eq_reader.read_action_bar_emergency_ring_colors)
             elif equipment_type == "tank":
                 action_ring_colors = read_equipment_colors(
-                    eq_reader.read_action_bar_tank_ring_colors
-                )
+                    eq_reader.read_action_bar_tank_ring_colors)
             else:
                 action_ring_colors = read_equipment_colors(
-                    eq_reader.read_action_bar_normal_ring_colors
-                )
+                    eq_reader.read_action_bar_normal_ring_colors)
             rings = [
                 ItemEntry(
                     name=ring_name,
@@ -116,9 +111,10 @@ def to_terminal_rgb(rgb: str) -> str:
     green = str(int(clean_rgb[2:4], 16))
     blue = str(int(clean_rgb[4:6], 16))
 
-    return "\033[38;2;{R};{G};{B}m{COLOR}\033[0;00m".format(
-        R=red, G=green, B=blue, COLOR=rgb
-    )
+    return "\033[38;2;{R};{G};{B}m{COLOR}\033[0;00m".format(R=red,
+                                                            G=green,
+                                                            B=blue,
+                                                            COLOR=rgb)
 
 
 def replace_colors(colors: ItemColors) -> ItemColors:
@@ -170,9 +166,8 @@ def print_dict(obj: Dict[str, Any], indent=0, key=""):
         print((" " * indent) + f"{prefix}{str(obj)},")
 
 
-def print_repository_spec(
-    spec: ItemRepositorySpec, config_path: str, colored_output: bool
-) -> None:
+def print_repository_spec(spec: ItemRepositorySpec, config_path: str,
+                          colored_output: bool) -> None:
     if len(spec.amulets) > 0:
         print(
             f"// Copy-paste this into item_repository > amulets in {config_path}",
@@ -207,38 +202,71 @@ def print_item_spec(
     tibia_wid = int(get_tibia_wid(tibia_pid, 0))
     schema = TibiaWindowSpecSchema()
     tibia_window_spec = schema.loadf(tibia_window_config_path)
-    repository_spec = generate_repository_spec(
-        tibia_wid, tibia_window_spec, equipment_type, ring_name, amulet_name
-    )
-    print_repository_spec(repository_spec, tibia_window_config_path, colored_output)
+    repository_spec = generate_repository_spec(tibia_wid, tibia_window_spec,
+                                               equipment_type, ring_name,
+                                               amulet_name)
+    print_repository_spec(repository_spec, tibia_window_config_path,
+                          colored_output)
 
 
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(
-        (
-            "Script used to generate item color specs to add to your "
-            "item_repository field in the tibia window config file"
-        )
-    )
-    parser.add_argument("--tibia_window_config_file", type=str, required=True)
-    parser.add_argument("--tibia_pid", type=int, required=True)
-    parser.add_argument("--ring_name", type=str, required=False)
-    parser.add_argument("--amulet_name", type=str, required=False)
+        ("Script used to generate item color specs to add to your "
+         "item_repository field in the tibia window config file"))
     parser.add_argument(
-        "--colored_output", "-c", action="store_true", required=False, default=False
-    )
+        "--tibia_window_config_file",
+        "--config",
+        type=str,
+        required=True,
+        help="File path to the JSON Tibia window config file")
     parser.add_argument(
-        "--type", type=str, choices=["normal", "emergency", "tank"], default="normal"
-    )
+        "--tibia_pid",
+        "--pid",
+        "-p",
+        type=int,
+        required=True,
+        help="PID of the Tibia client.")
+    parser.add_argument(
+        "--ring_name",
+        "--rn",
+        type=str,
+        required=False,
+        help="Name to use for the generated ring color profile.")
+    parser.add_argument(
+        "--amulet_name",
+        "--an",
+        type=str,
+        required=False,
+        help="Name to use for the generated amulet color profile.")
+    parser.add_argument(
+        "--colored_output",
+        "--color",
+        "-c",
+        action="store_true",
+        required=False,
+        default=False,
+        help=(
+            "Enables colored output for each of the item colors so that you "
+            "can compare the identified colors against what you'd expect from "
+            "the item"))
+    parser.add_argument(
+        "--type",
+        "-t",
+        type=str,
+        choices=["normal", "emergency", "tank"],
+        default="normal",
+        help="The action bar slot associated to the item.")
 
     def main():
         args = parser.parse_args()
         if not args.ring_name and not args.amulet_name:
             parser.exit(
                 status=1,
-                message=("One or both of ring_name or amulet_name must be specified."),
+                message=(
+                    "One or both of ring_name or amulet_name must be specified."
+                ),
             )
 
         print_item_spec(
