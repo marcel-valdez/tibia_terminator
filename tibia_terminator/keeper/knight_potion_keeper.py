@@ -116,6 +116,13 @@ class KnightPotionKeeper:
         battle_config: BattleConfig,
         total_hp: int
     ):
+        if not battle_config.potion_hp_hi:
+            raise Exception("battle_config.potion_hp_hi can't be null")
+        if not battle_config.potion_hp_lo:
+            raise Exception("battle_config.potion_hp_lo can't be null")
+        if not battle_config.potion_hp_critical:
+            raise Exception("battle_config.potion_hp_critical can't be null")
+
         self.priorities_strategy = KnightPrioritiesStrategy(
             mana_config=StatConfig(
                 battle_config.downtime_mana,
