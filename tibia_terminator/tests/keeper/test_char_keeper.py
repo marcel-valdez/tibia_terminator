@@ -449,6 +449,7 @@ class TestCharKeeper(TestCase):
                          emergency_hp_threshold=EMERGENCY_HP_THRESHOLD):
         return CharConfig(**{
             'char_name': 'test_char',
+            'vocation': 'mage',
             'strong_hasted_speed': 500,
             'total_hp': total_hp,
             'total_mana': total_mana,

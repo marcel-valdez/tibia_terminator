@@ -117,6 +117,7 @@ class TestCharConfigSchema(TestCase):
         # given
         input = {
             "char_name": "test_char_name",
+            "vocation": "mage",
             "total_hp": 100,
             "total_mana": 101,
             "base_speed": 102,
@@ -141,6 +142,7 @@ class TestCharConfigSchema(TestCase):
         }
         expected = CharConfig(
             char_name="test_char_name",
+            vocation="mage",
             total_hp=100,
             total_mana=101,
             base_speed=102,
@@ -173,6 +175,7 @@ class TestCharConfigSchema(TestCase):
         # given
         input = {
             "char_name": "test_char_name",
+            "vocation": "mage",
             "total_hp": 100,
             "total_mana": 101,
             "base_speed": 102,
@@ -228,6 +231,7 @@ class TestCharConfigSchema(TestCase):
         # given
         input = {
             "char_name": "test_char_name",
+            "vocation": "mage",
             "total_hp": 100,
             "total_mana": 101,
             "base_speed": 102,

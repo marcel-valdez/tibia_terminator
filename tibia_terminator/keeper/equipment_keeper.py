@@ -100,8 +100,10 @@ class EquipmentKeeper:
             self.prev_mode = next_mode
 
     def handle_normal_status_change(self, char_status: CharStatus):
-        self.normal_mode_manager.toggle_amulet_on(char_status)
-        self.normal_mode_manager.toggle_ring_on(char_status)
+        if self.should_equip_amulet:
+            self.normal_mode_manager.toggle_amulet_on(char_status)
+        if self.should_equip_ring:
+            self.normal_mode_manager.toggle_ring_on(char_status)
         self.handle_eat_food()
 
     def handle_emergency_transition_change(
@@ -122,45 +124,52 @@ class EquipmentKeeper:
                 self.normal_mode_manager.toggle_ring_on(char_status)
 
     def handle_emergency_status_change(self, char_status: CharStatus):
-        mode_manager_for_amulet = self.emergency_mode_manager
-        if char_status.emergency_action_amulet == AmuletName.UNKNOWN:
-            # Use tank -> normal amulets when we don't have emergency amulets
-            if char_status.tank_action_amulet != AmuletName.UNKNOWN:
-                mode_manager_for_amulet = self.tank_mode_manager
-            else:
-                mode_manager_for_amulet = self.normal_mode_manager
-        mode_manager_for_amulet.toggle_amulet_on(char_status)
+        if self.should_equip_amulet:
+            mode_manager_for_amulet = self.emergency_mode_manager
+            if char_status.emergency_action_amulet == AmuletName.UNKNOWN:
+                # Use tank -> normal amulets when we don't have emergency amulets
+                if char_status.tank_action_amulet != AmuletName.UNKNOWN:
+                    mode_manager_for_amulet = self.tank_mode_manager
+                else:
+                    mode_manager_for_amulet = self.normal_mode_manager
+            mode_manager_for_amulet.toggle_amulet_on(char_status)
 
-        mode_manager_for_ring = self.emergency_mode_manager
-        if char_status.emergency_action_ring == RingName.UNKNOWN:
-            # Use tank -> normal rings when we don't have emergency rings
-            if char_status.tank_action_ring != AmuletName.UNKNOWN:
-                mode_manager_for_ring = self.tank_mode_manager
-            else:
-                mode_manager_for_ring = self.normal_mode_manager
-        mode_manager_for_ring.toggle_ring_on(char_status)
+        if self.should_equip_ring:
+            mode_manager_for_ring = self.emergency_mode_manager
+            if char_status.emergency_action_ring == RingName.UNKNOWN:
+                # Use tank -> normal rings when we don't have emergency rings
+                if char_status.tank_action_ring != AmuletName.UNKNOWN:
+                    mode_manager_for_ring = self.tank_mode_manager
+                else:
+                    mode_manager_for_ring = self.normal_mode_manager
+            mode_manager_for_ring.toggle_ring_on(char_status)
 
     def handle_tank_transition_change(self, char_status: CharStatus):
-        toggled_amulet = self.tank_mode_manager.toggle_amulet_off(char_status)
-        if not toggled_amulet:
-            self.normal_mode_manager.toggle_amulet_on(char_status)
+        if self.should_equip_amulet:
+            toggled_amulet = self.tank_mode_manager.toggle_amulet_off(char_status)
+            if not toggled_amulet:
+                self.normal_mode_manager.toggle_amulet_on(char_status)
 
-        toggled_ring = self.tank_mode_manager.toggle_ring_off(char_status)
-        if not toggled_ring:
-            self.normal_mode_manager.toggle_ring_on(char_status)
+        if self.should_equip_ring:
+            toggled_ring = self.tank_mode_manager.toggle_ring_off(char_status)
+            if not toggled_ring:
+                self.normal_mode_manager.toggle_ring_on(char_status)
 
     def handle_tank_status_change(self, char_status: CharStatus):
-        mode_manager_for_amulet = self.tank_mode_manager
-        if char_status.tank_action_amulet == AmuletName.UNKNOWN:
-            # Use normal amulets when we don't have tank amulets
-            mode_manager_for_amulet = self.normal_mode_manager
-        mode_manager_for_amulet.toggle_amulet_on(char_status)
+        if self.should_equip_amulet:
+            mode_manager_for_amulet = self.tank_mode_manager
+            if char_status.tank_action_amulet == AmuletName.UNKNOWN:
+                # Use normal amulets when we don't have tank amulets
+                mode_manager_for_amulet = self.normal_mode_manager
+            mode_manager_for_amulet.toggle_amulet_on(char_status)
 
-        mode_manager_for_ring = self.tank_mode_manager
-        if char_status.tank_action_ring == RingName.UNKNOWN:
-            # Use normal rings when we don't have tank rings
-            mode_manager_for_ring = self.normal_mode_manager
-        mode_manager_for_ring.toggle_ring_on(char_status)
+        if self.should_equip_ring:
+            mode_manager_for_ring = self.tank_mode_manager
+            if char_status.tank_action_ring == RingName.UNKNOWN:
+                # Use normal rings when we don't have tank rings
+                mode_manager_for_ring = self.normal_mode_manager
+            mode_manager_for_ring.toggle_ring_on(char_status)
+        self.handle_eat_food()
 
     def is_normal_amulet_on(self, char_status: CharStatus) -> bool:
         return char_status.equipped_amulet != AmuletName.EMPTY
