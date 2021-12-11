@@ -1,12 +1,11 @@
 #!/usr/bin/env python3.8
 
 import queue
-import subprocess
 import threading
 import time
 
 from enum import Enum
-from typing import Dict, List, Callable, Tuple
+from typing import Dict, List, Callable, Optional
 from random import randint
 from collections import deque
 
@@ -33,14 +32,15 @@ class ThrottleBehavior(Enum):
     FORCE = 4
 
 
-class CommandType:
+class CommandType(str, Enum):
     HEAL_SPELL = "heal_spell"
     EQUIP_ITEM = "equip_item"
     USE_ITEM = "use_item"
     UTILITY_SPELL = "utility_spell"
+    NOOP = "noop"
 
     @staticmethod
-    def types() -> List[str]:
+    def types() -> List['CommandType']:
         return [
             CommandType.HEAL_SPELL,
             CommandType.EQUIP_ITEM,
@@ -50,25 +50,25 @@ class CommandType:
 
 
 class CommandProfile:
-    type: CommandType = None
-    cmd_id: str = None
-    behavior: ThrottleBehavior = None
+    cmd_type: CommandType
+    cmd_id: str
+    behavior: ThrottleBehavior
 
     def __init__(
         self,
         cmd_type: CommandType,
-        cmd_id: str = None,
+        cmd_id: Optional[str] = None,
         throttle_behavior: ThrottleBehavior = ThrottleBehavior.DEFAULT,
     ):
         self.cmd_type = cmd_type
         self.throttle_behavior = throttle_behavior
-        self.cmd_id = cmd_id
+        self.cmd_id = cmd_id or str(randint(0, 10000))
 
 
 class Command:
     def __init__(
         self,
-        cmd_type: str,
+        cmd_type: CommandType,
         throttle_ms: int,
         cmd_id: str = None,
         throttle_behavior: ThrottleBehavior = ThrottleBehavior.DEFAULT,
@@ -172,18 +172,18 @@ class MacroCommand(Command):
 
 class CommandSender(threading.Thread):
     MAX_QUEUE_SIZE = 10
-    NOOP_COMMAND = Command("noop", 0, "noop_id", ThrottleBehavior.FORCE)
-    STOP_COMMAND = Command("stop", 0, "stop_id", ThrottleBehavior.FORCE)
+    NOOP_COMMAND = Command(CommandType.NOOP, 0, "noop_id", ThrottleBehavior.FORCE)
+    STOP_COMMAND = Command(CommandType.NOOP, 0, "stop_id", ThrottleBehavior.FORCE)
 
     def __init__(self, tibia_wid, logger: StatsLogger, only_monitor: bool):
         super().__init__(daemon=True)
         self.tibia_wid = tibia_wid
-        self.cmd_queue = queue.Queue()
+        self.cmd_queue: queue.Queue = queue.Queue()
         self.logger = logger
         self.only_monitor = only_monitor
         self.last_cmd_ts = 0
         self.prev_requeued_cmd: Command = CommandSender.NOOP_COMMAND
-        self.retry_queue = deque()
+        self.retry_queue: deque = deque()
 
     def send(self, command: Command):
         self.cmd_queue.put_nowait(command)
@@ -252,13 +252,12 @@ class CommandSender(threading.Thread):
             self.retry_queue.append(command)
             self.prev_requeued_cmd = command
 
-    # TODO: Test this method individually with a unit test
     def fetch_next_cmd(self) -> Command:
         cmd: Command = CommandSender.NOOP_COMMAND
         if len(self.retry_queue) > 0:
-            cmd: Command = self.retry_queue.pop()
+            cmd = self.retry_queue.pop()
         else:
-            cmd: Command = self.cmd_queue.get()
+            cmd = self.cmd_queue.get()
 
         if self.__throttle(cmd.throttle_ms):
             # If an instance last requeued command succeeds to execute,
@@ -267,16 +266,19 @@ class CommandSender(threading.Thread):
             if cmd.cmd_id == self.prev_requeued_cmd.cmd_id:
                 self.prev_requeued_cmd = CommandSender.NOOP_COMMAND
             return cmd
-        else:
-            if cmd.throttle_behavior is ThrottleBehavior.DROP or \
-               cmd.throttle_behavior is ThrottleBehavior.DEFAULT:
-                return CommandSender.NOOP_COMMAND
-            elif cmd.throttle_behavior is ThrottleBehavior.FORCE:
-                return cmd
-            elif cmd.throttle_behavior is ThrottleBehavior.REQUEUE_BACK:
-                self.requeue_back(cmd)
-            elif cmd.throttle_behavior is ThrottleBehavior.REQUEUE_TOP:
-                self.requeue_front(cmd)
+
+        if cmd.throttle_behavior is ThrottleBehavior.DROP or \
+           cmd.throttle_behavior is ThrottleBehavior.DEFAULT:
+            return CommandSender.NOOP_COMMAND
+
+        if cmd.throttle_behavior is ThrottleBehavior.FORCE:
+            return cmd
+
+        if cmd.throttle_behavior is ThrottleBehavior.REQUEUE_BACK:
+            self.requeue_back(cmd)
+        elif cmd.throttle_behavior is ThrottleBehavior.REQUEUE_TOP:
+            self.requeue_front(cmd)
+
         return CommandSender.NOOP_COMMAND
 
     def run(self):
@@ -284,10 +286,10 @@ class CommandSender(threading.Thread):
             cmd = self.fetch_next_cmd()
             if cmd is CommandSender.NOOP_COMMAND:
                 continue
-            elif cmd is CommandSender.STOP_COMMAND:
+            if cmd is CommandSender.STOP_COMMAND:
                 break
-            else:
-                self.issue_cmd(cmd)
+
+            self.issue_cmd(cmd)
 
 
 class CommandProcessor:
@@ -331,7 +333,7 @@ class CommandProcessor:
     @staticmethod
     def gen_cmd_senders(
         tibia_wid: str, logger: StatsLogger, only_monitor: bool
-    ) -> Dict[str, CommandSender]:
+    ) -> Dict[CommandType, CommandSender]:
         cmd_senders = {}
         for cmd_type in CommandType.types():
             cmd_senders[cmd_type] = CommandSender(tibia_wid, logger, only_monitor)
@@ -344,8 +346,8 @@ class ClientInterface:
         self,
         hotkeys_config: HotkeysConfig,
         keystroke_sender: KeystrokeSender,
-        logger: StatsLogger = None,
-        cmd_processor: CommandProcessor = None,
+        logger: StatsLogger,
+        cmd_processor: CommandProcessor,
     ):
         self.hotkeys_config = hotkeys_config
         self.keystroke_sender = keystroke_sender
@@ -434,6 +436,9 @@ class ClientInterface:
         throttle_behavior: ThrottleBehavior = ThrottleBehavior.DROP,
     ):
         self.logger.log_action(2, f"drink_greater_heal {throttle_ms} ms")
+        if not self.hotkeys_config.potion_greater_heal:
+            raise Exception("There is no hotkey configured for hotkeys_config.potion_greater_heal")
+
         self.send_keystroke_async(
             CommandType.USE_ITEM,
             throttle_ms,
@@ -448,6 +453,9 @@ class ClientInterface:
         throttle_behavior: ThrottleBehavior = ThrottleBehavior.DROP,
     ):
         self.logger.log_action(2, f"drink_medium_heal {throttle_ms} ms")
+        if not self.hotkeys_config.potion_medium_heal:
+            raise Exception("There is no hotkey configured for hotkeys_config.potion_medium_heal")
+
         self.send_keystroke_async(
             CommandType.USE_ITEM,
             throttle_ms,
@@ -462,6 +470,9 @@ class ClientInterface:
         throttle_behavior: ThrottleBehavior = ThrottleBehavior.DROP,
     ):
         self.logger.log_action(2, f"drink_minor_heal {throttle_ms} ms")
+        if not self.hotkeys_config.potion_minor_heal:
+            raise Exception("There is no hotkey configured for hotkeys_config.potion_minor_heal")
+
         self.send_keystroke_async(
             CommandType.USE_ITEM,
             throttle_ms,
@@ -667,7 +678,19 @@ def main():
         "loot": "loot_key",
         "start_emergency": "start_emergency_key",
         "cancel_emergency": "cancel_emergency_key",
+        "up": "up_key",
+        "down": "down_key",
+        "left": "left_key",
+        "right": "right_key",
+        "upper_left": "upper_left_key",
+        "lower_left": "lower_left_key",
+        "upper_right": "upper_right_key",
+        "lower_right": "lower_right_key"
     }
+
+    class FakeKeystrokeSender(KeystrokeSender):
+        def send_key(self, key: str) -> None:
+            pass
 
     fake_logger = FakeLogger()
     cmd_processor = CommandProcessor(
@@ -690,7 +713,10 @@ def main():
         },
     )
     client_interface = ClientInterface(
-        HotkeysConfig(**hotkeys), fake_logger, cmd_processor
+        HotkeysConfig(**hotkeys),
+        FakeKeystrokeSender(),
+        fake_logger,
+        cmd_processor
     )
     cmd_processor.start()
     method_names = [
