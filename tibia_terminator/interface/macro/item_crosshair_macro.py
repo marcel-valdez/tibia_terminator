@@ -1,12 +1,13 @@
 #!/usr/bin/env python3.8
 
 import argparse
+
+from threading import Lock
+from typing import Any, Callable, List, Tuple, Iterable, Optional
+
 import keyboard
 import pyautogui
-import time
 
-from typing import Any, Callable, List, Tuple, Iterable
-from threading import Lock
 from tibia_terminator.schemas.item_crosshair_macro_config_schema import (
     ItemCrosshairMacroConfig,
     MacroAction,
@@ -33,16 +34,15 @@ from tibia_terminator.interface.keystroke_sender import KeystrokeSender
 from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfig
 
 parser = argparse.ArgumentParser(description="Test item cross hair macro.")
-parser.add_argument(
-    "--action",
-    "-a",
-    type=str,
-    default=str(MacroAction.CLICK),
-    choices=MacroAction._member_names_,
-)
-parser.add_argument(
-    "keys", nargs="+", type=str, help="Keys to hook for crosshair macro."
-)
+parser.add_argument("--action",
+                    "-a",
+                    type=str,
+                    default=str(MacroAction.CLICK),
+                    choices=MacroAction._member_names_)
+parser.add_argument("keys",
+                    nargs="+",
+                    type=str,
+                    help="Keys to hook for crosshair macro.")
 
 OPPOSITE_DIRECTION_SQM_MAP = {
     Direction.LOWER_LEFT: UPPER_RIGHT_SQM,
@@ -84,12 +84,11 @@ def gen_click_action_fn(hotkey: str, directional_lock: Lock, *args, **kwargs):
 
 def gen_click_behind_fn(
     item_key: str,
-    direction_key: str,
     direction: Direction,
     directional_lock: Lock,
     *args,
     **kwargs,
-):
+) -> Callable[..., None]:
     # TODO: Use x_offset for this
     x, y = OPPOSITE_DIRECTION_SQM_MAP[direction]
 
@@ -108,7 +107,6 @@ def gen_click_behind_fn(
 
 
 class SingleItemCrosshairMacro(ClientMacro):
-    hotkey: str
 
     def __init__(
         self,
@@ -116,8 +114,8 @@ class SingleItemCrosshairMacro(ClientMacro):
         hotkey: str,
         action: Callable[[Tuple[Any, ...]], None],
         throttle_ms: int = DEFAULT_ITEM_CROSSHAIR_THROTTLE_MS,
-        cmd_id: str = None,
-        throttle_behavior=ThrottleBehavior.DROP,
+        cmd_id: Optional[str] = None,
+        throttle_behavior: ThrottleBehavior = ThrottleBehavior.DROP,
     ):
         super().__init__(
             client,
@@ -134,7 +132,6 @@ class SingleItemCrosshairMacro(ClientMacro):
 
 
 class ItemCrosshairMacro:
-    __macros: List[SingleItemCrosshairMacro]
 
     def __init__(
         self,
@@ -176,16 +173,13 @@ class ItemCrosshairMacro:
             hotkey = f"{config.hotkey}+{direction_key}"
             if config.action == MacroAction.CLICK:
                 action = gen_click_action_fn(config.hotkey, directional_lock)
-                yield SingleItemCrosshairMacro(
-                    client, hotkey, action, config.throttle_ms
-                )
+                yield SingleItemCrosshairMacro(client, hotkey, action,
+                                               config.throttle_ms)
             elif config.action == MacroAction.CLICK_BEHIND:
-                action = gen_click_behind_fn(
-                    config.hotkey, direction_key, direction, directional_lock
-                )
-                yield SingleItemCrosshairMacro(
-                    client, hotkey, action, config.throttle_ms
-                )
+                action = gen_click_behind_fn(config.hotkey, direction,
+                                             directional_lock)
+                yield SingleItemCrosshairMacro(client, hotkey, action,
+                                               config.throttle_ms)
             else:
                 raise Exception(f"Unsupported action: {config.action}")
 
@@ -241,7 +235,9 @@ def main(keys: List[str], action: str):
     )
     cmd_processor.start()
     for key in keys:
-        print(f"Listening on key {key}, a click will be issued when it is " "pressed.")
+        print(
+            f"Listening on key {key}, a click will be issued when it is pressed."
+        )
         macro = ItemCrosshairMacro(
             client,
             ItemCrosshairMacroConfig(

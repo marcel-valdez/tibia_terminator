@@ -179,7 +179,6 @@ class TibiaTerminator:
         self.view_renderer = view_renderer
         self.cmd_processor = cmd_processor
 
-        # TODO: This should be a separate init function
         self.app_status_file = app_status_file
         app_status = self.load_app_status()
         self.app_state = app_status.state or AppState.CONFIG_SELECTION
@@ -227,7 +226,7 @@ class TibiaTerminator:
             f.write(app_status_schema.dumps(app_status))
 
     def monitor_char(self):
-        # TODO: Rather than hardcoding these values, implement the init_*
+        # TODO: Rather than using JSON config values, implement the init_*
         # methods in char_reader to automatically find these values, the
         # only challenge is that they're likely to change with every Tibia
         # update.
