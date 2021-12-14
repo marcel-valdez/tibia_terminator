@@ -13,6 +13,9 @@
     "magic_shield": "F10",
     "cancel_magic_shield": "F11",
     "haste": "F12",
+    "potion_minor_heal": "XF86Tools",
+    "potion_medium_heal": "XF86Launch5",
+    "potion_greater_heal": "XF86Launch6",
     "eat_food": "Menu",
     "mana_potion": "Scroll_Lock",
 
