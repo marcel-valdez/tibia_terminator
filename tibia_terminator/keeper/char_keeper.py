@@ -125,7 +125,7 @@ class CharKeeper:
             ManaKeeper, KnightPotionKeeper
         ] = None  # type: ignore
         if mana_keeper is None:
-            if char_config.vocation == "mage" or not char_config.vocation:
+            if char_config.vocation == "mage":
                 self.mana_keeper = ManaKeeper(
                     client,
                     battle_config.mana_hi,
