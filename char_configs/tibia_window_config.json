@@ -317,7 +317,32 @@
                         "right": "474747"
                     }
                 ]
-            }
+            },
+            {
+                "name": "dwarven.ring",
+                "equipped_colors": [
+                    {
+                        "north": "fbf36d",
+                        "south": "000",
+                        "left": "f3f3f3",
+                        "right": "000",
+                    },
+                    {
+                        "north": "d0d0d0",
+                        "south": "000",
+                        "left": "f3f3f3",
+                        "right": "000",
+                    },
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "a2a2a2",
+                        "south": "c6c6c6",
+                        "left": "f3f3f3",
+                        "right": "c9c9c9",
+                    },
+                ],
+            },
         ],
         "amulets": [
             {
