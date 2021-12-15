@@ -1,10 +1,13 @@
 #!/usr/bin/env python3.8
 """Script to produce character auction reports in .csv format."""
 
+import asyncio
 import os
 import re
 import time
-import asyncio
+
+from typing import Optional
+
 import argparse
 import requests
 import tibiapy
@@ -43,7 +46,9 @@ def get_character(name):
     return character
 
 
-async def get_character_auction_history(page_start=1, total_pages=10000):
+async def get_character_auction_history(
+        page_start: int = 1, total_pages: int = 10000
+):
     """Fetch the auction history from tibia.com."""
     auction_pages = []
     client = Client()
@@ -57,7 +62,7 @@ async def get_character_auction_history(page_start=1, total_pages=10000):
     auctions = []
     try:
         for i in range(page_start, page_start + total_pages):
-            print(f'Fetching page {i} of {page_start + total_pages}')
+            print(f'Fetching page {i} of {total_pages}')
             response = await client.fetch_auction_history(page=i)
             for auction_entry in response.data.entries:
                 # TODO: Add auction_end and auction_start to CSV results
@@ -154,7 +159,7 @@ def auctions_to_csv(auctions, filename, write_header=True):
                        '\n')
 
 
-async def main(output_file, page_start, page_count):
+async def main(output_file: str, page_start: Optional[int], page_count: Optional[int]):
     auctions = await get_character_auction_history(page_start, page_count)
     auctions_to_csv(auctions, output_file, page_start == 1)
 
