@@ -662,6 +662,25 @@
                 ],
             },
             {
+                "name": "prismatic.amulet",
+                "equipped_colors": [
+                    {
+                        "north": "252625",
+                        "south": "242425",
+                        "left": "000",
+                        "right": "000",
+                    },
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "4f4f4f",
+                        "south": "000",
+                        "left": "000",
+                        "right": "7a33",
+                    },
+                ],
+            },
+            {
                 "name": "empty.amulet",
                 "equipped_colors": [
                     {
