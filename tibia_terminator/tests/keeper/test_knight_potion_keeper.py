@@ -25,11 +25,11 @@ TOTAL_HP = 120
 TOTAL_MANA = 100
 BASE_SPEED = 100
 HASTED_SPEED = 110
-HEAL_AT_MISSING = 5
+HEAL_AT_MISSING = TOTAL_HP - STAT_DOWNTIME
 POTION_HP_HI = STAT_HI
 POTION_HP_LO = STAT_LO
 POTION_HP_CRITICAL = STAT_CRIT
-DOWNTIME_HEAL_AT_MISSING = TOTAL_HP - STAT_DOWNTIME
+DOWNTIME_HEAL_AT_MISSING = 5
 MINOR_HEAL = 10
 MEDIUM_HEAL = 20
 GREATER_HEAL = 40
@@ -270,11 +270,10 @@ class TestKnightPotionKeeper(TestCase):
         #   lo-v        v-hi
         # ▯▯▯▮▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯
         #  ^-crit             ^-downtime
-        half_lo_to_hi = (STAT_HI + STAT_LO) / 2
-        quarter_crit_to_half = STAT_CRIT + (half_lo_to_hi - STAT_CRIT) / 2
-        quarter_crit_to_hi_pri_ms = int(666 + (1000 - 666) / 2)
-        self.check_get_threshold_ms(stat_value=quarter_crit_to_half,
-                                    expected=quarter_crit_to_hi_pri_ms)
+        half_crit_to_lo = (STAT_CRIT + STAT_LO) / 2
+        half_crit_to_lo_ms = 740
+        self.check_get_threshold_ms(stat_value=half_crit_to_lo,
+                                    expected=half_crit_to_lo_ms)
 
     def test_get_threshold_ms_three_quarters_crit_to_mid(self) -> None:
         #   lo-v        v-hi
@@ -335,6 +334,110 @@ class TestKnightPotionKeeper(TestCase):
         # then
         self.assertEqual(actual, expected)
 
+    def test_gen_hp_refill_probability_lo(self) -> None:
+        #   lo-v        v-hi
+        # ▯▯▯▯▯▮▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯
+        #  ^-crit             ^-downtime
+        self.check_gen_hp_refill_probability(
+            input_hp=STAT_LO,
+            expected=0.809,
+            hp_priority=RefillPriority.HIGH_PRIORITY,
+            mana_priority=RefillPriority.CRITICAL)
+
+    def test_gen_hp_refill_probability_half_crit_to_lo(self) -> None:
+        #   lo-v        v-hi
+        # ▯▯▯▮▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯
+        #  ^-crit             ^-downtime
+        half_crit_to_lo = (STAT_LO + STAT_CRIT) / 2
+        self.check_gen_hp_refill_probability(
+            input_hp=half_crit_to_lo,
+            hp_priority=RefillPriority.HIGH_PRIORITY,
+            mana_priority=RefillPriority.CRITICAL,
+            expected=0.904,
+        )
+
+    def test_gen_hp_refill_probability_three_quarters_crit_to_mid(
+            self) -> None:
+        #   lo-v        v-hi
+        # ▯▯▯▯▯▯▯▯▯▮▯▯▯▯▯▯▯▯▯▯▯▯▯
+        #  ^-crit             ^-downtime
+        half_lo_to_hi = (STAT_HI + STAT_LO) / 2
+        three_quarters_crit_to_mid = STAT_CRIT + (half_lo_to_hi -
+                                                  STAT_CRIT) * 0.75
+        self.check_gen_hp_refill_probability(
+            input_hp=three_quarters_crit_to_mid,
+            hp_priority=RefillPriority.HIGH_PRIORITY,
+            mana_priority=RefillPriority.CRITICAL,
+            expected=0.677)
+
+    def test_gen_hp_refill_probability_half_hi_pri(self) -> None:
+        #   lo_v        v_hi
+        # ▯▯▯▯▯▯▯▯▯▯▮▯▯▯▯▯▯▯▯▯▯▯▯
+        #  ^-crit             ^-downtime
+        self.check_gen_hp_refill_probability(
+            input_hp=(STAT_LO + STAT_HI) / 2,
+            hp_priority=RefillPriority.HIGH_PRIORITY,
+            mana_priority=RefillPriority.CRITICAL,
+            expected=0.569)
+
+    def test_gen_hp_refill_probability_hi(self) -> None:
+        #   lo_v        v_hi
+        # ▯▯▯▯▯▯▯▯▯▯▯▯▯▯▮▯▯▯▯▯▯▯▯
+        #  ^-crit             ^-downtime
+        self.check_gen_hp_refill_probability(
+            input_hp=STAT_HI,
+            hp_priority=RefillPriority.HIGH_PRIORITY,
+            mana_priority=RefillPriority.CRITICAL,
+            expected=0.33)
+
+    def test_gen_hp_refill_probability_hi_plus_5(self) -> None:
+        #   lo_v        v_hi
+        # ▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▮▯▯▯▯▯▯▯
+        #  ^-crit             ^-downtime
+        self.check_gen_hp_refill_probability(
+            input_hp=STAT_HI + 5,
+            hp_priority=RefillPriority.DOWNTIME,
+            mana_priority=RefillPriority.CRITICAL,
+            expected=0.275)
+
+    def test_gen_hp_refill_probability_half_hi(self) -> None:
+        #   lo_v        v_hi
+        # ▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▮▯▯▯▯▯
+        #  ^-crit             ^-downtime
+        self.check_gen_hp_refill_probability(
+            input_hp=(STAT_HI + STAT_DOWNTIME) / 2,
+            hp_priority=RefillPriority.DOWNTIME,
+            mana_priority=RefillPriority.HIGH_PRIORITY,
+            expected=0.3)
+
+    def test_gen_hp_refill_probability_critical(self) -> None:
+        #   lo_v        v_hi
+        # ▮▮▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯▯
+        #  ^-crit             ^-downtime
+        for input_hp in [STAT_CRIT, STAT_CRIT - 1, 0, 1, 2, STAT_CRIT - 2]:
+            for mana_priority in RefillPriority.values():
+                self.check_gen_hp_refill_probability(
+                    input_hp=input_hp,
+                    expected=1.0,
+                    hp_priority=RefillPriority.CRITICAL,
+                    mana_priority=mana_priority)
+
+    def check_gen_hp_refill_probability(self, input_hp: Union[int, float],
+                                        hp_priority: RefillPriority,
+                                        mana_priority: RefillPriority,
+                                        expected: float) -> None:
+        # given
+        target = KnightPotionKeeper(total_hp=TOTAL_HP,
+                                    client=Mock(),
+                                    battle_config=make_battle_config())
+        # when
+        actual = target.gen_hp_refill_probability(
+            input_hp,
+            RefillPriorities(hp_priority=hp_priority,
+                             mana_priority=mana_priority))
+        # then
+        self.assertAlmostEqual(actual, expected, places=3)
+
     def test_handle_status_change_no_refill(self) -> None:
         # given
         self.check_handle_status_change(
@@ -392,7 +495,7 @@ class TestKnightPotionKeeper(TestCase):
                 speed=HASTED_SPEED,
             ),
             # then
-            lambda m: m.drink_minor_heal.assert_called_with(2475),
+            lambda m: m.drink_minor_heal.assert_called_with(2472),
         )
 
     def test_handle_status_change_mana_downtime(self) -> None:
@@ -629,7 +732,7 @@ class TestKnightPotionKeeper(TestCase):
                 speed=HASTED_SPEED,
             ),
             # then
-            lambda m: m.drink_minor_heal.assert_called_with(1625),
+            lambda m: m.drink_minor_heal.assert_called_with(1681),
         )
 
     def test_handle_status_change_hp_potion_hi_no_minor_heal(self) -> None:
@@ -660,7 +763,7 @@ class TestKnightPotionKeeper(TestCase):
                 speed=HASTED_SPEED,
             ),
             # then
-            lambda m: m.drink_minor_heal.assert_called_with(1625),
+            lambda m: m.drink_minor_heal.assert_called_with(1681),
         )
 
     def test_handle_status_change_hp_potion_hi_no_heal_potions(self) -> None:
