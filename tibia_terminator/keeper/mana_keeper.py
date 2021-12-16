@@ -26,12 +26,13 @@ class ManaKeeper:
 
     def handle_status_change(self, char_status: CharStatus, is_downtime: bool):
         self.update_max(char_status)
+        threshold_ms = self.get_threshold_ms(char_status.mana)
         if self.should_drink_mana_critical(char_status.mana):
-            self.client.drink_mana(666)
+            self.client.drink_mana(threshold_ms)
         elif self.should_drink_mana_high_priority(char_status.mana):
-            self.client.drink_mana(1000)
+            self.client.drink_mana(threshold_ms)
         elif self.should_drink_mana_low_priority(char_status, is_downtime):
-            self.client.drink_mana(2500)
+            self.client.drink_mana(threshold_ms)
 
     def update_max(self, char_status: CharStatus) -> None:
         if char_status.mana > self.total_mana:
@@ -65,3 +66,31 @@ class ManaKeeper:
             self.should_drink_critical_mana = False
 
         return self.should_drink_critical_mana
+
+
+    def get_threshold_ms(self, current_mana: int) -> int:
+        critical_threshold_ms = 666
+        if current_mana <= self.critical_mana:
+            return critical_threshold_ms
+
+        hi_pri_threshold_ms = 1000
+        half_hi_pri_stat = (self.mana_hi + self.mana_lo) / 2
+        if self.critical_mana < current_mana <= half_hi_pri_stat:
+            hi_pri_pct = (current_mana - self.critical_mana) / (
+                half_hi_pri_stat - self.critical_mana)
+            critical_to_hi_pri_ms = hi_pri_threshold_ms - critical_threshold_ms
+            return int(critical_threshold_ms +
+                       (hi_pri_pct * critical_to_hi_pri_ms))
+
+        downtime_threshold_ms = 2500
+        if half_hi_pri_stat < current_mana <= self.downtime_mana:
+            hi_pri_to_downtime_ms = downtime_threshold_ms - hi_pri_threshold_ms
+            downtime_pct = (current_mana - half_hi_pri_stat) / (
+                self.downtime_mana - half_hi_pri_stat)
+            return int(hi_pri_threshold_ms +
+                       (downtime_pct * hi_pri_to_downtime_ms))
+
+        if current_mana > self.downtime_mana:
+            return 1000 * 60 * 5
+
+        raise Exception("This should never happen.")

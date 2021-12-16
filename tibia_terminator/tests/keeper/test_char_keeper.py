@@ -29,8 +29,8 @@ MEDIUM_HEAL = 20
 GREATER_HEAL = 40
 EMERGENCY_HP_THRESHOLD = TOTAL_HP * 0.5
 CRITICAL_MANA = 10
-MANA_HI = TOTAL_MANA - 50
-MANA_LO = TOTAL_MANA - 25
+MANA_HI = TOTAL_MANA - 25
+MANA_LO = TOTAL_MANA - 50
 DOWNTIME_MANA = TOTAL_MANA - 10
 
 
@@ -157,38 +157,38 @@ class TestCharKeeper(TestCase):
         target.client.cast_medium_heal.assert_not_called()
         target.client.cast_greater_heal.assert_not_called()
 
-    def test_should_drink_mana_at_mana_missing_hi(self):
+    def test_should_drink_mana_at_mana_lo(self):
         # given
         speed = BASE_SPEED
-        mana = MANA_HI
+        mana = MANA_LO
         hp = TOTAL_HP - MINOR_HEAL
         target = self.make_target()
         # when
         target.handle_mana_change(status(hp, mana, speed))
         # then
-        target.client.drink_mana.called_once_with(500)
+        target.client.drink_mana.assert_called_once_with(920)
 
     def test_should_not_drink_mana_at_mana_missing_lo(self):
         # given
         speed = BASE_SPEED
-        mana = MANA_LO
+        mana = MANA_HI
         hp = TOTAL_HP
         target = self.make_target()
         # when
         target.handle_mana_change(status(hp, mana, speed))
         # then
-        target.client.drink_mana.assert_not_called()
+        target.client.drink_mana.assert_called_with(1681)
 
-    def test_should_not_drink_hi_pri_mana_past_mana_lo(self):
+    def test_should_not_drink_hi_pri_mana_past_mana_hi(self):
         # given
         speed = BASE_SPEED
         hp = TOTAL_HP
         target = self.make_target()
-        target.handle_mana_change(status(hp, MANA_HI, speed))
-        target.client.drink_mana.assert_called_once_with(1000)
+        target.handle_mana_change(status(hp, MANA_LO, speed))
+        target.client.drink_mana.assert_called_once_with(920)
         target.client.reset_mock()
         # when
-        target.handle_mana_change(status(hp, MANA_LO + 1, speed + 1))
+        target.handle_mana_change(status(hp, MANA_HI + 1, speed + 1))
         # then
         target.client.drink_mana.assert_not_called()
 
@@ -268,12 +268,12 @@ class TestCharKeeper(TestCase):
         target.client.drink_mana.assert_called_once_with(666)
         target.client.reset_mock()
         target.handle_mana_change(status(hp, MANA_HI - 1, speed))
-        target.client.drink_mana.assert_called_once_with(666)
+        target.client.drink_mana.assert_called_once_with(1627)
         target.client.reset_mock()
         # when
         target.handle_mana_change(status(hp, MANA_HI, speed))
         # then
-        target.client.drink_mana.assert_called_once_with(1000)
+        target.client.drink_mana.assert_called_once_with(1681)
 
     def test_should_haste(self):
         # given
