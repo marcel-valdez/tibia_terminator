@@ -254,34 +254,34 @@ class KnightPotionKeeper:
     # 33% + 67%/2 = 66.5%
     def gen_hp_refill_probability(self, current_hp: int,
                                   priorities: RefillPriorities) -> float:
-        priority_probability = self.refill_probability_map[priorities]
+        lower_prob_boundary = self.refill_probability_map[priorities]
         if (priorities.hp_priority is RefillPriority.NO_REFILL
                 or priorities.mana_priority is RefillPriority.NO_REFILL):
-            return priority_probability
+            return lower_prob_boundary
 
         if priorities.hp_priority is RefillPriority.CRITICAL:
-            return priority_probability
+            return lower_prob_boundary
 
         if (priorities.hp_priority is RefillPriority.DOWNTIME
                 and priorities.mana_priority is RefillPriority.DOWNTIME):
-            return priority_probability
+            return lower_prob_boundary
 
-        higher_priority_probability = self.refill_probability_map[
+        upper_prob_boundary = self.refill_probability_map[
             RefillPriorities(
                 hp_priority=priorities.hp_priority.higher_priority(),
                 mana_priority=priorities.mana_priority)]
-        higher_priority_hp_boundary = self.hp_config.critical
+        lower_hp_boundary = self.hp_config.critical
         if priorities.hp_priority is RefillPriority.DOWNTIME:
-            higher_priority_hp_boundary = self.hp_config.hi
+            lower_hp_boundary = self.hp_config.hi
 
-        priority_hp_boundary = self.hp_config.hi
+        upper_hp_boundary = self.hp_config.hi
         if priorities.hp_priority is RefillPriority.DOWNTIME:
-            priority_hp_boundary = self.hp_config.downtime
+            upper_hp_boundary = self.hp_config.downtime
 
-        range_probability_hp = higher_priority_probability - priority_probability
-        range_priority_hp = priority_hp_boundary - higher_priority_hp_boundary
-        pct_priority_hp = (priority_hp_boundary - current_hp) / range_priority_hp
-        return priority_probability + (range_probability_hp * pct_priority_hp)
+        prob_range = upper_prob_boundary - lower_prob_boundary
+        hp_range = upper_hp_boundary - lower_hp_boundary
+        hp_range_pct = (upper_hp_boundary - current_hp) / hp_range
+        return lower_prob_boundary + (prob_range * hp_range_pct)
 
     @staticmethod
     def gen_choice_constant_hp(
