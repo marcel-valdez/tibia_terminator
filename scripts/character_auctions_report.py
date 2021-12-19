@@ -10,8 +10,7 @@ from typing import Optional
 
 import argparse
 import requests
-import tibiapy
-from tibiapy import Client
+from tibiapy import Client, AuctionStatus, BidType, AuctionFilters, BattlEyeTypeFilter, Character, TibiaResponse, CharacterBazaar, SalesArgument, AuctionEntry
 
 MELEE_SKILLS = ['sword', 'axe', 'club']
 USEFUL_SKILLS = ['magic', 'distance', 'sword', 'axe', 'club']
@@ -38,21 +37,22 @@ def debug(msg):
 
 def get_character(name):
     """Fetch a character using requests instead of aiohttp."""
-    url = tibiapy.Character.get_url(name)
+    url = Character.get_url(name)
 
     r = requests.get(url)
     content = r.text
-    character = tibiapy.Character.from_content(content)
+    character = Character.from_content(content)
     return character
 
 
-async def get_character_auction_history(
-        page_start: int = 1, total_pages: int = 10000
-):
+async def get_character_auction_history(page_start: int = 1,
+                                        total_pages: int = 10000):
     """Fetch the auction history from tibia.com."""
     auction_pages = []
     client = Client()
-    response = await client.fetch_auction_history()
+    filters = AuctionFilters(battleye=BattlEyeTypeFilter.GREEN)
+    response: TibiaResponse[
+        CharacterBazaar] = await client.fetch_auction_history(filters=filters)
     first_auction_page = response.data
     auction_pages.append(first_auction_page)
     print("Fetching first page")
@@ -63,10 +63,26 @@ async def get_character_auction_history(
     try:
         for i in range(page_start, page_start + total_pages):
             print(f'Fetching page {i} of {total_pages}')
-            response = await client.fetch_auction_history(page=i)
+            response = await client.fetch_auction_history(page=i,
+                                                          filters=filters)
             for auction_entry in response.data.entries:
+                if auction_entry.bid_type != BidType.WINNING:
+                    debug("  Not a won auction, ignoring character")
+                    continue
                 # TODO: Add auction_end and auction_start to CSV results
                 #       in order to be able to analyze prices over time.
+                debug(f"Fetching skills for {auction_entry.name}")
+                skills = extract_skills_from_sales_argument(
+                    auction_entry.sales_arguments)
+                if len(skills.keys()) == 0:
+                    debug("  No skills advertised, ignoring character.")
+                    continue
+
+                if not any(skill_value > 55
+                           for skill_value in skills.values()):
+                    debug("  Character used to trade items, no skills > 55."
+                          " ignoring character.")
+
                 auction = {
                     'id': auction_entry.auction_id,
                     'name': auction_entry.name,
@@ -81,15 +97,9 @@ async def get_character_auction_history(
                     'start': auction_entry.auction_start,
                     'end': auction_entry.auction_end
                 }
-                debug(f"Fetching skills for {auction_entry.name}")
-                skills = extract_skills_from_sales_argument(
-                    auction_entry.sales_arguments)
-                if len(skills.keys()) > 0:
-                    debug(f"  Found skills: {skills.keys()}")
-                    auction.update(skills)
-                    auctions.append(auction)
-                else:
-                    debug("  No skills advertised, ignoring character.")
+                debug(f"  Found skills: {skills.keys()}")
+                auction.update(skills)
+                auctions.append(auction)
 
             time.sleep(0.25)
     except Exception as e:
@@ -99,33 +109,30 @@ async def get_character_auction_history(
     return auctions
 
 
-def extract_skills_from_sales_argument(sales_arguments):
+def extract_skills_from_sales_argument(sales_arguments: SalesArgument):
     skills = {'magic': 1, 'distance': 13, 'melee': 13}
     updated = False
     melee = 0
     for sales_argument in sales_arguments:
         content = sales_argument.content
         m = re.match('([0-9]+) Magic Level.*', content)
-        if m is not None:
+        if m:
             updated = True
             skills['magic'] = int(m.group(1))
         m = re.match('([0-9]+) Distance Fighting.*', content)
-        if m is not None:
+        if m:
             updated = True
             skills['distance'] = int(m.group(1))
         m = re.match('([0-9]+) (Axe|Club|Sword) Fighting.*', content)
-        if m is not None:
-            updated = True
+        if m:
             other_melee = int(m.group(1))
             if other_melee > melee:
                 melee = other_melee
     if melee > 0:
+        updated = True
         skills['melee'] = melee
 
-    if updated:
-        return skills
-    else:
-        return {}
+    return skills if updated else {}
 
 
 async def get_auction_skills(client, auction_id):
@@ -159,7 +166,8 @@ def auctions_to_csv(auctions, filename, write_header=True):
                        '\n')
 
 
-async def main(output_file: str, page_start: Optional[int], page_count: Optional[int]):
+async def main(output_file: str, page_start: Optional[int],
+               page_count: Optional[int]):
     auctions = await get_character_auction_history(page_start, page_count)
     auctions_to_csv(auctions, output_file, page_start == 1)
 
