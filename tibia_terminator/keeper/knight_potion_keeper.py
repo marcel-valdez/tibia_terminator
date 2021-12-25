@@ -8,51 +8,12 @@ import time
 from enum import Enum
 from typing import TypeVar, Tuple, Dict, NamedTuple, List
 
+from tibia_terminator.keeper.common import StatConfig, RefillPriority
 from tibia_terminator.interface.client_interface import ClientInterface
 from tibia_terminator.common.char_status import CharStatus
 from tibia_terminator.schemas.char_config_schema import BattleConfig
 
 T = TypeVar("T")
-
-
-class RefillPriority(Enum):
-    NO_REFILL = 1
-    DOWNTIME = 2
-    HIGH_PRIORITY = 3
-    CRITICAL = 4
-
-    @classmethod
-    def values(cls) -> List['RefillPriority']:
-        return [cls.NO_REFILL, cls.DOWNTIME, cls.HIGH_PRIORITY, cls.CRITICAL]
-
-    def higher_priority(self) -> "RefillPriority":
-        if self is RefillPriority.CRITICAL:
-            return self
-        if self is RefillPriority.HIGH_PRIORITY:
-            return RefillPriority.CRITICAL
-        if self is RefillPriority.DOWNTIME:
-            return RefillPriority.HIGH_PRIORITY
-        return RefillPriority.DOWNTIME
-
-    def __lt__(self, other: "RefillPriority") -> bool:
-        if not isinstance(other, RefillPriority):
-            raise Exception(f"Can't compare {type(self)} < {type(other)}")
-        return self.value < other.value
-
-    def __le__(self, other: "RefillPriority") -> bool:
-        if not isinstance(other, RefillPriority):
-            raise Exception(f"Can't compare {type(self)} <= {type(other)}")
-        return self.value <= other.value
-
-    def __gt__(self, other: "RefillPriority") -> bool:
-        if not isinstance(other, RefillPriority):
-            raise Exception(f"Can't compare {type(self)} > {type(other)}")
-        return self.value > other.value
-
-    def __ge__(self, other: "RefillPriority") -> bool:
-        if not isinstance(other, RefillPriority):
-            raise Exception(f"Can't compare {type(self)} >= {type(other)}")
-        return self.value >= other.value
 
 
 class RefillPriorities(NamedTuple):
@@ -63,13 +24,6 @@ class RefillPriorities(NamedTuple):
 class RefillType(Enum):
     MANA = 1
     HP = 2
-
-
-class StatConfig(NamedTuple):
-    downtime: int
-    hi: int
-    lo: int
-    critical: int
 
 
 class KnightPrioritiesStrategy:
@@ -137,14 +91,14 @@ class KnightPotionKeeper:
             lo=battle_config.mana_lo,
             critical=battle_config.critical_mana,
         )
-        self.validate_stat_config(self.mana_config)
+        self.mana_config.validate()
         self.hp_config = StatConfig(
             downtime=total_hp - battle_config.heal_at_missing,
             hi=battle_config.potion_hp_hi,
             lo=battle_config.potion_hp_lo,
             critical=battle_config.potion_hp_critical,
         )
-        self.validate_stat_config(self.hp_config)
+        self.hp_config.validate()
 
         self.priorities_strategy = KnightPrioritiesStrategy(
             mana_config=self.mana_config,
@@ -391,14 +345,6 @@ class KnightPotionKeeper:
 
     def get_priority_threshold_ms(self, priority: RefillPriority) -> int:
         return KnightPotionKeeper.THRESHOLD_PRIORITY_MAP[priority]
-
-    def validate_stat_config(self, stat_config: StatConfig) -> None:
-        if not (stat_config.critical < stat_config.lo < stat_config.hi <
-                stat_config.downtime):
-            raise Exception(
-                "Invalid critical, hi, lo, downtime ranges battle config. "
-                f"Found: {stat_config}. Make sure to always configure such that: "
-                "critical < lo < hi < downtime")
 
     def random_choice(self, prob_a: float, choice_a: T, choice_b: T) -> T:
         value = random.random()

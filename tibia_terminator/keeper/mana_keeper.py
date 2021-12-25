@@ -1,11 +1,18 @@
 """Keeps mana at healthy levels."""
 
-
+from tibia_terminator.keeper.common import StatConfig, RefillPriority, ThresholdCalculator
 from tibia_terminator.common.char_status import CharStatus
 from tibia_terminator.interface.client_interface import ClientInterface
 
 
 class ManaKeeper:
+    THRESHOLD_PRIORITY_MAP = {
+        RefillPriority.CRITICAL: 666,
+        RefillPriority.HIGH_PRIORITY: 1000,
+        RefillPriority.DOWNTIME: 2500,
+        RefillPriority.NO_REFILL: 60000 * 5,
+    }
+
     def __init__(
         self,
         client: ClientInterface,
@@ -15,6 +22,13 @@ class ManaKeeper:
         downtime_mana: int,
         total_mana: int,
     ):
+        self.threshold_calculator = ThresholdCalculator(
+            stat_config=StatConfig(downtime=downtime_mana,
+                                   critical=critical_mana,
+                                   hi=mana_hi,
+                                   lo=mana_lo),
+            priority_threshold_map=type(self).THRESHOLD_PRIORITY_MAP)
+        self.threshold_calculator.stat_config.validate()
         self.client = client
         self.mana_hi = mana_hi
         self.mana_lo = mana_lo
@@ -46,9 +60,8 @@ class ManaKeeper:
 
     # Drink mana until high levels when HP is 100% and already hasted
     # with an interval of 2.5 seconds so it does not affect gameplay
-    def should_drink_mana_low_priority(
-        self, char_status: CharStatus, is_downtime: bool
-    ) -> bool:
+    def should_drink_mana_low_priority(self, char_status: CharStatus,
+                                       is_downtime: bool) -> bool:
         return is_downtime and char_status.mana <= self.downtime_mana
 
     def should_drink_mana_high_priority(self, current_mana: int) -> bool:
@@ -67,30 +80,5 @@ class ManaKeeper:
 
         return self.should_drink_critical_mana
 
-
     def get_threshold_ms(self, current_mana: int) -> int:
-        critical_threshold_ms = 666
-        if current_mana <= self.critical_mana:
-            return critical_threshold_ms
-
-        hi_pri_threshold_ms = 1000
-        half_hi_pri_stat = (self.mana_hi + self.mana_lo) / 2
-        if self.critical_mana < current_mana <= half_hi_pri_stat:
-            hi_pri_pct = (current_mana - self.critical_mana) / (
-                half_hi_pri_stat - self.critical_mana)
-            critical_to_hi_pri_ms = hi_pri_threshold_ms - critical_threshold_ms
-            return int(critical_threshold_ms +
-                       (hi_pri_pct * critical_to_hi_pri_ms))
-
-        downtime_threshold_ms = 2500
-        if half_hi_pri_stat < current_mana <= self.downtime_mana:
-            hi_pri_to_downtime_ms = downtime_threshold_ms - hi_pri_threshold_ms
-            downtime_pct = (current_mana - half_hi_pri_stat) / (
-                self.downtime_mana - half_hi_pri_stat)
-            return int(hi_pri_threshold_ms +
-                       (downtime_pct * hi_pri_to_downtime_ms))
-
-        if current_mana > self.downtime_mana:
-            return 1000 * 60 * 5
-
-        raise Exception("This should never happen.")
+        return self.threshold_calculator.gen_threshold_ms(current_mana)
