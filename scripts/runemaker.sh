@@ -224,6 +224,7 @@ function get_potion_count() {
 
 function burn_excess_mana_fn() {
     # burn mana until we're below the threshold
+    fetch_char_stats 1
     while [[ ${MANA} -ge ${max_mana_threshold} ]]; do
         send_keystroke "${BURN_MANA_KEY}" 1 1
         fetch_char_stats 1
@@ -361,7 +362,8 @@ function smart_equip_regen_ring() {
   send_keystroke "${EQUIP_RING_LR_KEY}" 1
   fetch_char_stats 1
 
-  if [[ "${SOUL_POINTS}" -gt 10 ]]; then
+  if [[ "${SOUL_POINTS}" -gt 10 ]] || \
+         [[ ${burn_excess_mana_fn} ]]; then
     echo '-------------------------'
     echo 'Equipping ring of healing'
     echo "because soul points (${SOUL_POINTS}) > 10"
@@ -445,6 +447,9 @@ function make_rune() {
     fetch_char_stats 1
     if [[ ${MANA} -gt ${mana_per_rune} ]]; then
       cast_rune_spell "${min_wait}" "${max_wait}"
+    fi
+    if [[ ${burn_excess_mana} ]]; then
+        burn_excess_mana_fn
     fi
   else
     cast_rune_spell "${min_wait}" "${max_wait}"
