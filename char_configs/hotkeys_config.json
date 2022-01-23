@@ -30,8 +30,8 @@
     "loot_button": "right",
     // Cancels an on-going emergency state, so the App will cancel
     // utamo and put on ordinary ring & amulet.
-    "cancel_emergency": "end",
     "start_emergency": "home",
+    "cancel_emergency": "end",
     "start_tank_mode": "5",
     "cancel_tank_mode": "end",
     // We need these in order to hook single item hotkeys with
@@ -40,7 +40,7 @@
     "left": "a",
     "down": "s",
     "right": "d",
-    "upper_left": "w",
+    "upper_left": "q",
     "upper_right": "r",
     "lower_left": "z",
     "lower_right": "c"
