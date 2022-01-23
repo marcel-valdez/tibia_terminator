@@ -63,7 +63,7 @@ class TestCharKeeper(TestCase):
         # when
         target.handle_hp_change(status(hp, mana, speed))
         # then
-        target.client.cast_minor_heal.assert_called_once_with(throttle_ms=500)
+        target.client.cast_minor_heal.assert_called_once_with(throttle_ms=700)
 
     def test_should_cast_minor_heal_even_if_paralyzed_or_missing_mana(self):
         # given
@@ -74,7 +74,7 @@ class TestCharKeeper(TestCase):
         # when
         target.handle_hp_change(status(hp, mana, speed))
         # then
-        target.client.cast_minor_heal.assert_called_once_with(throttle_ms=500)
+        target.client.cast_minor_heal.assert_called_once_with(throttle_ms=700)
 
     def test_should_spam_medium_heal(self):
         # given
@@ -85,7 +85,7 @@ class TestCharKeeper(TestCase):
         # when
         target.handle_hp_change(status(hp, mana, speed))
         # then
-        target.client.cast_medium_heal.assert_called_once_with(throttle_ms=250)
+        target.client.cast_medium_heal.assert_called_once_with(throttle_ms=600)
 
     def test_should_spam_medium_heal_even_if_paralyzed_or_missing_mana(self):
         # given
@@ -96,9 +96,9 @@ class TestCharKeeper(TestCase):
         # when
         target.handle_hp_change(status(hp, mana, speed))
         # then
-        target.client.cast_medium_heal.assert_called_once_with(throttle_ms=250)
+        target.client.cast_medium_heal.assert_called_once_with(throttle_ms=600)
 
-    def test_should_spam_exura_sio(self):
+    def test_should_spam_greater_heal(self):
         # given
         speed = HASTED_SPEED
         mana = TOTAL_MANA
@@ -107,9 +107,9 @@ class TestCharKeeper(TestCase):
         # when
         target.handle_hp_change(status(hp, mana, speed))
         # then
-        target.client.cast_greater_heal.assert_called_once_with(throttle_ms=250)
+        target.client.cast_greater_heal.assert_called_once_with(throttle_ms=375)
 
-    def test_should_spam_exura_sio_even_if_paralyzed_or_missing_mana(self):
+    def test_should_spam_greater_heal_even_if_paralyzed_or_missing_mana(self):
         # given
         speed = BASE_SPEED - 10
         mana = MANA_HI
@@ -118,7 +118,7 @@ class TestCharKeeper(TestCase):
         # when
         target.handle_hp_change(status(hp, mana, speed))
         # then
-        target.client.cast_greater_heal.assert_called_once_with(throttle_ms=250)
+        target.client.cast_greater_heal.assert_called_once_with(throttle_ms=375)
 
     def test_should_cast_minor_heal_downtime(self):
         # given
