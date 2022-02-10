@@ -46,7 +46,8 @@ function random() {
 
 function update_max_mana() {
     max_char_mana=$1
-    max_mana_threshold=$((max_char_mana - 200))
+    max_mana_threshold=$((max_char_mana - 250))
+    burn_mana_threshold=$((max_char_mana - 125))
     mana_per_rune=${max_mana_threshold}
 }
 
@@ -225,7 +226,8 @@ function get_potion_count() {
 function burn_excess_mana_fn() {
     # burn mana until we're below the threshold
     fetch_char_stats 1
-    while [[ ${MANA} -ge ${max_mana_threshold} ]]; do
+    while [[ ${MANA} -ge ${burn_mana_threshold} ]]; do
+        echo "burning excess pmana because ${MANA} >= ${burn_mana_threshold}"
         send_keystroke "${BURN_MANA_KEY}" 1 1
         fetch_char_stats 1
         sleep 0.5
@@ -349,9 +351,8 @@ function smart_equip_regen_ring() {
   fetch_char_stats 1
   if is_out_of_souls_or_mana "${MANA}" "${SOUL_POINTS}" || \
           [[ "${MANA}" -ge "${max_char_mana}" ]]; then
-      if [[ ${burn_excess_mana} ]]; then
-          burn_excess_mana_fn
-      elif ! is_ring_slot_empty; then
+      if ! [[ ${burn_excess_mana} ]] && \
+              ! is_ring_slot_empty; then
           unequip_ring_of_healing
           return 1
       fi
@@ -363,10 +364,14 @@ function smart_equip_regen_ring() {
   fetch_char_stats 1
 
   if [[ "${SOUL_POINTS}" -gt 10 ]] || \
-         [[ ${burn_excess_mana_fn} ]]; then
+         [[ ${burn_excess_mana} ]]; then
     echo '-------------------------'
     echo 'Equipping ring of healing'
-    echo "because soul points (${SOUL_POINTS}) > 10"
+    if [[ ${burn_excess_mana} ]]; then
+        echo "because burn_excess_mana is enabled"
+    else
+        echo "because soul points (${SOUL_POINTS}) > 10"
+    fi
     echo '-------------------------'
     wait_time="0.$(random 250 390)s"
     sleep "${wait_time}"
@@ -404,9 +409,7 @@ function equip_soft_boots() {
     fetch_char_stats 1
     if is_out_of_souls_or_mana ${MANA} ${SOUL_POINTS} || \
             [[ ${MANA} -ge ${max_char_mana} ]]; then
-        if [[ ${burn_excess_mana} ]]; then
-            burn_excess_mana_fn
-        else
+        if ! [[ ${burn_excess_mana} ]]; then
             return 1
         fi
     fi
@@ -424,9 +427,7 @@ function eat_food() {
     fetch_char_stats 1
     if is_out_of_souls_or_mana ${MANA} ${SOUL_POINTS} || \
             [[ ${MANA} -ge ${max_char_mana} ]]; then
-        if [[ ${burn_excess_mana} ]]; then
-            burn_excess_mana_fn
-        else
+        if ! [[ ${burn_excess_mana} ]]; then
             return 1
         fi
     fi
@@ -445,15 +446,19 @@ function make_rune() {
   local max_wait="$2"
   if [[ ${use_char_reader} ]]; then
     fetch_char_stats 1
-    if [[ ${MANA} -gt ${mana_per_rune} ]]; then
+    if [[ ${MANA} -gt ${mana_per_rune} ]] && \
+           [[ ${SOUL_POINTS} -ge 5 ]]; then
       cast_rune_spell "${min_wait}" "${max_wait}"
     fi
     if [[ ${burn_excess_mana} ]]; then
+        sleep "0.125s"
         burn_excess_mana_fn
     fi
   else
     cast_rune_spell "${min_wait}" "${max_wait}"
   fi
+  # TODO: burn mana when mana is greater than threshold + 100 regardless
+  # of burn_excess_mana option.
 }
 
 function wait_for_mana() {
