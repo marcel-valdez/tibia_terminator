@@ -406,20 +406,20 @@
                 "name": "sta.amulet",
                 "equipped_colors": [
                     {
-                        "north": "252626",
-                        "south": "1b42c",
-                        "left": "252626",
-                        "right": "a3f19"
-                    }
+                        "north": "252625",
+                        "south": "ab727",
+                        "left": "202020",
+                        "right": "83c15",
+                    },
                 ],
                 "action_bar_colors": [
                     {
                         "north": "4d170",
                         "south": "1ad552",
                         "left": "d421d",
-                        "right": "93215"
-                    }
-                ]
+                        "right": "93215",
+                    },
+                ],
             },
             {
                 "name": "leviathan.amulet",
