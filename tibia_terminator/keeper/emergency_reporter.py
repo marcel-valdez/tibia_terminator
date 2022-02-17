@@ -26,7 +26,8 @@ class EmergencyReporter():
     def should_stop_emergency(self, char_status):
         """Whether the emergency should be stopped due to the char's status."""
         if self.in_emergency_override:
-            return False  # Can only be stopped with a stop_emergency_manual_override
+            # Can only be stopped with a stop_emergency_manual_override
+            return False
         if not self.in_emergency:
             return True
 

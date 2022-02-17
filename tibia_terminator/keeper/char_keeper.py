@@ -5,17 +5,23 @@ from typing import List, Dict, Optional, Union
 from tibia_terminator.interface.client_interface import ClientInterface
 from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfig
 from tibia_terminator.schemas.char_config_schema import CharConfig, BattleConfig
-from tibia_terminator.schemas.directional_macro_config_schema import DirectionalMacroConfig
-from tibia_terminator.schemas.item_crosshair_macro_config_schema import ItemCrosshairMacroConfig
+from tibia_terminator.schemas.directional_macro_config_schema import (
+    DirectionalMacroConfig,
+)
+from tibia_terminator.schemas.item_crosshair_macro_config_schema import (
+    ItemCrosshairMacroConfig,
+)
 from tibia_terminator.common.char_status import CharStatus
 from tibia_terminator.interface.macro.cancel_emergency_macro import (
-    CancelEmergencyMacro, CancelTankModeMacro
+    CancelEmergencyMacro,
+    CancelTankModeMacro,
 )
 from tibia_terminator.interface.macro.item_crosshair_macro import ItemCrosshairMacro
 from tibia_terminator.interface.macro.directional_macro import DirectionalMacro
 from tibia_terminator.interface.macro.macro import Macro
 from tibia_terminator.interface.macro.start_emergency_macro import (
-    StartEmergencyMacro, StartTankModeMacro
+    StartEmergencyMacro,
+    StartTankModeMacro,
 )
 from tibia_terminator.reader.equipment_reader import MagicShieldStatus
 from tibia_terminator.keeper.emergency_reporter import (
@@ -121,9 +127,7 @@ class CharKeeper:
         battle_config: BattleConfig,
         mana_keeper: Optional[Union[ManaKeeper, KnightPotionKeeper]] = None,
     ):
-        self.mana_keeper: Union[
-            ManaKeeper, KnightPotionKeeper
-        ] = None  # type: ignore
+        self.mana_keeper: Union[ManaKeeper, KnightPotionKeeper] = None  # type: ignore
         if mana_keeper is None:
             if char_config.vocation == "mage":
                 self.mana_keeper = ManaKeeper(
@@ -138,7 +142,7 @@ class CharKeeper:
                 self.mana_keeper = KnightPotionKeeper(
                     client=client,
                     battle_config=battle_config,
-                    total_hp=char_config.total_hp
+                    total_hp=char_config.total_hp,
                 )
             else:
                 raise Exception(f"Unsupported vocation: {char_config.vocation}")
@@ -280,9 +284,7 @@ class CharKeeper:
         self.directional_macros = []
 
     def init_core_macros(
-        self,
-        hotkeys_config: HotkeysConfig,
-        core_macros: Optional[List[Macro]] = None
+        self, hotkeys_config: HotkeysConfig, core_macros: Optional[List[Macro]] = None
     ):
         self.unload_core_macros()
         if core_macros is not None:
@@ -296,7 +298,11 @@ class CharKeeper:
             start_emergency_key = hotkeys_config.start_emergency
             if start_emergency_key:
                 self.core_macros.append(
-                    StartEmergencyMacro(self.emergency_reporter, start_emergency_key)
+                    StartEmergencyMacro(
+                        self.emergency_reporter,
+                        self.tank_mode_reporter,
+                        start_emergency_key,
+                    )
                 )
             cancel_tank_mode_key = hotkeys_config.cancel_tank_mode
             if cancel_tank_mode_key:
@@ -306,7 +312,11 @@ class CharKeeper:
             start_tank_mode_key = hotkeys_config.start_tank_mode
             if start_tank_mode_key:
                 self.core_macros.append(
-                    StartTankModeMacro(self.tank_mode_reporter, start_tank_mode_key)
+                    StartTankModeMacro(
+                        self.tank_mode_reporter,
+                        self.emergency_reporter,
+                        start_tank_mode_key,
+                    )
                 )
 
     def unload_core_macros(self):
@@ -373,10 +383,9 @@ class CharKeeper:
         self.hp_keeper.handle_status_change(char_status, is_downtime)
 
     def handle_mana_change(self, char_status: CharStatus):
-        is_downtime = (
-            self.hp_keeper.is_healthy(char_status) and
-            self.speed_keeper.is_hasted(char_status.speed)
-        )
+        is_downtime = self.hp_keeper.is_healthy(
+            char_status
+        ) and self.speed_keeper.is_hasted(char_status.speed)
         self.mana_keeper.handle_status_change(char_status, is_downtime)
 
     def handle_speed_change(self, char_status: CharStatus):
@@ -386,8 +395,9 @@ class CharKeeper:
     def should_skip_haste(self, char_status: CharStatus) -> bool:
         # Do not issue order to haste if we're at critical HP levels,
         # since haste shared cooldown with magic shield.
-        if self.hp_keeper.is_critical_hp(char_status.hp) and \
-           not self.magic_shield_keeper.is_healthy(char_status):
+        if self.hp_keeper.is_critical_hp(
+            char_status.hp
+        ) and not self.magic_shield_keeper.is_healthy(char_status):
             return True
 
         # Do not issue a haste order if we're not paralyzed and we're at
