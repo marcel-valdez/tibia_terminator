@@ -20,12 +20,15 @@ EQUIP_RING_LR_KEY='XF86Launch6'  # F15
 EQUIP_RING_ROH_KEY='XF86Launch7'  # F16
 EQUIP_SOFT_BOOTS_KEY='XF86Launch8'  # F17
 UNEQUIP_RING_ROH_KEY='XF86Launch9'  # F18
-DRINK_POTION_KEY='XF86TouchpadToggle'  # F21
-BURN_MANA_KEY="F9"  # Exura vita
-MANA_POTION_CENTER_X=1707
-MANA_POTION_CENTER_Y=292
+DRINK_POTION_KEY='XF86TouchpadToggle'  # F21 TODO: Replace with another key
+BURN_MANA_KEY='XF86TouchpadToggle'  # F21
+
+
+MANA_POTION_CENTER_X=1601
+MANA_POTION_CENTER_Y=38
 CHAR_CENTER_X=958
 CHAR_CENTER_Y=372
+SQM_LEN=56
 SCREEN_NO=0
 REGEN_RING_CENTER_X=1772
 REGEN_RING_CENTER_Y=498
@@ -46,8 +49,8 @@ function random() {
 
 function update_max_mana() {
     max_char_mana=$1
-    max_mana_threshold=$((max_char_mana - 250))
-    burn_mana_threshold=$((max_char_mana - 125))
+    max_mana_threshold=$((max_char_mana - 270))
+    burn_mana_threshold=$((max_char_mana - 175))
     mana_per_rune=${max_mana_threshold}
 }
 
@@ -55,11 +58,11 @@ function update_max_mana() {
 # to get the realtime mouse location use:
 #   watch -t -n 0.0001 xdotool getmouselocation
 function click_mana_potion() {
-  local minx=$((mana_potion_center_x-12))
-  local maxx=$((mana_potion_center_x+12))
+  local minx=$((MANA_POTION_CENTER_X-12))
+  local maxx=$((MANA_POTION_CENTER_X+12))
   # with full depot box
-  local miny=$((mana_potion_center_y-12))
-  local maxy=$((mana_potion_center_y+12))
+  local miny=$((MANA_POTION_CENTER_Y-12))
+  local maxy=$((MANA_POTION_CENTER_Y+12))
   # with 1500 manas
   #local miny=169
   #local maxy=195
@@ -72,14 +75,14 @@ function click_mana_potion() {
 
   echo "clicking mana potion (${x},${y})" &
   xdotool mousemove --screen "${screen_no}" --window "${tibia_wid}" "${x}" "${y}"
-  xdotool click --window "${tibia_wid}" --delay $(random 125 250) 1
+  xdotool click --window "${tibia_wid}" --delay $(random 125 250) 3
 }
 
 function click_char() {
-  local miny=$((char_center_y-12))
-  local maxy=$((char_center_y+12))
-  local minx=$((char_center_x-12))
-  local maxx=$((char_center_x+12))
+  local miny=$((CHAR_CENTER_Y-12))
+  local maxy=$((CHAR_CENTER_Y+12))
+  local minx=$((CHAR_CENTER_X-12))
+  local maxx=$((CHAR_CENTER_X+12))
   local x=$(random ${minx} ${maxx})
   local y=$(random ${miny} ${maxy})
 
@@ -232,6 +235,12 @@ function burn_excess_mana_fn() {
         fetch_char_stats 1
         sleep 0.5
     done
+}
+
+function open_mana_potions_field() {
+    echo "Browsing the mana potions field."
+    browse_field "${tibia_wid}" "$((CHAR_CENTER_X+SQM_LEN))"\
+                 "$((CHAR_CENTER_Y-SQM_LEN))"
 }
 
 function drink_mana_potion() {
@@ -494,6 +503,7 @@ function is_logged_out {
   [[ ${exit_status} -eq 2 ]]
 }
 
+
 function login {
   "${RECONNECTOR_BIN}" --login \
                        --credentials_user "${credentials_profile}" \
@@ -507,6 +517,7 @@ function login {
   fi
 }
 
+
 function manasit() {
   local start_timestamp_sec=0
   while true; do
@@ -517,8 +528,20 @@ function manasit() {
       # in the Tibia client.
       sleep "$(random 180 300)s"
       login
-      if [[ ${refill_char} ]]; then
-        reopen_depot
+      if [[ ${refill_char} ]] || [[ ${use_mouse_for_mana_potion} ]]; then
+          if lock_interaction; then
+              if is_interaction_owner; then
+                  trap free_interaction SIGINT SIGTERM ERR EXIT
+                  if [[ ${refill_char} ]]; then
+                      reopen_depot
+                  fi
+                  if [[ ${use_mouse_for_mana_potion} ]]; then
+                      open_mana_potions_field
+                  fi
+                  free_interaction
+                  trap - SIGINT SIGTERM ERR EXIT
+              fi
+          fi
       fi
     fi
     # get current focused window
@@ -572,17 +595,29 @@ function manasit() {
     # return to prev window
     sleep "$(random 1 2).$(random 11 99)s"
     if [[ "${refocus_tibia_to_make_rune}" ]]; then
-      xdotool mousemove --screen ${curr_screen} \
-        ${curr_x} ${curr_y}
-      focus_window ${curr_window}
+        xdotool mousemove --screen ${curr_screen} \
+                ${curr_x} ${curr_y}
+        focus_window ${curr_window}
     fi
 
     if [[ "${credentials_profile}" ]] && is_logged_out; then
       echo "We were disconnected. We will attempt login after 3-5 minutes."
       sleep "$(random 180 300)s"
       login
-      if [[ "${refill_char}" ]]; then
-        reopen_depot
+      if [[ ${refill_char} ]] || [[ ${use_mouse_for_mana_potion} ]]; then
+          if lock_interaction; then
+              if is_interaction_owner; then
+                  trap free_interaction SIGINT SIGTERM ERR EXIT
+                  if [[ ${refill_char} ]]; then
+                      reopen_depot
+                  fi
+                  if [[ ${use_mouse_for_mana_potion} ]]; then
+                      open_mana_potions_field
+                  fi
+                  free_interaction
+                  trap - SIGINT SIGTERM ERR EXIT
+              fi
+          fi
       fi
     fi
     # sit until next rune spell with randomization
@@ -789,12 +824,12 @@ function close_other_menus {
 function reopen_depot {
   focus_window
   if ! close_other_menus; then
-    echo "Unable to close other menus, cannot proceed refilling char." >&2
-    exit 1
+      echo "Unable to close other menus, cannot proceed refilling char." >&2
+      exit 1
   fi
 
   if ! is_depot_box_open "${tibia_wid}"; then
-    open_depot "${tibia_wid}"
+      open_depot "${tibia_wid}"
   fi
 }
 
@@ -802,11 +837,22 @@ function main() {
   parse_args "$@"
   tibia_wid="$(get_tibia_wid)"
   if [[ "${credentials_profile}" ]] && is_logged_out; then
-    login
+      login
   fi
-
-  if [[ "${refill_char}" ]]; then
-    reopen_depot
+  if [[ ${refill_char} ]] || [[ ${use_mouse_for_mana_potion} ]]; then
+      if lock_interaction; then
+          if is_interaction_owner; then
+              trap free_interaction SIGINT SIGTERM ERR EXIT
+              if [[ ${refill_char} ]]; then
+                  reopen_depot
+              fi
+              if [[ ${use_mouse_for_mana_potion} ]]; then
+                  open_mana_potions_field
+              fi
+              free_interaction
+              trap - SIGINT SIGTERM ERR EXIT
+          fi
+      fi
   fi
   manasit
 }

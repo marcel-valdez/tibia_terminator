@@ -32,6 +32,33 @@ function lock_interaction {
   fi
 }
 
+function browse_field() {
+    local tibia_wid="$1"
+    local x="$2"
+    local y="$3"
+
+    local delta_x=50
+    local delta_y=85
+    local click_x=$((x+delta_x))
+    local click_y=$((y+delta_y))
+
+        xdotool \
+            windowfocus "${tibia_wid}" \
+            sleep 0.3 \
+            mousemove --window "${tibia_wid}" "${x}" "${y}" \
+            sleep 0.3 \
+            keydown --window "${tibia_wid}" "Control_L" \
+            sleep 0.3 \
+            click 3 \
+            sleep 0.3 \
+            keyup --window "${tibia_wid}" "Control_L" \
+            sleep 0.3 \
+            mousemove --window "${tibia_wid}" "${click_x}" "${click_y}" \
+            sleep 0.3 \
+            click 1 \
+            sleep 0.3
+}
+
 
 CLOSE_X=1909
 CLOSE_Y=503
