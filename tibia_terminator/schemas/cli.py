@@ -7,7 +7,7 @@ import sys
 from tibia_terminator.schemas.common import FactorySchema
 
 
-def main(schema: FactorySchema, config_file: str) -> None:
+def load_file(schema: FactorySchema, config_file: str) -> None:
     if not os.path.exists(config_file):
         sys.stderr.writelines([f"File {config_file} does not exist."])
         sys.exit(1)
@@ -18,7 +18,7 @@ def main(schema: FactorySchema, config_file: str) -> None:
     sys.exit(0)
 
 
-def parse_args(schema: FactorySchema):
+def main(schema: FactorySchema):
     parser = argparse.ArgumentParser(
         f"{type(schema)} Test",
         description=f"Use this to validate JSON config definitions of {type(schema)}."
@@ -29,4 +29,4 @@ def parse_args(schema: FactorySchema):
         type=str
     )
     args = parser.parse_args()
-    main(schema, args.config_file)
+    load_file(schema, args.config_file)

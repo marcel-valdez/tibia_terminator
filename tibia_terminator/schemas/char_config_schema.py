@@ -14,6 +14,7 @@ from tibia_terminator.schemas.directional_macro_config_schema import (
     DirectionalMacroConfig,
     DirectionalMacroConfigSchema,
 )
+from tibia_terminator.schemas.cli import main
 
 
 class BattleConfig(NamedTuple):
@@ -183,14 +184,5 @@ class CharConfigSchema(FactorySchema[CharConfig]):
         return data
 
 
-def main(char_config_path: str):
-    CharConfigSchema().loadf(char_config_path)
-
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Tibia terminator CLI parameters.")
-    parser.add_argument("char_config_path",
-                        help="Path to the char config file to validate")
-    args = parser.parse_args()
-    main(args.char_config_path)
+    main(CharConfigSchema())
