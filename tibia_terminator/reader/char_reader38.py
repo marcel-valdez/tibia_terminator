@@ -207,7 +207,7 @@ class CharReader38():
             self.magic_shield_address = override_value
         elif (self.magic_shield_address is None
               and self.speed_address is not None):
-            self.magic_shield_address = self.speed_address + 196
+            self.magic_shield_address = self.speed_address + 204
         else:
             # TODO: Implement automated mechanism
             raise Exception("No magic shield memory address provided.")
