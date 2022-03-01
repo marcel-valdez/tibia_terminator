@@ -11,9 +11,39 @@ import commentjson as json
 from marshmallow import Schema, fields, ValidationError, post_load, pre_load
 
 T = TypeVar("T")
+ALLOWED_BUILTINS = {
+    "abs": abs,
+    "all": all,
+    "any": any,
+    "bool": bool,
+    "dict": dict,
+    "divmod": divmod,
+    "enumerate": enumerate,
+    "filter": filter,
+    "float": float,
+    "int": int,
+    "iter": iter,
+    "len": len,
+    "list": list,
+    "map": map,
+    "max": max,
+    "min": min,
+    "next": next,
+    "pow": pow,
+    "range": range,
+    "reversed": reversed,
+    "round": round,
+    "set": set,
+    "slice": slice,
+    "sorted": sorted,
+    "str": str,
+    "sum": sum,
+    "tuple": tuple,
+    "zip": zip,
+}
 
 
-class ResolvableMixin():
+class ResolvableMixin:
     __RESOLVE_CONTEXT_KEY = uuid1()
 
     @property
@@ -42,10 +72,7 @@ class ResolvableMixin():
 
 
 class FactorySchema(Generic[T], Schema, ResolvableMixin):
-    def __init__(self,
-                 ctor: Callable[[Dict[str, Any]], T] = None,
-                 *args,
-                 **kwargs):
+    def __init__(self, ctor: Callable[[Dict[str, Any]], T] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if ctor is not None:
             self.ctor = ctor
@@ -58,10 +85,10 @@ class FactorySchema(Generic[T], Schema, ResolvableMixin):
         if not os.path.isfile(path):
             raise Exception(f"Path {path} does not exist.")
         try:
-            with open(path, 'r', encoding="utf-8") as file:
+            with open(path, "r", encoding="utf-8") as file:
                 return self.load(json.load(file))
-        except Exception as e:
-            raise Exception(f"Error while loading: {path}") from e
+        except Exception as exc:
+            raise Exception(f"Error while loading: {path}") from exc
 
 
 FORMATTER = Formatter()
@@ -69,8 +96,11 @@ FORMATTER = Formatter()
 K = TypeVar("K")
 
 
-class ResolvableField(Generic[K], fields.Field, ResolvableMixin):
+def has_refs(value: str):
+    return any(tup[1] for tup in FORMATTER.parse(value) if tup[1] is not None)
 
+
+class ResolvableField(Generic[K], fields.Field, ResolvableMixin):
     def __init__(self, cast_fn: Callable[[str], K], *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.cast_fn = cast_fn
@@ -80,24 +110,51 @@ class ResolvableField(Generic[K], fields.Field, ResolvableMixin):
             return None
         return str(value)
 
+    def eval_str(self, value: str, context: Dict[str, Any]) -> str:
+        return eval(f'f"{value}"', {"__builtins__": ALLOWED_BUILTINS}, context)
+
     def resolve_str(self, value: str, context: Dict[str, Any]) -> str:
-        value = eval(f'f"{value}"', {}, context)
-        has_refs = any(
-            tup[1] for tup in FORMATTER.parse(value) if tup[1] is not None
-        )
-        if has_refs:
-            return self.resolve_str(value, context)
+        try:
+            resolved_value = self.eval_str(value, context)
+        except TypeError as type_error:
+            # we should try to evaluate everything of type string in the
+            # top-level context?
+            if has_refs(value):
+                matching_keys = []
+                context_keys = list(context.keys())
+                for key in context_keys:
+                    ref_value = context[key]
+                    # Avoid infinite recursion
+                    if ref_value == value:
+                        context.pop(key)
+                        matching_keys.append(key)
+                    elif isinstance(ref_value, str) and has_refs(ref_value):
+                        ref_resolved_value = self.resolve_str(ref_value, context)
+                        if ref_resolved_value.replace(".", "", 1).isdigit():
+                            context[key] = float(ref_resolved_value)
+                        else:
+                            context[key] = ref_resolved_value
 
-        return value
+                for matching_key in matching_keys:
+                    context[matching_key] = value
 
-    def resolve_t(
-            self, value_str: str, ref_str: str, field_name: str
-    ) -> Optional[K]:
+                resolved_value = self.eval_str(value, context)
+            else:
+                raise type_error
+
+        if has_refs(resolved_value):
+            return self.resolve_str(resolved_value, context)
+
+        return resolved_value
+
+    def resolve_t(self, value_str: str, ref_str: str, field_name: str) -> Optional[K]:
         value_str = value_str.strip()
         if self.cast_fn is not str and value_str == "None":
             if not self.allow_none:
-                raise ValidationError(f"Field {field_name} can't be null, but "
-                                      f"{ref_str} resolves to null.")
+                raise ValidationError(
+                    f"Field {field_name} can't be null, but "
+                    f"{ref_str} resolves to null."
+                )
             return None
 
         return self.cast_fn(value_str)
@@ -117,8 +174,10 @@ class ResolvableField(Generic[K], fields.Field, ResolvableMixin):
             resolved_value = self.resolve_t(value_str, value, attr)
             data[attr] = resolved_value
             return resolved_value
-        except TypeError as e:
-            raise TypeError(f"Type error while deserializing {value} for field {attr}", e)
+        except TypeError as type_error:
+            raise TypeError(
+                f"Type error while deserializing {value} for field {attr}"
+            ) from type_error
         finally:
             self.pop_context(data)
 
@@ -129,7 +188,7 @@ def isnamedtupleinstance(x):
     if len(bases) != 1 or bases[0] != tuple:
         return False
 
-    _fields = getattr(_type, '_fields', None)
+    _fields = getattr(_type, "_fields", None)
     if not isinstance(_fields, tuple):
         return False
 
