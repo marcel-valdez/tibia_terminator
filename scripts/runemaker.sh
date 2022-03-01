@@ -49,8 +49,8 @@ function random() {
 
 function update_max_mana() {
     max_char_mana=$1
-    max_mana_threshold=$((max_char_mana - 270))
-    burn_mana_threshold=$((max_char_mana - 175))
+    max_mana_threshold=$((max_char_mana - 300))
+    burn_mana_threshold=$((max_char_mana - 200))
     mana_per_rune=${max_mana_threshold}
 }
 
