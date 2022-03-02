@@ -291,6 +291,28 @@ class TestCommon(TestCase):
             # when
             self.assertEqual(result.nested_list[0].optional_ref_field, 42)
 
+    def test_nested_list_resolvable_schema_ref_multivar_math_fn(self):
+        # given
+        # ordering of the input dictionary affects results, so we rerun the
+        # test 100 times.
+        for _ in range(100):
+            input = {
+                "root_field": 42,
+                "nested_list": [
+                    {
+                        "ref_field": 44,
+                        "optional_ref_field": "{root_field + ref_field - 12}",
+                        "test_field": "{optional_ref_field + ref_field}",
+                        "optional_test_field": "{max(root_field - ref_field, test_field * 0.8)}",
+                    }
+                ],
+            }
+            target = NestedListTestSchema()
+            # given
+            result = target.load(input)
+            # when
+            self.assertEqual(result.nested_list[0].optional_ref_field, 74)
+
 
 if __name__ == "__main__":
     unittest.main()

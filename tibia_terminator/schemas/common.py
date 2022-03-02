@@ -4,13 +4,25 @@ import os
 from string import Formatter
 from uuid import uuid1
 
-from typing import TypeVar, Generic, Callable, Dict, Any, NamedTuple, Optional
+from typing import TypeVar, Generic, Callable, Dict, Any, NamedTuple, Optional, Union
 
 import commentjson as json
 
 from marshmallow import Schema, fields, ValidationError, post_load, pre_load
 
 T = TypeVar("T")
+K = TypeVar("K")
+FORMATTER = Formatter()
+
+
+def has_refs(value: str):
+    return any(tup[1] for tup in FORMATTER.parse(value) if tup[1] is not None)
+
+
+def safe_int(x: Any):
+    return int(float(x))
+
+
 ALLOWED_BUILTINS = {
     "abs": abs,
     "all": all,
@@ -21,7 +33,7 @@ ALLOWED_BUILTINS = {
     "enumerate": enumerate,
     "filter": filter,
     "float": float,
-    "int": int,
+    "int": safe_int,
     "iter": iter,
     "len": len,
     "list": list,
@@ -91,18 +103,11 @@ class FactorySchema(Generic[T], Schema, ResolvableMixin):
             raise Exception(f"Error while loading: {path}") from exc
 
 
-FORMATTER = Formatter()
-
-K = TypeVar("K")
-
-
-def has_refs(value: str):
-    return any(tup[1] for tup in FORMATTER.parse(value) if tup[1] is not None)
-
-
 class ResolvableField(Generic[K], fields.Field, ResolvableMixin):
     def __init__(self, cast_fn: Callable[[str], K], *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if cast_fn is int:
+            cast_fn = safe_int
         self.cast_fn = cast_fn
 
     def _serialize(self, value, attr, obj, **kwargs):
@@ -113,37 +118,37 @@ class ResolvableField(Generic[K], fields.Field, ResolvableMixin):
     def eval_str(self, value: str, context: Dict[str, Any]) -> str:
         return eval(f'f"{value}"', {"__builtins__": ALLOWED_BUILTINS}, context)
 
+    def resolve_partial_context(self, value: str, context: Dict[str, Any]) -> None:
+        context_keys = list(context.keys())
+        for key in context_keys:
+            context_value = context[key]
+            if isinstance(context_value, str):
+                # avoid infinite recursion
+                if has_refs(context_value) and context_value != value:
+                    context_value = self.resolve_str(context_value, context)
+
+                if context_value.replace(".", "", 1).isdigit():
+                    context[key] = float(context_value)
+                else:
+                    context[key] = context_value
+
     def resolve_str(self, value: str, context: Dict[str, Any]) -> str:
         try:
             resolved_value = self.eval_str(value, context)
-        except TypeError as type_error:
-            # we should try to evaluate everything of type string in the
-            # top-level context?
+        except Exception as error:
             if has_refs(value):
-                matching_keys = []
-                context_keys = list(context.keys())
-                for key in context_keys:
-                    ref_value = context[key]
-                    # Avoid infinite recursion
-                    if ref_value == value:
-                        context.pop(key)
-                        matching_keys.append(key)
-                    elif isinstance(ref_value, str) and has_refs(ref_value):
-                        ref_resolved_value = self.resolve_str(ref_value, context)
-                        if ref_resolved_value.replace(".", "", 1).isdigit():
-                            context[key] = float(ref_resolved_value)
-                        else:
-                            context[key] = ref_resolved_value
-
-                for matching_key in matching_keys:
-                    context[matching_key] = value
-
-                resolved_value = self.eval_str(value, context)
+                self.resolve_partial_context(value, context)
+                try:
+                    resolved_value = self.eval_str(value, context)
+                except Exception as nested_error:
+                    raise type(nested_error)(
+                        f"Error evaluating {value}"
+                    ) from nested_error
             else:
-                raise type_error
+                raise type(error)(f"Error evaluating {value}") from error
 
         if has_refs(resolved_value):
-            return self.resolve_str(resolved_value, context)
+            resolved_value = self.resolve_str(resolved_value, context)
 
         return resolved_value
 
