@@ -2,6 +2,7 @@
 
 from marshmallow import fields, pre_load
 from typing import Optional, NamedTuple, List, Union, Dict, Any
+from tibia_terminator.schemas.cli import main
 from tibia_terminator.schemas.common import FactorySchema
 
 
@@ -49,8 +50,8 @@ class AppConfigs(NamedTuple):
         return next((c for c in self.configs if c.pid == key), None)
 
 
-def _validate_hex(hex_number: str = None) -> bool:
-    if str is None:
+def _validate_hex(hex_number: Optional[str] = None) -> bool:
+    if hex_number is None:
         return True
 
     try:
@@ -66,11 +67,9 @@ class AppConfigSchema(FactorySchema[AppConfig]):
     pid = fields.Int(required=True)
     mana_memory_address = fields.Str(allow_none=True, validate=_validate_hex)
     speed_memory_address = fields.Str(allow_none=True, validate=_validate_hex)
-    soul_points_memory_address = fields.Str(allow_none=True,
-                                            validate=_validate_hex)
+    soul_points_memory_address = fields.Str(allow_none=True, validate=_validate_hex)
     hp_memory_address = fields.Str(allow_none=True, validate=_validate_hex)
-    magic_shield_memory_address = fields.Str(allow_none=True,
-                                             validate=_validate_hex)
+    magic_shield_memory_address = fields.Str(allow_none=True, validate=_validate_hex)
     max_mana_address = fields.Str(allow_none=True, validate=_validate_hex)
     max_hp_address = fields.Str(allow_none=True, validate=_validate_hex)
 
@@ -88,3 +87,7 @@ class AppConfigsSchema(FactorySchema[AppConfigs]):
     ctor = AppConfigs
     default_pid = fields.Int(required=False)
     configs = fields.List(fields.Nested(AppConfigSchema))
+
+
+if __name__ == "__main__":
+    main(AppConfigsSchema())

@@ -19,6 +19,7 @@ pyautogui = "*"
 "tibia.py" = "*"
 requests = "*"
 pynput = "*"
+psutil = "*"
 
 [requires]
 python_version = "3.8"
