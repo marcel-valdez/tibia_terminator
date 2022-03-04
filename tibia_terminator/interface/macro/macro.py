@@ -162,9 +162,9 @@ class ClientMacro(Macro):
         hotkey: str,
         command_type: str,
         throttle_ms: int,
+        *args,
         cmd_id: str = None,
         throttle_behavior: ThrottleBehavior = ThrottleBehavior.DEFAULT,
-        *args,
         **kwargs,
     ):
         super().__init__(hotkey, *args, **kwargs)

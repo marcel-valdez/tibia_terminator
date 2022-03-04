@@ -184,6 +184,7 @@ class TibiaTerminator:
         self.app_state = app_status.state or AppState.CONFIG_SELECTION
         self.selected_config_name = (app_status.selected_config_name
                                      or self.char_config_entries[0].name)
+        self.drag_macros: List[DragMacro] = []
         if not self.load_config(self.selected_config_name):
             self.selected_config_name = self.char_config_entries[0].name
 
@@ -353,6 +354,7 @@ class TibiaTerminator:
     def enter_running_state(self):
         self.loot_macro.hook_hotkey()
         self.char_keeper.hook_macros()
+        self.char_keeper.unhook_drag_macros()
         self.view = RunView()
         self.view.title = self.gen_title()
         self.view.main_options = RUNNING_STATE_MAIN_OPTIONS_MSG
@@ -404,6 +406,7 @@ class TibiaTerminator:
     def enter_paused_state(self):
         self.loot_macro.unhook_hotkey()
         self.char_keeper.unhook_macros()
+        self.char_keeper.hook_drag_macros()
         self.view = PausedView()
         self.view.title = self.gen_title()
         self.view.main_options = PAUSED_STATE_MAIN_OPTIONS_MSG

@@ -9,6 +9,10 @@ from tibia_terminator.schemas.item_crosshair_macro_config_schema import (
     ItemCrosshairMacroConfig,
     ItemCrosshairMacroConfigSchema,
 )
+from tibia_terminator.schemas.drag_macro_config_schema import (
+    DragMacroConfig,
+    DragMacroConfigSchema
+)
 from tibia_terminator.schemas.common import FactorySchema, ResolvableField
 from tibia_terminator.schemas.directional_macro_config_schema import (
     DirectionalMacroConfig,
@@ -50,6 +54,7 @@ class BattleConfig(NamedTuple):
 
     item_crosshair_macros: Optional[List[ItemCrosshairMacroConfig]] = []
     directional_macros: Optional[List[DirectionalMacroConfig]] = []
+    drag_macros: Optional[List[DragMacroConfig]] = []
     equip_amulet_secs: Optional[int] = 1
     equip_ring_secs: Optional[int] = 1
 
@@ -88,6 +93,10 @@ class BattleConfigSchema(FactorySchema[BattleConfig]):
     emergency_hp_threshold = ResolvableField(float, required=True)
     item_crosshair_macros = fields.List(
         fields.Nested(ItemCrosshairMacroConfigSchema),
+        required=False,
+        default=[])
+    drag_macros = fields.List(
+        fields.Nested(DragMacroConfigSchema),
         required=False,
         default=[])
     directional_macros = fields.List(

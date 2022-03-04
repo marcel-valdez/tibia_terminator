@@ -3,7 +3,9 @@
 from typing import List, Dict, Optional, Union
 
 from tibia_terminator.interface.client_interface import ClientInterface
+from tibia_terminator.interface.macro.drag_macro import DragMacro
 from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfig
+from tibia_terminator.schemas.drag_macro_config_schema import DragMacroConfig
 from tibia_terminator.schemas.char_config_schema import CharConfig, BattleConfig
 from tibia_terminator.schemas.directional_macro_config_schema import (
     DirectionalMacroConfig,
@@ -63,6 +65,7 @@ class CharKeeper:
         self.item_crosshair_macros: List[ItemCrosshairMacro] = []
         self.directional_macros: List[DirectionalMacro] = []
         self.core_macros: List[Macro] = []
+        self.drag_macros: List[DragMacro] = []
         self.client = client
         self.hotkeys_config = hotkeys_config
         # load the first battle config from the first char config
@@ -95,6 +98,7 @@ class CharKeeper:
         )
         self.init_core_macros(self.hotkeys_config)
         self.init_directional_macros(battle_config.directional_macros or [])
+        self.init_drag_macros(battle_config.drag_macros or [])
 
     def init_emergency_reporter(
         self,
@@ -267,6 +271,22 @@ class CharKeeper:
         self.__unhook_macros(self.item_crosshair_macros)
         self.item_crosshair_macros = []
 
+    def init_drag_macros(
+        self,
+        macro_configs: List[DragMacroConfig] = [],
+        drag_macros: Optional[List[DragMacro]] = None
+    ):
+        self.unload_drag_macros()
+        if drag_macros is not None:
+            self.drag_macros = drag_macros
+        else:
+            for macro_config in macro_configs:
+                self.drag_macros.append(DragMacro(self.client, macro_config))
+
+    def unload_drag_macros(self):
+        self.__unhook_macros(self.drag_macros)
+        self.drag_macros = []
+
     def init_directional_macros(
         self,
         macro_configs: List[DirectionalMacroConfig],
@@ -336,6 +356,12 @@ class CharKeeper:
         self.__hook_macros(self.item_crosshair_macros)
         self.__hook_macros(self.core_macros)
         self.__hook_macros(self.directional_macros)
+
+    def hook_drag_macros(self):
+        self.__hook_macros(self.drag_macros)
+
+    def unhook_drag_macros(self):
+        self.__unhook_macros(self.drag_macros)
 
     def __hook_macros(self, macros: Optional[List[Macro]] = None):
         for macro in macros or []:

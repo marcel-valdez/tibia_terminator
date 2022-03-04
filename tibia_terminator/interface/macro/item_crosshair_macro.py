@@ -30,7 +30,7 @@ from tibia_terminator.interface.client_interface import (
     CommandProcessor,
     ThrottleBehavior,
 )
-from tibia_terminator.interface.keystroke_sender import KeystrokeSender
+from tibia_terminator.schemas.common import Direction
 from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfig
 
 parser = argparse.ArgumentParser(description="Test item cross hair macro.")
@@ -192,71 +192,73 @@ class ItemCrosshairMacro:
             macro.unhook_hotkey(*args, **kwargs)
 
 
-class MockLogger:
-    def log_action(self, level, msg):
-        print(str(level), msg)
-
-
-class MockKeystrokeSender(KeystrokeSender):
-    def send_key(self, key: str):
-        pass
-
-
-def main(keys: List[str], action: str):
-    macros = []
-    logger = MockLogger()
-    action = MacroAction.from_str(action)
-    cmd_processor = CommandProcessor("wid", logger, False)
-    client = ClientInterface({}, MockKeystrokeSender(), logger, cmd_processor)
-    hotkeys_config = HotkeysConfig(
-        up="w",
-        down="s",
-        left="a",
-        right="d",
-        upper_left="q",
-        upper_right="e",
-        lower_left="z",
-        lower_right="c",
-        minor_heal="",
-        medium_heal="",
-        greater_heal="",
-        haste="",
-        equip_ring="",
-        equip_amulet="",
-        eat_food="",
-        magic_shield="",
-        cancel_magic_shield="",
-        mana_potion="",
-        toggle_emergency_amulet="",
-        toggle_emergency_ring="",
-        loot="",
-        start_emergency="",
-        cancel_emergency="",
-    )
-    cmd_processor.start()
-    for key in keys:
-        print(
-            f"Listening on key {key}, a click will be issued when it is pressed."
-        )
-        macro = ItemCrosshairMacro(
-            client,
-            ItemCrosshairMacroConfig(
-                hotkey=key,
-                action=action,
-            ),
-            hotkeys_config=hotkeys_config,
-        )
-        macro.hook_hotkey()
-        macros.append(macro)
-    try:
-        print("Press [Enter] to exit.")
-        keyboard.wait("enter")
-    finally:
-        cmd_processor.stop()
-        for macro in macros:
-            macro.unhook_hotkey()
-
-
 if __name__ == "__main__":
+    from tibia_terminator.interface.keystroke_sender import KeystrokeSender
+
+
+    class MockLogger:
+        def log_action(self, level, msg):
+            print(str(level), msg)
+
+
+    class MockKeystrokeSender(KeystrokeSender):
+        def send_key(self, key: str):
+            pass
+
+
+    def main(keys: List[str], action: str):
+        macros = []
+        logger = MockLogger()
+        action = MacroAction.from_str(action)
+        cmd_processor = CommandProcessor("wid", logger, False)
+        client = ClientInterface({}, MockKeystrokeSender(), logger, cmd_processor)
+        hotkeys_config = HotkeysConfig(
+            up="w",
+            down="s",
+            left="a",
+            right="d",
+            upper_left="q",
+            upper_right="e",
+            lower_left="z",
+            lower_right="c",
+            minor_heal="",
+            medium_heal="",
+            greater_heal="",
+            haste="",
+            equip_ring="",
+            equip_amulet="",
+            eat_food="",
+            magic_shield="",
+            cancel_magic_shield="",
+            mana_potion="",
+            toggle_emergency_amulet="",
+            toggle_emergency_ring="",
+            loot="",
+            start_emergency="",
+            cancel_emergency="",
+        )
+        cmd_processor.start()
+        for key in keys:
+            print(
+                f"Listening on key {key}, a click will be issued when it is pressed."
+            )
+            macro = ItemCrosshairMacro(
+                client,
+                ItemCrosshairMacroConfig(
+                    hotkey=key,
+                    action=action,
+                ),
+                hotkeys_config=hotkeys_config,
+            )
+            macro.hook_hotkey()
+            macros.append(macro)
+        try:
+            print("Press [Enter] to exit.")
+            keyboard.wait("enter")
+        finally:
+            cmd_processor.stop()
+            for macro in macros:
+                macro.unhook_hotkey()
+
     args = parser.parse_args()
     main(args.keys, args.action)

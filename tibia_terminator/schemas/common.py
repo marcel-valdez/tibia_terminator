@@ -1,10 +1,22 @@
 #!/usr/bin/env python3.8
 
 import os
+
+from enum import Enum
 from string import Formatter
 from uuid import uuid1
 
-from typing import TypeVar, Generic, Callable, Dict, Any, NamedTuple, Optional, Union
+from typing import (
+    TypeVar,
+    Generic,
+    Callable,
+    Dict,
+    Any,
+    NamedTuple,
+    Optional,
+    Union,
+    List,
+)
 
 import commentjson as json
 
@@ -211,3 +223,34 @@ def to_dict(obj: NamedTuple) -> Any:
         return tuple(to_dict(value) for value in obj)
 
     return obj
+
+
+class Direction(Enum):
+    LEFT = 1
+    UPPER_LEFT = 2
+    LOWER_LEFT = 3
+    RIGHT = 4
+    UPPER_RIGHT = 5
+    LOWER_RIGHT = 6
+    UP = 7
+    DOWN = 8
+
+    @classmethod
+    def values(cls):
+        return cls.__members__.values()
+
+    @staticmethod
+    def from_str(name: str):
+        if name is None:
+            raise ValidationError("direction name cannot be null")
+
+        name_map = Direction.__members__
+        direction = name_map.get(name.upper(), None)
+        if direction is None:
+            raise ValidationError(
+                f"Unknown direction: {name}. " f"Valid values are: {name_map.keys()}"
+            )
+        return direction
+
+    def __str__(self):
+        return self.name.lower()
