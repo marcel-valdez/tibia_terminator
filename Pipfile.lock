@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "796133df2aec507eef715ff3c19f2a0fb2641c2c2b250d051cb5760e9c5b076e"
+            "sha256": "c5cf1650335cebc3263f09a5efde5901dfee77e3a7e32a91f948379d211df593"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -409,6 +409,13 @@
             ],
             "markers": "python_version >= '3.6'",
             "version": "==2.3.1"
+        },
+        "tesserocr": {
+            "hashes": [
+                "sha256:9371dd3f6fe3238039c73bfe15bcaf21389f7e75f62bd530a30110149f39b2ae"
+            ],
+            "index": "pypi",
+            "version": "==2.5.2"
         },
         "tibia.py": {
             "hashes": [

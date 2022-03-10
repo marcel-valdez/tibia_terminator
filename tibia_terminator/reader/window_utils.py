@@ -79,9 +79,12 @@ def get_window_geometry(wid: Union[str, int]) -> WindowGeometry:
 
 def get_tibia_wid(pid: Union[str, int], debug_level=1) -> str:
     """Get the Tibia window id belonging to the process with PID."""
-    return run_cmd(
-        ["/usr/bin/xdotool", "search", "--pid", str(pid)], debug_level
-    ).strip().splitlines()[-1].strip()
+    return (
+        run_cmd(["/usr/bin/xdotool", "search", "--pid", str(pid)], debug_level)
+        .strip()
+        .splitlines()[-1]
+        .strip()
+    )
 
 
 def focus_tibia(wid: str) -> str:
@@ -214,6 +217,24 @@ class ScreenReader:
 
     def get_coord_color(self, coord: Coord) -> str:
         return self.get_pixel_color(coord.x, coord.y)
+
+    def get_area_image(self, x: int, y: int, width: int, height: int) -> PIL.Image:
+        window = self.tibia_window or self.screen.root
+        img_rgb_res = window.get_image(
+            x,
+            y,
+            width,
+            height,
+            Xlib.X.ZPixmap,
+            0xFFFFFFFF
+        )
+
+        if isinstance(img_rgb_res, str):
+            img_rgb_bytes = bytes(img_rgb_res.data, "utf-8")
+        else:
+            img_rgb_bytes = img_rgb_res.data
+
+        return PIL.Image.frombytes("RGB", (width, height), img_rgb_bytes, "raw", "BGRX")
 
     def get_pixel_color(self, x: int, y: int):
         pixel_rgb_res = self.get_pixel_rgb_bytes_xlib(x, y)

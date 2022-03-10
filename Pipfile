@@ -20,6 +20,7 @@ pyautogui = "*"
 requests = "*"
 pynput = "*"
 psutil = "*"
+tesserocr = "*"
 
 [requires]
 python_version = "3.8"
