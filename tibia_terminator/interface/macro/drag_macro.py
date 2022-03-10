@@ -80,14 +80,13 @@ class DragMacro(ClientMacro):
         client: ClientInterface,
         config: DragMacroConfig,
         *args,
-        throttle_ms: int = DRAG_THROTTLE_MS,
         **kwargs,
     ):
         super().__init__(
             client,
             config.hotkey,
             CommandType.USE_ITEM,
-            throttle_ms,
+            config.throttle_ms or DRAG_THROTTLE_MS,
             *args,
             cmd_id="DRAG_CMD",
             throttle_behavior=ThrottleBehavior.DROP,
@@ -148,6 +147,14 @@ if __name__ == "__main__":
         default="left",
         type=str,
     )
+    parser.add_argument(
+        "--throttle_ms",
+        "--throttle",
+        help="Throttle maximum rate at which the command can be issued.",
+        required=False,
+        default=50,
+        type=int
+    )
 
     class MockLogger:
         def log_action(self, level, msg):
@@ -177,6 +184,7 @@ if __name__ == "__main__":
                     direction=direction,
                     btn=args.button,
                     duration_ms=args.duration_ms,
+                    throttle_ms=args.throttle_ms
                 ),
             )
             macro.hook_hotkey()

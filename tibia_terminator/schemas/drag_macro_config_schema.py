@@ -14,6 +14,7 @@ class DragMacroConfig(NamedTuple):
     distance: int
     duration_ms: Optional[int] = 100
     btn: Optional[str] = "left"
+    throttle_ms: Optional[int] = 50
 
 
 class DragMacroConfigSchema(FactorySchema[DragMacroConfig]):
@@ -30,6 +31,7 @@ class DragMacroConfigSchema(FactorySchema[DragMacroConfig]):
     btn = fields.Str(
         required=False, allow_none=False, validate=validate.OneOf(["left", "right"])
     )
+    throttle_ms = fields.Int(required=False, default=50)
 
 
 if __name__ == "__main__":
