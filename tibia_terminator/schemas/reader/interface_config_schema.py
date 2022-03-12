@@ -126,6 +126,6 @@ class TibiaWindowSpecSchema(FactorySchema[TibiaWindowSpec]):
 
 
 if __name__ == "__main__":
-    from tibia_terminator.schemas.cli import parse_args
+    from tibia_terminator.schemas.cli import main
 
-    parse_args(TibiaWindowSpecSchema())
+    main(TibiaWindowSpecSchema())
