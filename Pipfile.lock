@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "c5cf1650335cebc3263f09a5efde5901dfee77e3a7e32a91f948379d211df593"
+            "sha256": "e94427038512cdffedbe613b8b0464dc458353bc095f60f6d13cdb60bd5d3fe3"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -201,6 +201,14 @@
             ],
             "index": "pypi",
             "version": "==3.14.1"
+        },
+        "mem-edit": {
+            "hashes": [
+                "sha256:50796692225674bba5bb2db9da78d179e6cb1f9c3cfbf0b5fb4f909112a6b193",
+                "sha256:6d7a22f450223aafc504d32996c5e727ae6dba8396e422645114ee4bfe87f8eb"
+            ],
+            "index": "pypi",
+            "version": "==0.6"
         },
         "mouseinfo": {
             "hashes": [
@@ -424,6 +432,14 @@
             ],
             "index": "pypi",
             "version": "==5.2.1"
+        },
+        "typing": {
+            "hashes": [
+                "sha256:1187fb9c82fd670d10aa07bbb6cfcfe4bdda42d6fab8d5134f04e8c4d0b71cc9",
+                "sha256:283d868f5071ab9ad873e5e52268d611e851c870a2ba354193026f2dfb29d8b5"
+            ],
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+            "version": "==3.7.4.3"
         },
         "typing-extensions": {
             "hashes": [

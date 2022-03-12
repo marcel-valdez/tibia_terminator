@@ -21,6 +21,7 @@ requests = "*"
 pynput = "*"
 psutil = "*"
 tesserocr = "*"
+mem-edit = "*"
 
 [requires]
 python_version = "3.8"

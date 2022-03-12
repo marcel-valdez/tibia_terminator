@@ -1,13 +1,16 @@
 #!/usr/bin/env python3.8
 
+import logging
+
 from argparse import ArgumentParser, Namespace
-from ctypes import c_uint8 as unsigned_byte
-from typing import NamedTuple, List
-import operator
-import math
+from typing import NamedTuple, List, Union, Tuple, Any
+
 
 from tesserocr import PyTessBaseAPI, OEM
 from tibia_terminator.reader.window_utils import ScreenReader
+
+
+logger = logging.getLogger(__name__)
 
 
 class Rect(NamedTuple):
@@ -16,13 +19,16 @@ class Rect(NamedTuple):
     width: int
     height: int
 
-def to_black_over_white(color: int) -> int:
-    return 255 if color <= 127 else 0
+    def copy(self, **update) -> 'Rect':
+        data = self._asdict()
+        data.update(update)
+        return Rect(**data)
+
 
 def gen_bw_color_table() -> List[int]:
     color_table = []
     for i in range(256):
-        if i <= 127:
+        if i <= 120:
             color_table.append(1)
         else:
             color_table.append(0)
@@ -64,15 +70,21 @@ class OcrNumberReader:
     def close(self) -> None:
         self.ocr_api.End()
 
-    def read_number(self, rect: Rect) -> str:
+    def read_number(
+        self, rect: Rect, return_image: bool = False
+    ) -> Union[str, Tuple[str, Any]]:
         image = self.screen_reader.get_area_image(
             rect.x, rect.y, rect.width, rect.height
         )
         # convert image into black text over white background, since
         # tesseract is MUCH better at parsing the image like that.
-        image = image.convert('L').point(self.color_table, mode="1")
+        image = image.convert("L").point(self.color_table, mode="1")
         self.ocr_api.SetImage(image)
-        return str(self.ocr_api.GetUTF8Text()).strip()
+        number = str(self.ocr_api.GetUTF8Text()).strip()
+        if return_image:
+            return (number, image)
+        else:
+            return number
 
 
 if __name__ == "__main__":
@@ -95,14 +107,20 @@ if __name__ == "__main__":
                 x=args.coords[0], y=args.coords[1], width=args.width, height=args.height
             )
             # warm-up
+            logger.info("Performing warm-up")
             for _ in range(10):
                 text = ocr_reader.read_number(rect)
 
+            logger.info("Reading %s samples", args.samples)
             for _ in range(args.samples):
                 start = time.time()
                 text = ocr_reader.read_number(rect)
                 end = time.time()
                 times.append(end - start)
+
+            if args.show_image:
+                (_, image) = ocr_reader.read_number(rect, True)
+                image.show()
 
             times.sort()
             avg_ms = sum(times) * 1000 / len(times)
@@ -152,7 +170,17 @@ if __name__ == "__main__":
         "--samples",
         type=int,
         default=1,
-        help=("Number of times to read the screen. Useful for tunning the "
-              "OCR performance settings"))
+        help=(
+            "Number of times to read the screen. Useful for tunning the "
+            "OCR performance settings"
+        ),
+    )
+    parser.add_argument(
+        "--show_image",
+        action="store_true",
+        help="Show the last image processed.",
+        default=False,
+        required=False,
+    )
 
     main(parser.parse_args())
