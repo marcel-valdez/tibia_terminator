@@ -362,6 +362,31 @@
                     },
                 ],
             },
+            {
+                "name": "blister.ring",
+                "equipped_colors": [
+                    {
+                        "north": "000",
+                        "south": "b3a791",
+                        "left": "9b8a6c",
+                        "right": "c7b493",
+                    },
+                ],
+                "action_bar_colors": [
+                    {
+                        "north": "000",
+                        "south": "454545",
+                        "left": "9b8a6c",
+                        "right": "000",
+                    },
+                    {
+                        "north": "e6e6e6",
+                        "south": "454545",
+                        "left": "9b8a6c",
+                        "right": "000",
+                    },
+                ],
+            },
         ],
         "amulets": [
             {
