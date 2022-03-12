@@ -2,6 +2,9 @@ SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 ROOT_PATH="$(dirname ${SCRIPTPATH})/tibia_terminator"
 PYTHONPATH="${PYTHONPATH}:${ROOT_PATH}"
 MENU_READER_BIN="${ROOT_PATH}/reader/menu_reader.py"
+XDOTOOL_LEFT_BTN=1
+XDOTOOL_RIGHT_BTN=3
+WAIT_TIME_SEC="0.3"
 
 function is_interaction_owner {
   local owner_pid=$(cat /tmp/tibia_refill)
@@ -44,19 +47,19 @@ function browse_field() {
 
         xdotool \
             windowfocus "${tibia_wid}" \
-            sleep 0.3 \
+            sleep "${WAIT_TIME_SEC}" \
             mousemove --window "${tibia_wid}" "${x}" "${y}" \
-            sleep 0.3 \
+            sleep "${WAIT_TIME_SEC}" \
             keydown --window "${tibia_wid}" "Control_L" \
-            sleep 0.3 \
-            click 3 \
-            sleep 0.3 \
+            sleep "${WAIT_TIME_SEC}" \
+            click ${XDOTOOL_RIGHT_BTN} \
+            sleep "${WAIT_TIME_SEC}" \
             keyup --window "${tibia_wid}" "Control_L" \
-            sleep 0.3 \
+            sleep "${WAIT_TIME_SEC}" \
             mousemove --window "${tibia_wid}" "${click_x}" "${click_y}" \
-            sleep 0.3 \
-            click 1 \
-            sleep 0.3
+            sleep "${WAIT_TIME_SEC}" \
+            click ${XDOTOOL_LEFT_BTN} \
+            sleep "${WAIT_TIME_SEC}"
 }
 
 
@@ -65,8 +68,8 @@ CLOSE_Y=503
 function close_menu {
   local tibia_wid="$1"
   xdotool windowfocus "${tibia_wid}" \
-          sleep 0.3 mousemove --window "${tibia_wid}" --sync "${CLOSE_X}" "${CLOSE_Y}" \
-          sleep 0.3 click 1
+          sleep "${WAIT_TIME_SEC}" mousemove --window "${tibia_wid}" --sync "${CLOSE_X}" "${CLOSE_Y}" \
+          sleep "${WAIT_TIME_SEC}" click ${XDOTOOL_LEFT_BTN}
 }
 
 function is_depot_box_open {
@@ -88,12 +91,12 @@ STOW_Y=455
 function stow_bp {
   local tibia_wid="$1"
   xdotool windowfocus "${tibia_wid}" \
-          sleep 0.3 mousemove --window "${tibia_wid}" --sync "${BP_X}" "${BP_Y}" \
-          sleep 0.3 keydown ctrl \
-          sleep 0.3 click 1 \
-          sleep 0.3 keyup ctrl \
-          sleep 0.3 mousemove --window "${tibia_wid}" --sync "${STOW_X}" "${STOW_Y}" \
-          sleep 0.3 click 1
+          sleep "${WAIT_TIME_SEC}" mousemove --window "${tibia_wid}" --sync "${BP_X}" "${BP_Y}" \
+          sleep "${WAIT_TIME_SEC}" keydown ctrl \
+          sleep "${WAIT_TIME_SEC}" click ${XDOTOOL_LEFT_BTN} \
+          sleep "${WAIT_TIME_SEC}" keyup ctrl \
+          sleep "${WAIT_TIME_SEC}" mousemove --window "${tibia_wid}" --sync "${STOW_X}" "${STOW_Y}" \
+          sleep "${WAIT_TIME_SEC}" click ${XDOTOOL_LEFT_BTN}
 }
 
 STASH_X=1806
@@ -102,8 +105,8 @@ function open_stash {
   local tibia_wid="$1"
   open_depot "${tibia_wid}"
   xdotool windowfocus "${tibia_wid}" \
-          sleep 0.3 mousemove --window "${tibia_wid}" --sync "${STASH_X}" "${STASH_Y}" \
-          sleep 0.3 click 3
+          sleep "${WAIT_TIME_SEC}" mousemove --window "${tibia_wid}" --sync "${STASH_X}" "${STASH_Y}" \
+          sleep "${WAIT_TIME_SEC}" click ${XDOTOOL_RIGHT_BTN}
 
 }
 
@@ -112,8 +115,8 @@ DEPOT_Y=320
 function open_depot {
   local tibia_wid="$1"
   xdotool windowfocus "${tibia_wid}" \
-          sleep 0.3 mousemove --window "${tibia_wid}" --sync "${DEPOT_X}" "${DEPOT_Y}" \
-          sleep 0.3 click 3
+          sleep "${WAIT_TIME_SEC}" mousemove --window "${tibia_wid}" --sync "${DEPOT_X}" "${DEPOT_Y}" \
+          sleep "${WAIT_TIME_SEC}" click ${XDOTOOL_RIGHT_BTN}
 }
 
 DEPOT_SEARCH_BTN_X=1880
@@ -138,34 +141,35 @@ function fetch_from_locker {
   local item_count="$3"
   # search for the item
   xdotool windowfocus "${tibia_wid}" \
-          sleep 0.3 mousemove --window "${tibia_wid}" --sync "${DEPOT_SEARCH_BTN_X}" "${DEPOT_SEARCH_BTN_Y}" \
-          sleep 0.3 click --window "${tibia_wid}" 1 \
-          sleep 0.3 mousemove --window "${tibia_wid}" --sync "${SEARCH_BACK_X}" "${SEARCH_BACK_Y}" \
-          sleep 0.3 click --window "${tibia_wid}" 1 \
-          sleep 0.3 mousemove --window "${tibia_wid}" --sync "${SEARCH_CLEAR_X}" "${SEARCH_CLEAR_Y}" \
-          sleep 0.3 click --window "${tibia_wid}" 1 \
-          sleep 0.3 mousemove --window "${tibia_wid}" --sync "${SEARCH_X}" "${SEARCH_Y}" \
-          sleep 0.3 click --window "${tibia_wid}" 1 \
-          sleep 0.3 type --window "${tibia_wid}" --terminator @ "${item_name}" @ \
-          sleep 0.3 mousemove --window "${tibia_wid}" --sync "${SEARCH_RESULT_X}" "${SEARCH_RESULT_Y}" \
-          sleep 0.3 click --window "${tibia_wid}" 1 sleep 0.1 click --window "${tibia_wid}" 1
+          sleep "${WAIT_TIME_SEC}" mousemove --window "${tibia_wid}" --sync "${DEPOT_SEARCH_BTN_X}" "${DEPOT_SEARCH_BTN_Y}" \
+          sleep "${WAIT_TIME_SEC}" click --window "${tibia_wid}" ${XDOTOOL_LEFT_BTN} \
+          sleep "${WAIT_TIME_SEC}" mousemove --window "${tibia_wid}" --sync "${SEARCH_BACK_X}" "${SEARCH_BACK_Y}" \
+          sleep "${WAIT_TIME_SEC}" click --window "${tibia_wid}" ${XDOTOOL_LEFT_BTN} \
+          sleep "${WAIT_TIME_SEC}" mousemove --window "${tibia_wid}" --sync "${SEARCH_CLEAR_X}" "${SEARCH_CLEAR_Y}" \
+          sleep "${WAIT_TIME_SEC}" click --window "${tibia_wid}" ${XDOTOOL_LEFT_BTN} \
+          sleep "${WAIT_TIME_SEC}" mousemove --window "${tibia_wid}" --sync "${SEARCH_X}" "${SEARCH_Y}" \
+          sleep "${WAIT_TIME_SEC}" click --window "${tibia_wid}" ${XDOTOOL_LEFT_BTN} \
+          sleep "${WAIT_TIME_SEC}" type --window "${tibia_wid}" --terminator @ "${item_name}" @ \
+          sleep "${WAIT_TIME_SEC}" mousemove --window "${tibia_wid}" --sync "${SEARCH_RESULT_X}" "${SEARCH_RESULT_Y}" \
+          sleep "${WAIT_TIME_SEC}" click --window "${tibia_wid}" ${XDOTOOL_LEFT_BTN} \
+          sleep "$((WAIT_TIME_SEC / 2))" click --window "${tibia_wid}" ${XDOTOOL_LEFT_BTN}
 
   # retrieve the item
   if [[ "${item_count}" = "page" ]]; then
     xdotool mousemove --window "${tibia_wid}" --sync "${SEARCH_RETRIEVE_PAGE_X}" "${SEARCH_RETRIEVE_PAGE_Y}" \
-            sleep 0.3 click --window "${tibia_wid}" 1 \
-            sleep 0.3 key --window "${tibia_wid}" Escape
+            sleep "${WAIT_TIME_SEC}" click --window "${tibia_wid}" ${XDOTOOL_LEFT_BTN} \
+            sleep "${WAIT_TIME_SEC}" key --window "${tibia_wid}" Escape
   else
     xdotool mousemove --window "${tibia_wid}" --sync "${SEARCH_RETRIEVE_X}" "${SEARCH_RETRIEVE_Y}" \
-            sleep 0.3 click --window "${tibia_wid}" 1 \
-            sleep 0.3 type --window "${tibia_wid}" --terminator @ "${item_count}" @ \
-            sleep 0.3 mousemove --window "${tibia_wid}" "${SEARCH_RETRIEVE_OK_X}" "${SEARCH_RETRIEVE_OK_Y}" \
-            sleep 0.3 click --window "${tibia_wid}" 1 \
-            sleep 0.3 key --window "${tibia_wid}" Escape
+            sleep "${WAIT_TIME_SEC}" click --window "${tibia_wid}" ${XDOTOOL_LEFT_BTN} \
+            sleep "${WAIT_TIME_SEC}" type --window "${tibia_wid}" --terminator @ "${item_count}" @ \
+            sleep "${WAIT_TIME_SEC}" mousemove --window "${tibia_wid}" "${SEARCH_RETRIEVE_OK_X}" "${SEARCH_RETRIEVE_OK_Y}" \
+            sleep "${WAIT_TIME_SEC}" click --window "${tibia_wid}" ${XDOTOOL_LEFT_BTN} \
+            sleep "${WAIT_TIME_SEC}" key --window "${tibia_wid}" Escape
   fi
 
   # set search menu back to original state and exit the search subwindow focus
   xdotool mousemove --window "${tibia_wid}" --sync "${SEARCH_BACK_X}" "${SEARCH_BACK_Y}" \
-          sleep 0.3 click --window "${tibia_wid}" 1 \
-          sleep 0.3 key --window "${tibia_wid}" Escape
+          sleep "${WAIT_TIME_SEC}" click --window "${tibia_wid}" ${XDOTOOL_LEFT_BTN} \
+          sleep "${WAIT_TIME_SEC}" key --window "${tibia_wid}" Escape
 }
