@@ -20,7 +20,7 @@ EQUIP_RING_LR_KEY='XF86Launch6'  # F15
 EQUIP_RING_ROH_KEY='XF86Launch7'  # F16
 EQUIP_SOFT_BOOTS_KEY='XF86Launch8'  # F17
 UNEQUIP_RING_ROH_KEY='XF86Launch9'  # F18
-DRINK_POTION_KEY='XF86TouchpadToggle'  # F21 TODO: Replace with another key
+DRINK_POTION_KEY='XF86TouchpadOn'  # F22
 BURN_MANA_KEY='XF86TouchpadToggle'  # F21
 
 
@@ -35,6 +35,8 @@ REGEN_RING_CENTER_Y=498
 RING_SLOT_CENTER_X=1768
 RING_SLOT_CENTER_Y=336
 
+MIN_WAIT_TIME_MS=35
+MAX_WAIT_TIME_MS=60
 
 function debug() {
   [[ "${DEBUG}" ]] && echo "$@" >&2
@@ -45,6 +47,10 @@ function random() {
   local max=$2
   local delta=$((max - min))
   echo $((min + (RANDOM % (delta + 1))))
+}
+
+function get_wait_time() {
+    printf "0.%03ds" $(random ${MIN_WAIT_TIME_MS} ${MAX_WAIT_TIME_MS})
 }
 
 function update_max_mana() {
@@ -69,13 +75,13 @@ function click_mana_potion() {
   local x=$(random ${minx} ${maxx})
   local y=$(random ${miny} ${maxy})
 
-  local wait_time="0.$(random 250 390)s"
+  local wait_time=$(get_wait_time)
   echo "pausing ${wait_time}" &
   sleep ${wait_time}
 
   echo "clicking mana potion (${x},${y})" &
   xdotool mousemove --screen "${screen_no}" --window "${tibia_wid}" "${x}" "${y}"
-  xdotool click --window "${tibia_wid}" --delay $(random 125 250) 3
+  xdotool click --window "${tibia_wid}" --delay "$(random ${MIN_WAIT_TIME_MS} ${MAX_WAIT_TIME_MS})" 3
 }
 
 function click_char() {
@@ -86,13 +92,13 @@ function click_char() {
   local x=$(random ${minx} ${maxx})
   local y=$(random ${miny} ${maxy})
 
-  local wait_time="0.$(random 250 390)s"
+  local wait_time="$(get_wait_time)"
   echo "pausing ${wait_time}" &
   sleep ${wait_time}
 
   echo "clicking char (${x},${y})" &
   xdotool mousemove --screen "${screen_no}" --window "${tibia_wid}" "${x}" "${y}"
-  xdotool click --window "${tibia_wid}" --delay "$(random 125 250)" 1
+  xdotool click --window "${tibia_wid}" --delay "$(random ${MIN_WAIT_TIME_MS} ${MAX_WAIT_TIME_MS})" 1
 }
 
 function send_keystroke() {
@@ -103,10 +109,10 @@ function send_keystroke() {
   [[ -z "${max}" ]] && max=2
   local reps=$(random ${min} ${max})
   for i in $(seq 1 ${reps}); do
-    local delay="$(random 123 257)"
-    echo "sending ${keystroke} with delay 0.${delay}s"
+    local delay="$(random ${MIN_WAIT_TIME_MS} ${MAX_WAIT_TIME_MS})"
+    echo "sending ${keystroke} with delay ${delay} ms"
     xdotool key --delay "${delay}" --window "${tibia_wid}" "${keystroke}"
-    local wait_time="0.$(random 110 350)s"
+    local wait_time="$(get_wait_time)"
     echo "pausing ${wait_time}"
     sleep "${wait_time}"
   done
@@ -230,10 +236,10 @@ function burn_excess_mana_fn() {
     # burn mana until we're below the threshold
     fetch_char_stats 1
     while [[ ${MANA} -ge ${burn_mana_threshold} ]]; do
-        echo "burning excess pmana because ${MANA} >= ${burn_mana_threshold}"
+        echo "burning excess mana because ${MANA} >= ${burn_mana_threshold}"
         send_keystroke "${BURN_MANA_KEY}" 1 1
         fetch_char_stats 1
-        sleep 0.5
+        sleep "$(get_wait_time)"
     done
 }
 
@@ -288,7 +294,7 @@ function drink_mana_potions() {
   echo '-----------------------'
   for i in $(seq 1 ${potion_count}); do
     drink_mana_potion
-    local wait_time="0.$(random 310 560)s"
+    local wait_time="$(get_wait_time)"
     echo "Pausing ${wait_time}"
     sleep "${wait_time}"
 
@@ -321,10 +327,10 @@ function hold_regen_ring() {
   local X=$(random ${minX} ${maxX})
   local Y=$(random ${minY} ${maxY})
 
-  local wait_time="0.$(random 250 390)s"
+  local wait_time="$(get_wait_time)"
   sleep ${wait_time}
   xdotool mousemove --sync --screen 0 ${X} ${Y}
-  wait_time="0.$(random 250 390)s"
+  wait_time="$(get_wait_time)"
   sleep ${wait_time}
   xdotool mousedown --window "${tibia_wid}" 1
 }
@@ -338,12 +344,12 @@ function drop_regen_ring() {
   local X=$(random ${minX} ${maxX})
   local Y=$(random ${minY} ${maxY})
 
-  local wait_time="0.$(random 250 390)s"
+  local wait_time="$(get_wait_time)"
   sleep "${wait_time}"
   for i in $(seq 1 160); do
     xdotool mousemove_relative --sync 0 -1
   done
-  wait_time="0.$(random 250 390)s"
+  wait_time="$(get_wait_time)"
   sleep "${wait_time}"
   xdotool keyup --window "${tibia_wid}" Pointer_Button1
 }
@@ -352,7 +358,7 @@ function unequip_ring_of_healing() {
   echo '-------------------------'
   echo 'Unequipping ring of healing'
   echo '-------------------------'
-  sleep "0.$(random 250 390)s"
+  sleep "$(get_wait_time)"
   send_keystroke "${UNEQUIP_RING_ROH_KEY}" 1 1
 }
 
@@ -382,7 +388,7 @@ function smart_equip_regen_ring() {
         echo "because soul points (${SOUL_POINTS}) > 10"
     fi
     echo '-------------------------'
-    wait_time="0.$(random 250 390)s"
+    wait_time="$(get_wait_time)"
     sleep "${wait_time}"
     send_keystroke "${EQUIP_RING_ROH_KEY}" 1
   fi
@@ -395,7 +401,7 @@ function dumb_equip_regen_ring() {
   # equip life ring
   send_keystroke "${EQUIP_RING_LR_KEY}" 1
   # small wait to make sure primary gets equipped
-  wait_time="0.$(random 250 390)s"
+  wait_time="$(get_wait_time)"
   sleep "${wait_time}"
   # equip ring of healing
   send_keystroke "${EQUIP_RING_ROH_KEY}" 1
@@ -557,8 +563,8 @@ function manasit() {
     # focus tibia window
     if [[ "${refocus_tibia_to_make_rune}" ]]; then
       focus_window
+      sleep "0.$(random 100 150)s"
     fi
-    sleep "0.$(random 210 550)s"
 
     local current_timestamp_sec=$(timestamp_sec)
     local elapsed_sec=$((current_timestamp_sec - start_timestamp_sec))
@@ -593,8 +599,8 @@ function manasit() {
     eat_food
 
     # return to prev window
-    sleep "$(random 1 2).$(random 11 99)s"
     if [[ "${refocus_tibia_to_make_rune}" ]]; then
+        sleep "1.$(random 11 99)s"
         xdotool mousemove --screen ${curr_screen} \
                 ${curr_x} ${curr_y}
         focus_window ${curr_window}
