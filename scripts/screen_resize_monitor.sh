@@ -26,16 +26,21 @@ if [[ "$1" ]]; then
 fi
 
 function __screen_resize_monitor {
+  wid=$1
   SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
   ROOT_PATH="${SCRIPT_PATH}/tibia_terminator"
   PYTHONPATH="${PYTHONPATH}:${ROOT_PATH}"
   EQUIPMENT_READER_BIN="${ROOT_PATH}/reader/equipment_reader.py"
   PYTHON_BIN="$(type -p python3.8)"
   echo "mouse location: $(xdotool getmouselocation)"
+  echo "tibia wid: ${wid}"
+
   PYTHONPATH=${PYTHONPATH} "${PYTHON_BIN}" "${EQUIPMENT_READER_BIN}" \
-            --equipment_status "${wid}"
+            --equipment_status \
+            --tibia_window_config_path "${SCRIPT_PATH}/char_configs/tibia_window_config.json" \
+            "${wid}"
 }
 
 export -f __screen_resize_monitor
 
-watch -n 0.1 -x bash -c __screen_resize_monitor
+watch -n 0.1 -x bash -c "__screen_resize_monitor ${wid}"
