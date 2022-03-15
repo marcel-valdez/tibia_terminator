@@ -6,7 +6,7 @@ import curses
 from queue import Queue
 from threading import Thread, Lock
 from time import sleep
-from typing import List, Any, Callable, Optional
+from typing import List, Any, Callable, Optional, Tuple
 
 from tibia_terminator.common.char_status import CharStatus
 from tibia_terminator.common.logger import get_debug_level
@@ -39,7 +39,7 @@ class CliScreen:
         self.cli.idlok(True)
         self.cli.leaveok(False)
 
-    def getch(self, y, x):
+    def getch(self, y: int, x: int):
         return self.cli.getch(y, x)
 
     def __resize(self, lines: List[str], new_len: int):
@@ -59,14 +59,13 @@ class CliScreen:
             self.cli.clrtoeol()
             self.cli.addstr(row, diff_idx + col, diff_substr)
 
-    def __diff_substr(self, old: str, new: str) -> str:
+    def __diff_substr(self, old: str, new: str) -> Tuple[Optional[str], int]:
         diff_idx = self.__diff_index(old, new)
         # they're different
         if diff_idx != -1:
             return new[diff_idx:], diff_idx
         # they're the same
-        else:
-            return None, -1
+        return None, -1
 
     def __diff_index(self, a: str, b: str) -> int:
         if (len(a) == 0 and len(b) != 0) or (len(a) != 0 and len(b) == 0):
@@ -80,8 +79,8 @@ class CliScreen:
 
         if i < len(a) or i < len(b):
             return i
-        else:
-            return -1
+
+        return -1
 
 
 class View:

@@ -43,6 +43,9 @@ class ActionLogEntry():
 
 
 class LogEntry():
+    # TODO: Make it so that the log format and the objects for the format are
+    # separately added, that way constructing the actual log string happens in
+    # the logging thread.
     def __init__(self, msg, row=0, col=0, end='\n'):
         self.msg = msg
         self.row = row
