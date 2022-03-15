@@ -6,16 +6,17 @@ from enum import Enum
 from string import Formatter
 from uuid import uuid1
 
+
 from typing import (
-    TypeVar,
-    Generic,
+    Any,
     Callable,
     Dict,
-    Any,
+    Generic,
+    Mapping,
     NamedTuple,
     Optional,
-    Union,
-    List,
+    Type,
+    TypeVar,
 )
 
 import commentjson as json
@@ -67,6 +68,9 @@ ALLOWED_BUILTINS = {
 }
 
 
+N = TypeVar("N", bound=NamedTuple)
+
+
 class ResolvableMixin:
     __RESOLVE_CONTEXT_KEY = uuid1()
 
@@ -95,17 +99,17 @@ class ResolvableMixin:
         return ctx
 
 
-class FactorySchema(Generic[T], Schema, ResolvableMixin):
-    def __init__(self, ctor: Callable[[Dict[str, Any]], T] = None, *args, **kwargs):
+class FactorySchema(Generic[N], Schema, ResolvableMixin):
+    def __init__(self, ctor: Type[N] = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if ctor is not None:
             self.ctor = ctor
 
     @post_load
-    def make(self, data, **kwargs) -> T:
+    def make(self, data: Mapping[str, Any], **kwargs) -> N:
         return self.ctor(**data)
 
-    def loadf(self, path: str) -> T:
+    def loadf(self, path: str) -> N:
         if not os.path.isfile(path):
             raise Exception(f"Path {path} does not exist.")
         try:
@@ -254,3 +258,4 @@ class Direction(Enum):
 
     def __str__(self):
         return self.name.lower()
+

@@ -8,6 +8,13 @@ from tibia_terminator.schemas.reader.common import Coord, CoordSchema
 # POPOs
 
 
+class Rect(NamedTuple):
+    x: int
+    y: int
+    width: int
+    height: int
+
+
 class MagicShieldSpec(NamedTuple):
     coord: Coord
     recently_cast_color: List[str]
@@ -55,10 +62,18 @@ class CharEquipmentCoords(NamedTuple):
     ring: EquipmentCoords
 
 
+class StatsFields(NamedTuple):
+    mana_field: Optional[Rect] = None
+    speed_field: Optional[Rect] = None
+    soul_points_field: Optional[Rect] = None
+    hp_field: Optional[Rect] = None
+
+
 class TibiaWindowSpec(NamedTuple):
     action_bar: ActionBarSpec
     char_equipment: CharEquipmentCoords
     item_repository: ItemRepositorySpec
+    stats_fields: Optional[StatsFields] = None
 
 
 # marshmallow spec
@@ -118,11 +133,28 @@ class ItemRepositorySpecSchema(FactorySchema[ItemRepositorySpec]):
     amulets = fields.List(fields.Nested(ItemEntrySchema), required=True)
 
 
+class RectSchema(FactorySchema[Rect]):
+    ctor = Rect
+    x = fields.Int(required=True)
+    y = fields.Int(required=True)
+    width = fields.Int(required=True)
+    height = fields.Int(required=True)
+
+
+class StatsFieldsSchema(FactorySchema[StatsFields]):
+    ctor = StatsFields
+    mana_field = fields.Nested(RectSchema, required=False, allow_none=True)
+    speed_field = fields.Nested(RectSchema, required=False, allow_none=True)
+    soul_points_field = fields.Nested(RectSchema, required=False, allow_none=True)
+    hp_field = fields.Nested(RectSchema, required=False, allow_none=True)
+
+
 class TibiaWindowSpecSchema(FactorySchema[TibiaWindowSpec]):
     ctor = TibiaWindowSpec
     action_bar = fields.Nested(ActionBarSpecSchema, required=True)
     char_equipment = fields.Nested(CharEquipmentCoordsSchema, required=True)
     item_repository = fields.Nested(ItemRepositorySpecSchema, required=True)
+    stats_fields = fields.Nested(StatsFieldsSchema, required=False, allow_none=True)
 
 
 if __name__ == "__main__":

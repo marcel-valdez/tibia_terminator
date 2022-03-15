@@ -17,7 +17,7 @@ class LoginScreenSpec(NamedTuple):
     char_list_ok_btn: Coord
 
 
-class LoginScreenSpecsSchema(FactorySchema[LoginScreenSpec]):
+class LoginScreenSpecSchema(FactorySchema[LoginScreenSpec]):
     ctor = LoginScreenSpec
     north = fields.Nested(CoordColorSchema, required=True, allow_none=False)
     south = fields.Nested(CoordColorSchema, required=True, allow_none=False)
@@ -30,6 +30,6 @@ class LoginScreenSpecsSchema(FactorySchema[LoginScreenSpec]):
 
 
 if __name__ == "__main__":
-    from tibia_terminator.schemas.cli import parse_args
-    parse_args(LoginScreenSpecSchema())
+    from tibia_terminator.schemas.cli import main
+    main(LoginScreenSpecSchema())
 

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3.8
 
+from typing import (Optional, List, Union, Dict, Any, NamedTuple)
+
 from marshmallow import fields, pre_load
-from typing import Optional, NamedTuple, List, Union, Dict, Any
 from tibia_terminator.schemas.cli import main
-from tibia_terminator.schemas.common import FactorySchema
+from tibia_terminator.schemas.common import (FactorySchema)
 
 
 class AppConfig(NamedTuple):
@@ -30,12 +31,6 @@ class AppConfig(NamedTuple):
 class AppConfigs(NamedTuple):
     default_pid: Optional[int] = None
     configs: List[AppConfig] = []
-
-    def __iter__(self):
-        return self.configs.__iter__()
-
-    def __len__(self) -> int:
-        return len(self.configs)
 
     def __getitem__(self, key: Union[int, str]) -> AppConfig:
         if isinstance(key, str):

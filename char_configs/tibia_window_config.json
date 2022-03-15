@@ -744,5 +744,19 @@
                 ]
             }
         ]
+    },
+    "stats_fields": {
+        "mana_field": {
+            "x": 1853,
+            "y": 520,
+            "width": 50,
+            "height": 16
+        },
+        "speed_field": {
+            "x": 1858,
+            "y": 565,
+            "width": 45,
+            "height": 16
+        }
     }
 }

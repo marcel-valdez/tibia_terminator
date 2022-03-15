@@ -550,7 +550,7 @@ def main(args: Namespace):
     if not app_configs[str(args.pid)]:
         raise Exception(
             f"App config for PID: {args.pid} not configured. Available"
-            f" PIDs: {[c.pid for c in app_configs]}")
+            f" PIDs: {[c.pid for c in app_configs.configs]}")
     hotkeys_config = HotkeysConfigSchema().loadf(
         os.path.join(args.char_configs_path, "hotkeys_config.json"))
     char_configs = list(load_configs(args.char_configs_path))

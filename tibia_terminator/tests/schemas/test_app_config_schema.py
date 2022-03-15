@@ -52,7 +52,7 @@ class TestAppCofigSchema(TestCase):
         app_configs = target.load(data)
         # then
         self.assertIsInstance(app_configs, AppConfigs)
-        self.assertEqual(len(app_configs), 2)
+        self.assertEqual(len(app_configs.configs), 2)
         for i in range(2):
             self.assertIsInstance(app_configs.configs[i], AppConfig)
             self.assertEqual(app_configs.configs[i].pid,
@@ -88,7 +88,7 @@ class TestAppCofigSchema(TestCase):
         app_configs = target.load(data)
         # then
         self.assertIsInstance(app_configs, AppConfigs)
-        self.assertEqual(len(app_configs), 2)
+        self.assertEqual(len(app_configs.configs), 2)
         for i in range(2):
             self.assertIsInstance(app_configs.configs[i], AppConfig)
             self.assertEqual(app_configs.configs[i].pid,

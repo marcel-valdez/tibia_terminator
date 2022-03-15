@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.8
 
 from marshmallow import fields
-from typing import NamedTuple, Optional
+from typing import Optional, NamedTuple
 from tibia_terminator.schemas.common import FactorySchema
 
 
