@@ -27,24 +27,19 @@ class MemoryAddressFinder:
         self, rect: Rect, prev_value: Optional[int] = None
     ) -> Tuple[int, bool, Rect]:
         retry_updates = [
-            [0, 2, 0, 0],
-            [0, -2, 0, 0],
-            [2, 0, 0, 0],
-            [-2, 0, 0, 0],
-            [0, 0, 2, 0],
-            [0, 0, -2, 0],
-            [0, 0, 0, 2],
-            [0, 0, 0, -2],
+            ("y", 2),
+            ("y", -2),
+            ("x", 2),
+            ("x", -2),
+            ("width", 2),
+            ("width", -2),
+            ("height", 2),
+            ("height", -2),
         ]
 
         def retry_rect(orig: Rect, retry_no: int) -> Rect:
-            x, y, w, h = retry_updates[retry_no]
-            return Rect(
-                x=orig.x + x,
-                y=orig.y + y,
-                width=orig.width + w,
-                height=orig.height + h
-            )
+            key, value = retry_updates[retry_no]
+            return orig.update({key: getattr(orig, key) + value})
 
         def read_valid_ocr_value() -> Optional[int]:
             _retries_left = 5

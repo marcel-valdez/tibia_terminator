@@ -3,26 +3,16 @@
 import logging
 
 from argparse import ArgumentParser, Namespace
-from typing import NamedTuple, List, Union, Tuple, Any
+from typing import NamedTuple, List, Union, Tuple, Any, Dict
 
 
 from tesserocr import PyTessBaseAPI, OEM
+
 from tibia_terminator.reader.window_utils import ScreenReader
+from tibia_terminator.schemas.reader.interface_config_schema import Rect
 
 
 logger = logging.getLogger(__name__)
-
-
-class Rect(NamedTuple):
-    x: int
-    y: int
-    width: int
-    height: int
-
-    def copy(self, **update) -> "Rect":
-        data = self._asdict()
-        data.update(update)
-        return Rect(**data)
 
 
 def gen_bw_color_table() -> List[int]:

@@ -1,11 +1,9 @@
 #!/usr/bin/env python3.8
 
-from typing import NamedTuple, List, Optional
+from typing import NamedTuple, List, Optional, Dict, Any
 from marshmallow import fields
 from tibia_terminator.schemas.common import FactorySchema
 from tibia_terminator.schemas.reader.common import Coord, CoordSchema
-
-# POPOs
 
 
 class Rect(NamedTuple):
@@ -13,6 +11,17 @@ class Rect(NamedTuple):
     y: int
     width: int
     height: int
+
+    def update(self, update_data: Dict[str, Any] = {}, **kw_data) -> 'Rect':
+        data = {
+            "x": self.x,
+            "y": self.y,
+            "width": self.width,
+            "height": self.height
+        }
+        data.update(update_data)
+        data.update(**kw_data)
+        return Rect(**data)
 
 
 class MagicShieldSpec(NamedTuple):
