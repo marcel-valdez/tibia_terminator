@@ -259,21 +259,17 @@ class ScreenReader:
 
         return PIL.Image.frombytes("RGB", (width, height), img_rgb_bytes, "raw", "BGRX")
 
-    def get_pixel_color(self, x: int, y: int):
+    def get_pixel_color(self, x: int, y: int) -> str:
         pixel_rgb_res = self.get_pixel_rgb_bytes_xlib(x, y)
-
-        # for some reason sometimes the byte data comes back as a string
+        # Sometimes the byte data comes back as a string
         # but the data backing that string are the actual bytes
         if isinstance(pixel_rgb_res.data, str):
             pixel_rgb_bytes = bytes(pixel_rgb_res.data, "utf-8")
         else:
             pixel_rgb_bytes = pixel_rgb_res.data
 
-        with PIL.Image.frombytes(
-            "RGB", (1, 1), pixel_rgb_bytes, "raw", "BGRX"
-        ) as pixel_rgb_image:
-            pixel_rgb_color = PIL.ImageStat.Stat(pixel_rgb_image).mean
-            return rgb_color_to_hex_str(pixel_rgb_color).lower()
+        rgb = pixel_rgb_bytes[2] << 16 | pixel_rgb_bytes[1] << 8 | pixel_rgb_bytes[0]
+        return f"{rgb:03x}"
 
     def get_pixel_color_slow(self, x: int, y: int) -> str:
         # We do not offset this, since it uses values relative to the
