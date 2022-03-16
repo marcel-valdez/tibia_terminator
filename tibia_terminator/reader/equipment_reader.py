@@ -104,11 +104,18 @@ class EquipmentReader(ScreenReader):
         )
         self.task_loop = TaskLoop()
 
+    def __enter__(self, *args, **kwargs) -> 'EquipmentReader':
+        self.open()
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.close()
+
     def open(self):
         super().open()
         self.task_loop.start()
 
-    def stop(self):
+    def close(self):
         super().close()
         self.task_loop.stop()
 
