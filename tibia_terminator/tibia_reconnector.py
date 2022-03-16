@@ -47,8 +47,8 @@ Expected 84a3b7 (Coord(x=1132, y=316)) but found 142131
 DEBUG_LEVEL = 0
 # TODO: Make these configurable through JSON
 LOGIN_SCREEN_SPEC = LoginScreenSpec(
-    north=CoordColor(Coord(480, 310),"af64cd"),
-    south=CoordColor(Coord(1531,713),"322328"),
+    north=CoordColor(Coord(480, 310), "af64cd"),
+    south=CoordColor(Coord(1531, 713), "322328"),
     left=CoordColor(Coord(482, 546), "7d17b"),
     right=CoordColor(Coord(1132, 316), "8ca2b0"),
     email_field=Coord(989, 477),
