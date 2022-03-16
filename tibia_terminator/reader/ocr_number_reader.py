@@ -19,7 +19,7 @@ class Rect(NamedTuple):
     width: int
     height: int
 
-    def copy(self, **update) -> 'Rect':
+    def copy(self, **update) -> "Rect":
         data = self._asdict()
         data.update(update)
         return Rect(**data)
@@ -40,6 +40,13 @@ class OcrNumberReader:
         self.screen_reader = screen_reader
         self.ocr_api = ocr_api
         self.color_table = gen_bw_color_table()
+
+    def __enter__(self, *args, **kwargs) -> "OcrNumberReader":
+        self.open()
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.close()
 
     def open(self) -> None:
         # Do not load dicionaries of words or common word patterns, since
@@ -73,18 +80,21 @@ class OcrNumberReader:
     def read_number(
         self, rect: Rect, return_image: bool = False
     ) -> Union[str, Tuple[str, Any]]:
-        image = self.screen_reader.get_area_image(
+        with self.screen_reader.get_area_image(
             rect.x, rect.y, rect.width, rect.height
-        )
-        # convert image into black text over white background, since
-        # tesseract is MUCH better at parsing the image like that.
-        image = image.convert("L").point(self.color_table, mode="1")
-        self.ocr_api.SetImage(image)
-        number = str(self.ocr_api.GetUTF8Text()).strip()
-        if return_image:
-            return (number, image)
-        else:
-            return number
+        ) as image:
+            # convert image into black text over white background, since
+            # tesseract is MUCH better at parsing the image like that.
+            bw_image = image.convert("L").point(self.color_table, mode="1")
+            try:
+                self.ocr_api.SetImage(bw_image)
+                number = str(self.ocr_api.GetUTF8Text()).strip()
+                if return_image:
+                    return (number, bw_image)
+                return number
+            finally:
+                if not return_image:
+                    bw_image.close()
 
 
 if __name__ == "__main__":
@@ -96,57 +106,53 @@ if __name__ == "__main__":
 
     def main(args: Namespace):
         tibia_wid = get_tibia_wid(args.tibia_pid)
-        screen_reader = ScreenReader(int(tibia_wid))
-        ocr_reader = OcrNumberReader(screen_reader, PyTessBaseAPI())
-        screen_reader.open()
-        ocr_reader.open()
-        try:
-            times = []
-            text = None
-            rect = Rect(
-                x=args.coords[0], y=args.coords[1], width=args.width, height=args.height
-            )
-            # warm-up
-            logger.info("Performing warm-up")
-            for _ in range(10):
-                text = ocr_reader.read_number(rect)
+        with ScreenReader(int(tibia_wid)) as screen_reader:
+            with OcrNumberReader(screen_reader, PyTessBaseAPI()) as ocr_reader:
+                times = []
+                text = None
+                rect = Rect(
+                    x=args.coords[0],
+                    y=args.coords[1],
+                    width=args.width,
+                    height=args.height,
+                )
+                # warm-up
+                logger.info("Performing warm-up")
+                for _ in range(10):
+                    text = ocr_reader.read_number(rect)
 
-            logger.info("Reading %s samples", args.samples)
-            for _ in range(args.samples):
-                start = time.time()
-                text = ocr_reader.read_number(rect)
-                end = time.time()
-                times.append(end - start)
+                logger.info("Reading %s samples", args.samples)
+                for _ in range(args.samples):
+                    start = time.time()
+                    text = ocr_reader.read_number(rect)
+                    end = time.time()
+                    times.append(end - start)
 
-            if args.show_image:
-                (_, image) = ocr_reader.read_number(rect, True)
-                image.show()
+                if args.show_image:
+                    (_, image) = ocr_reader.read_number(rect, True)
+                    image.show()
 
-            times.sort()
-            avg_ms = sum(times) * 1000 / len(times)
-            max_ms = times[-1] * 1000
-            min_ms = times[0] * 1000
-            median_ms = percentile(times, 0.5)
-            p99_ms = percentile(times, 0.99)
-            p95_ms = percentile(times, 0.95)
-            p75_ms = percentile(times, 0.75)
-            p25_ms = percentile(times, 0.25)
-            p90_ms = percentile(times, 0.90)
-            p01_ms = percentile(times, 0.01)
-            p05_ms = percentile(times, 0.05)
-            p10_ms = percentile(times, 0.10)
+                times.sort()
+                avg_ms = sum(times) * 1000 / len(times)
+                max_ms = times[-1] * 1000
+                min_ms = times[0] * 1000
+                median_ms = percentile(times, 0.5)
+                p99_ms = percentile(times, 0.99)
+                p95_ms = percentile(times, 0.95)
+                p75_ms = percentile(times, 0.75)
+                p25_ms = percentile(times, 0.25)
+                p90_ms = percentile(times, 0.90)
+                p01_ms = percentile(times, 0.01)
+                p05_ms = percentile(times, 0.05)
+                p10_ms = percentile(times, 0.10)
 
-            print(f"samples: {args.samples}")
-            print(f"avg: {avg_ms:.1f} median: {median_ms:.1f}")
-            print(f"max: {max_ms:.1f} min: {min_ms:.1f}")
-            print(f"p99: {p99_ms:.1f} p95: {p95_ms:.1f} p90: {p90_ms:.1f}")
-            print(f"p75: {p75_ms:.1f} p50: {median_ms:.1f} p25: {p25_ms:.1f}")
-            print(f"p10: {p10_ms:.1f} p05: {p05_ms:.1f} p01: {p01_ms:.1f}")
-            print(f"Read text: {text}")
-        except Exception as ex:
-            screen_reader.close()
-            ocr_reader.close()
-            raise ex
+                print(f"samples: {args.samples}")
+                print(f"avg: {avg_ms:.1f} median: {median_ms:.1f}")
+                print(f"max: {max_ms:.1f} min: {min_ms:.1f}")
+                print(f"p99: {p99_ms:.1f} p95: {p95_ms:.1f} p90: {p90_ms:.1f}")
+                print(f"p75: {p75_ms:.1f} p50: {median_ms:.1f} p25: {p25_ms:.1f}")
+                print(f"p10: {p10_ms:.1f} p05: {p05_ms:.1f} p01: {p01_ms:.1f}")
+                print(f"Read text: {text}")
 
     parser = ArgumentParser(
         "OCR Scanner for the Tibia Window",

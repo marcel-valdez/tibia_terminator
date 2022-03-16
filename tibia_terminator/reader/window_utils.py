@@ -5,8 +5,9 @@ Requires python-xlib, python-imaging and imagemagick
 
 import subprocess
 import os
+import logging
 
-from typing import Union, List, Tuple, Iterable
+from typing import Union, List, Tuple, Iterable, TypeVar
 
 import Xlib.display  # python-xlib
 import PIL.Image  # python-imaging
@@ -14,6 +15,7 @@ import PIL.ImageStat  # python-imaging
 
 from tibia_terminator.schemas.reader.common import Coord
 
+logger = logging.getLogger(__name__)
 
 XY = Tuple[int, int]
 
@@ -28,7 +30,7 @@ def get_debug_level():
 
 def debug(msg, debug_level=0):
     if get_debug_level() >= debug_level:
-        print(msg)
+        logger.debug(msg)
 
 
 class Key:
@@ -51,7 +53,10 @@ class WindowGeometry:
     screen: int
 
 
-def parse_bash_variables_to_object(dst: object, bash_variables: str) -> None:
+T = TypeVar("T")
+
+
+def parse_bash_variables_to_object(dst: T, bash_variables: str) -> T:
     for line in bash_variables.split(os.linesep):
         clean_line = line.strip().lower()
         if clean_line:
@@ -65,7 +70,7 @@ def run_cmd(cmd: List[str], debug_level=2) -> str:
     debug(" ".join(cmd), debug_level)
     stdout = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
     debug(stdout, debug_level)
-    # TODO: In windows / mac this encoding may be a different value
+    # NOTE: In windows / mac this encoding may be a different value
     return stdout.decode("utf-8")
 
 
@@ -115,7 +120,6 @@ def get_pixel_rgb_bytes_imagemagick(wid: str, x: int, y: int):
     ) as pixel_snapshot_proc:
         pixel_rgb_bytes, stderr = pixel_snapshot_proc.communicate()
         if pixel_snapshot_proc.returncode != 0:
-            print(str(stderr) + "\nUnable to fetch window snapshot.")
             raise Exception(str(stderr) + "\nUnable to fetch window snapshot.")
 
         return pixel_rgb_bytes
@@ -150,7 +154,7 @@ def send_key(wid: str, key: str) -> None:
     ).strip()
 
     if output:
-        print(output)
+        logging.info(output)
 
 
 def send_text(wid: str, text: str) -> None:
@@ -158,7 +162,7 @@ def send_text(wid: str, text: str) -> None:
         ["/usr/bin/xdotool", "type", "--window", str(wid), "--delay", "250", text]
     ).strip()
     if output:
-        print(output)
+        logging.info(output)
 
 
 def left_click(wid: str, x: int, y: int) -> None:
@@ -174,13 +178,13 @@ def left_click(wid: str, x: int, y: int) -> None:
         ]
     ).strip()
     if mousemove_output:
-        print(mousemove_output)
+        logging.info(mousemove_output)
 
     click_output = run_cmd(
         ["/usr/bin/xdotool", "click", "--window", str(wid), "--delay", "50", "1"]
     ).strip()
     if click_output:
-        print(click_output)
+        logging.info(click_output)
 
 
 class ScreenReader:
@@ -195,9 +199,20 @@ class ScreenReader:
         self.screen = screen
         self.display = display
         self.tibia_wid = tibia_wid
-        self.tibia_window = None
+        self.tibia_window: Xlib.xobject.drawable.Window = None
+        self.is_open = False
+
+    def __enter__(self, *args, **kwargs) -> "ScreenReader":
+        self.open()
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.close()
 
     def open(self):
+        if self.is_open:
+            return
+        self.is_open = True
         self.display = Xlib.display.Display()
         self.screen = self.display.screen()
         if self.tibia_wid:
@@ -210,26 +225,34 @@ class ScreenReader:
         self.screen = None
         self.display.close()
         self.display = None
+        self.is_open = False
+
+    def get_window(self) -> Xlib.xobject.drawable.Window:
+        if not self.is_open:
+            raise Exception(
+                "Unable to get Window, because this ScreenReader hasn't been opened."
+            )
+
+        if self.tibia_window:
+            return self.tibia_window
+        if self.screen:
+            return self.screen.root
+        raise Exception(
+            "Unable to fetch Window, have you initialized this ScreenReader yet?."
+        )
 
     def get_pixel_rgb_bytes_xlib(self, x: int, y: int):
-        window = self.tibia_window or self.screen.root
-        return window.get_image(x, y, 1, 1, Xlib.X.ZPixmap, 0xFFFFFFFF)
+        return self.get_window().get_image(x, y, 1, 1, Xlib.X.ZPixmap, 0xFFFFFFFF)
 
     def get_coord_color(self, coord: Coord) -> str:
         return self.get_pixel_color(coord.x, coord.y)
 
     def get_area_image(self, x: int, y: int, width: int, height: int) -> PIL.Image:
-        window = self.tibia_window or self.screen.root
-        img_rgb_res = window.get_image(
-            x,
-            y,
-            width,
-            height,
-            Xlib.X.ZPixmap,
-            0xFFFFFFFF
+        img_rgb_res = self.get_window().get_image(
+            x, y, width, height, Xlib.X.ZPixmap, 0xFFFFFFFF
         )
 
-        if isinstance(img_rgb_res, str):
+        if isinstance(img_rgb_res.data, str):
             img_rgb_bytes = bytes(img_rgb_res.data, "utf-8")
         else:
             img_rgb_bytes = img_rgb_res.data
@@ -246,19 +269,19 @@ class ScreenReader:
         else:
             pixel_rgb_bytes = pixel_rgb_res.data
 
-        pixel_rgb_image = PIL.Image.frombytes(
+        with PIL.Image.frombytes(
             "RGB", (1, 1), pixel_rgb_bytes, "raw", "BGRX"
-        )
-        pixel_rgb_color = PIL.ImageStat.Stat(pixel_rgb_image).mean
-        return rgb_color_to_hex_str(pixel_rgb_color).lower()
+        ) as pixel_rgb_image:
+            pixel_rgb_color = PIL.ImageStat.Stat(pixel_rgb_image).mean
+            return rgb_color_to_hex_str(pixel_rgb_color).lower()
 
     def get_pixel_color_slow(self, x: int, y: int) -> str:
         # We do not offset this, since it uses values relative to the
         # window.
-        return get_pixel_color_slow(self.tibia_wid, x, y)
+        return get_pixel_color_slow(str(self.tibia_wid), x, y)
 
     def get_coord_color_slow(self, coord: Coord) -> str:
-        return self.get_pixel_color_slow(self.tibia_wid, coord.x, coord.y)
+        return self.get_pixel_color_slow(coord.x, coord.y)
 
     def get_pixels_slow(self, coords: Iterable[XY]) -> List[str]:
         def get_pixel(coord: XY) -> str:

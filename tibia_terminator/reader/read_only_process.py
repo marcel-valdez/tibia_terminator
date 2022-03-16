@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.8
 
-from typing import List, Tuple, IO, NamedTuple, Optional, Mapping, Any
+from typing import List, IO, NamedTuple, Optional, Mapping, Any
 from ctypes import sizeof, c_byte
 from traceback import format_exc
 from enum import Enum
@@ -70,20 +70,24 @@ MAP_ENTRY_PARSER = re.compile(MAP_ENTRY_REGEX_STR)
 
 
 class ReadOnlyProcess(Process):
-    pid = None
+    pid: int = None
+    mem: Optional[IO] = None
 
     def __init__(self, pid: int):
         self.pid = pid
-        self.mem: IO = open("/proc/{}/mem".format(self.pid), mode="rb")
+        self.mem: Optional[IO] = None
 
-    def __enter__(self):
-        if not self.mem and not self.pid:
-            raise Exception("Process is already closed.")
-
+    def __enter__(self, *args, **kwargs) -> 'ReadOnlyProcess':
+        self.open()
         return self
 
     def __exit__(self, exception_type, exception_value, exception_traceback):
         self.close()
+
+    def open(self):
+        if not self.mem and not self.pid:
+            raise Exception("Process is already closed.")
+        self.mem = open("/proc/{}/mem".format(self.pid), mode="rb")
 
     def close(self):
         self.pid = None

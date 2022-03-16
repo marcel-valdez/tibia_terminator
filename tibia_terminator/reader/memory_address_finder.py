@@ -17,11 +17,11 @@ logger = logging.getLogger(__name__)
 class MemoryAddressFinder:
     def __init__(
         self,
-        ocr_number_reader: OcrNumberReader,
+        ocr_reader: OcrNumberReader,
         tibia_pid: int,
     ):
         self.tibia_pid = tibia_pid
-        self.ocr_number_reader = ocr_number_reader
+        self.ocr_reader = ocr_reader
 
     def read_ocr_value(
         self, rect: Rect, prev_value: Optional[int] = None
@@ -36,6 +36,7 @@ class MemoryAddressFinder:
             [0, 0, 0, 2],
             [0, 0, 0, -2],
         ]
+
         def retry_rect(orig: Rect, retry_no: int) -> Rect:
             x, y, w, h = retry_updates[retry_no]
             return Rect(
@@ -49,7 +50,7 @@ class MemoryAddressFinder:
             _retries_left = 5
             while _retries_left > 0:
                 logger.info("Attempting to OCR read next value.")
-                value_str = self.ocr_number_reader.read_number(rect).strip()
+                value_str = self.ocr_reader.read_number(rect).strip()
                 if len(value_str) > 0:
                     return int(value_str)
                 _retries_left -= 1
@@ -173,13 +174,8 @@ if __name__ == "__main__":
 
     def main(args: Namespace) -> None:
         logging.basicConfig(level=args.log_level)
-        screen_reader = ScreenReader(int(get_tibia_wid(args.tibia_pid)))
-        ocr_reader = OcrNumberReader(screen_reader, PyTessBaseAPI())
-
-        screen_reader.open()
-        try:
-            ocr_reader.open()
-            try:
+        with ScreenReader(int(get_tibia_wid(args.tibia_pid))) as screen_reader:
+            with OcrNumberReader(screen_reader, PyTessBaseAPI()) as ocr_reader:
                 f = MemoryAddressFinder(ocr_reader, args.tibia_pid)
                 addresses, _ = f.find_address(
                     args.update_keys,
@@ -190,12 +186,6 @@ if __name__ == "__main__":
                     value = f.read_memory(address, c_int)
                     print(f"Address: {hex(address)}")
                     print(f"Value: {value}")
-            except Exception as ex:
-                ocr_reader.close()
-                raise ex
-        except Exception as e:
-            screen_reader.close()
-            raise e
 
     parser = ArgumentParser(
         "Memory Address finder for the Tibia Client",

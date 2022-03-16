@@ -153,29 +153,22 @@ class AppConfigMemoryAddressFinder:
 
 if __name__ == "__main__":
     from argparse import ArgumentParser, Namespace
-    from tibia_terminator.reader.window_utils import ScreenReader
+
+    import commentjson as json
+
     from tesserocr import PyTessBaseAPI
 
-if __name__ == "__main__":
-    import json
-
-    from argparse import ArgumentParser, Namespace
-    from tesserocr import PyTessBaseAPI
-
-    from tibia_terminator.schemas.app_config_schema import AppConfigSchema
     from tibia_terminator.reader.ocr_number_reader import OcrNumberReader
     from tibia_terminator.reader.window_utils import ScreenReader
+    from tibia_terminator.reader.window_utils import ScreenReader
+    from tibia_terminator.schemas.app_config_schema import AppConfigSchema
     from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfigSchema
 
     def main(args: Namespace) -> None:
         logging.basicConfig(level=args.log_level)
-        screen_reader = ScreenReader(int(get_tibia_wid(args.tibia_pid)))
-        ocr_reader = OcrNumberReader(screen_reader, PyTessBaseAPI())
         hotkeys_config = HotkeysConfigSchema().loadf(args.hotkeys_config_file)
-        screen_reader.open()
-        try:
-            ocr_reader.open()
-            try:
+        with ScreenReader(int(get_tibia_wid(args.tibia_pid))) as screen_reader:
+            with OcrNumberReader(screen_reader, PyTessBaseAPI()) as ocr_reader:
                 finder = AppConfigMemoryAddressFinder(
                     tibia_pid=args.tibia_pid,
                     memory_address_finder=MemoryAddressFinder(
@@ -201,13 +194,6 @@ if __name__ == "__main__":
                         AppConfigSchema().dump(app_config), indent=4, sort_keys=True
                     )
                 )
-
-            except Exception as ex:
-                ocr_reader.close()
-                raise ex
-        except Exception as e:
-            screen_reader.close()
-            raise e
 
     parser = ArgumentParser(
         "Memory Address finder for the Tibia Client",
