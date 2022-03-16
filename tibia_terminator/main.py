@@ -298,11 +298,11 @@ class TibiaTerminator:
                 if loop_wait_ms > 0:
                     time.sleep(loop_wait_ms / 1000)
         finally:
-            self.loot_macro.unhook_hotkey()
-            self.char_keeper.unhook_macros()
             self.equipment_reader.close()
             self.view_renderer.stop()
             self.cmd_processor.stop()
+            self.loot_macro.unhook_hotkey()
+            self.char_keeper.unhook_macros()
 
     def handle_exit_state(self):
         """Exits the program based on user input."""
