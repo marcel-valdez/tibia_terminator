@@ -30,6 +30,7 @@ from tibia_terminator.reader.memory_address_finder import MemoryAddressFinder
 from tibia_terminator.reader.ocr_number_reader import OcrNumberReader
 from tibia_terminator.reader.window_utils import ScreenReader, get_tibia_wid
 from tesserocr import PyTessBaseAPI
+from tibia_terminator.schemas.common import to_dict
 
 
 logger = logging.getLogger(__name__)
@@ -199,8 +200,9 @@ def main(args: Namespace) -> None:
 
     if not args.dry_run:
         write_app_config(app_configs, args.app_config)
+        print(f"Successfully updated {args.app_config} with new memory addresses")
     else:
-        print(app_configs)
+        print(json.dumps(to_dict(app_configs), indent=2))
 
 
 if __name__ == "__main__":
