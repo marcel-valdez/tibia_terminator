@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.8
 
-from typing import List, IO, NamedTuple, Optional, Mapping, Any
+from typing import List, IO, NamedTuple, Optional, Mapping, Any, Callable
 from ctypes import sizeof, c_byte
 from traceback import format_exc
 from enum import Enum
@@ -260,6 +260,7 @@ class ReadOnlyProcess(Process):
         needle_buffer: ctypes_buffer_t,
         writeable_only: bool = True,
         verbatim: bool = True,
+        mem_region_filter: Callable[[MemRegion], bool] = bool
     ) -> List[MemRegion]:
         """
         Search the entire memory space accessible to the process for the provided value.
@@ -272,6 +273,8 @@ class ReadOnlyProcess(Process):
                 Default `True`.
             verbatim: If `True`, perform bitwise comparison when searching for `needle_buffer`.
                 If `False`, perform `utils.ctypes_equal-based` comparison. Default `True`.
+            mem_region_filter: A function to filter memory regions that should be searched.
+                Memory regions that pass the filter will be included, others will be excluded.
 
         Returns:
             List of addresses where the `needle_buffer` was found.
@@ -282,7 +285,7 @@ class ReadOnlyProcess(Process):
         else:
             search = search_buffer
 
-        for map_region in self.list_mapped_regions(writeable_only):
+        for map_region in filter(mem_region_filter, self.list_mapped_regions(writeable_only)):
             try:
                 region_buffer = (c_byte * (map_region.end - map_region.start))()
                 self.read_memory(map_region.start, region_buffer)

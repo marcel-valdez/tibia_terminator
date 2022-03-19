@@ -9,7 +9,7 @@ import math
 
 from tibia_terminator.reader.ocr_number_reader import OcrNumberReader, Rect
 from tibia_terminator.reader.window_utils import get_tibia_wid, send_key
-from tibia_terminator.reader.read_only_process import ReadOnlyProcess
+from tibia_terminator.reader.read_only_process import ReadOnlyProcess, MemRegion, MemRegionType
 
 logger = logging.getLogger(__name__)
 
@@ -114,10 +114,20 @@ class MemoryAddressFinder:
         update_keys: List[str],
         text_field_rectangle: Rect,
         ctype_ctor: Callable = c_int,
+        *,
         initial_address_space: Optional[List[int]] = None,
         stop_gap_matches: int = 1,
         verbatim: bool = True,
+        only_search_heap: bool = True,
     ) -> Tuple[List[int], Rect]:
+        def mem_region_filter(mem_region: MemRegion) -> bool:
+            if only_search_heap:
+                return (
+                    mem_region.region_type is MemRegionType.HEAP or
+                    "[heap]" in mem_region.filename
+                )
+            return True
+
         with ReadOnlyProcess(self.tibia_pid) as proc:
             prev_value = None
             tibia_wid = int(get_tibia_wid(self.tibia_pid))
@@ -125,12 +135,15 @@ class MemoryAddressFinder:
             if initial_address_space is None:
                 # never search all of the memory with verbatim False
                 addresses = proc.search_all_memory(
-                    ctype_ctor(value), writeable_only=True, verbatim=True
+                    ctype_ctor(value), writeable_only=True, verbatim=True,
+                    mem_region_filter=mem_region_filter
                 )
             else:
                 use_verbatim = verbatim or len(addresses) > 250
                 addresses = proc.search_addresses(
-                    addresses, ctype_ctor(value), verbatim=use_verbatim
+                    addresses,
+                    ctype_ctor(value),
+                    verbatim=use_verbatim
                 )
 
             logger.info("OCR Scan of %s: %s", text_field_rectangle, value)

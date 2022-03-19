@@ -110,7 +110,7 @@ class CharReader38:
                 )
             if self.soul_points_address is not None:
                 stats["soul_points"] = self.memory_reader.read_address_ctype(
-                    self.soul_points_address, c_int()
+                    self.soul_points_address, c_int16()
                 )
         finally:
             self.memory_reader.close()

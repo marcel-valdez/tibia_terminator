@@ -3,8 +3,8 @@
 import time
 import logging
 
-from typing import Optional, Any, Callable
-from ctypes import c_int, c_int16, c_int32
+from typing import Optional, Any
+from ctypes import c_int, c_int16
 
 from tibia_terminator.reader.char_reader38 import MAGIC_SHIELD_TO_SPEED_OFFSET
 from tibia_terminator.reader.memory_address_finder import MemoryAddressFinder
@@ -15,6 +15,7 @@ from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfig
 
 logger = logging.getLogger(__name__)
 SPEED_TO_MANA_MEMORY_OFFSET = 8
+SOUL_PTS_TO_SPEED_MEMORY_OFFSET = -4
 
 
 class UnableToFindMemoryAddressException(Exception):
@@ -69,27 +70,30 @@ class AppConfigMemoryAddressFinder:
                 update_keys=[self.hotkeys_config.minor_heal for _ in range(6)],
                 text_field_rectangle=self.mana_rect,
                 ctype_ctor=c_int16,
-                stop_gap_matches=2
+                stop_gap_matches=2,
             )
             self.mana_rect = better_rect
-            if 1 <= len(addresses) <= 2:
-                if addresses[0] != mana_address:
-                    return addresses[0] + SPEED_TO_MANA_MEMORY_OFFSET
             if len(addresses) == 2:
-                # mana_address is the c_int32 address we're not interested in
-                if addresses[1] != mana_address:
-                    return addresses[1] + SPEED_TO_MANA_MEMORY_OFFSET
+                return (
+                    next(a for a in addresses if a != mana_address)
+                    + SPEED_TO_MANA_MEMORY_OFFSET
+                )
             retry_count -= 1
 
-        raise UnableToFindMemoryAddressException("Unable to determine speed address")
+        raise UnableToFindMemoryAddressException(
+            "Unable to determine speed address. Found too many addresses for "
+            f"the int16 mana address: {[hex(a) for a in addresses]}"
+        )
 
     def build_app_config_entry(self) -> AppConfig:
         mana_address = self.find_mana_address()
         speed_address = self.find_speed_address(mana_address)
+        soul_points_address = speed_address + SOUL_PTS_TO_SPEED_MEMORY_OFFSET
         return AppConfig(
             pid=self.tibia_pid,
             mana_memory_address=hex(mana_address),
             speed_memory_address=hex(speed_address),
+            soul_points_memory_address=hex(soul_points_address)
         )
 
 
