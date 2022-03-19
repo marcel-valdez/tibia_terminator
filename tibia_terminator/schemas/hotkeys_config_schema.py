@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.8
 
 from marshmallow import fields
-from typing import Optional, NamedTuple
+from typing import NamedTuple, Optional
 from tibia_terminator.schemas.common import FactorySchema
 
 
@@ -35,6 +35,8 @@ class HotkeysConfig(NamedTuple):
     toggle_tank_ring: Optional[str] = None
     start_tank_mode: Optional[str] = None
     cancel_tank_mode: Optional[str] = None
+    start_defensive_mode: Optional[str] = None
+    cancel_defensive_mode: Optional[str] = None
 
     potion_minor_heal: Optional[str] = None
     potion_medium_heal: Optional[str] = None
@@ -58,10 +60,13 @@ class HotkeysConfigSchema(FactorySchema[HotkeysConfig]):
     cancel_magic_shield = fields.Str(required=True)
     mana_potion = fields.Str(required=True)
 
-    toggle_emergency_amulet = fields.Str(required=True)
-    toggle_emergency_ring = fields.Str(required=True)
-    start_emergency = fields.Str(required=True)
-    cancel_emergency = fields.Str(required=True)
+    toggle_emergency_amulet = fields.Str(required=False, allow_none=True)
+    toggle_emergency_ring = fields.Str(required=False, allow_none=True)
+    start_emergency = fields.Str(required=False, allow_none=True)
+    cancel_emergency = fields.Str(required=False, allow_none=True)
+
+    start_defensive_mode = fields.Str(required=False, allow_none=True)
+    cancel_defensive_mode = fields.Str(required=False, allow_none=True)
 
     toggle_tank_amulet = fields.Str(required=False, allow_none=True)
     toggle_tank_ring = fields.Str(required=False, allow_none=True)

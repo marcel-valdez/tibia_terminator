@@ -34,6 +34,8 @@
     "cancel_emergency": "end",
     "start_tank_mode": "5",
     "cancel_tank_mode": "end",
+    "start_defensive_mode": "[",
+    "cancel_defensive_mode": "end",
     // We need these in order to hook single item hotkeys with
     // directional keys as separate hotkeys
     "up": "w",

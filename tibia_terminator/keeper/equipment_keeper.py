@@ -3,15 +3,13 @@
 
 import time
 
+from enum import Enum
 from typing import Callable, Optional
 
 from tibia_terminator.interface.client_interface import ClientInterface
 from tibia_terminator.common.char_status import CharStatus
 from tibia_terminator.reader.equipment_reader import RingName, AmuletName
-from tibia_terminator.keeper.emergency_reporter import (
-    EmergencyReporter,
-    TankModeReporter,
-)
+from tibia_terminator.keeper.emergency_reporter import SimpleModeReporter
 
 # We throttle commands here and ask the client_interface
 # to use 0 throttling.
@@ -19,18 +17,23 @@ DEFAULT_EQUIP_FREQ = 0.25
 DEFAULT_EQUIP_EMERGENCY_FREQ = 0.25
 
 
-class EquipmentMode:
-    NORMAL = "normal"
-    TANK = "tank"
-    EMERGENCY = "emergency"
+class EquipmentMode(Enum):
+    NORMAL = 0
+    DEFENSIVE = 1
+    TANK = 2
+    EMERGENCY = 3
+
+    def __str__(self) -> str:
+        return self.name.lower()
 
 
 class EquipmentKeeper:
     def __init__(
         self,
         client: ClientInterface,
-        emergency_reporter: EmergencyReporter,
-        tank_mode_reporter: TankModeReporter,
+        emergency_reporter: SimpleModeReporter,
+        tank_mode_reporter: SimpleModeReporter,
+        defensive_mode_reporter: SimpleModeReporter,
         should_equip_amulet: bool,
         should_equip_ring: bool,
         should_eat_food: bool,
@@ -40,14 +43,13 @@ class EquipmentKeeper:
         self.client = client
         self.emergency_reporter = emergency_reporter
         self.tank_mode_reporter = tank_mode_reporter
+        self.defensive_mode_reporter = defensive_mode_reporter
         self.should_equip_amulet = should_equip_amulet
         self.should_equip_ring = should_equip_ring
         self.should_eat_food = should_eat_food
         self.equip_amulet_secs = equip_amulet_secs
         self.equip_ring_secs = equip_ring_secs
-        self.timestamps = {
-            "food": 0.0
-        }
+        self.timestamps = {"food": 0.0}
         self.eat_food_counter = 0
         self.prev_mode = EquipmentMode.NORMAL
         self.normal_mode_manager = EquipmentModeManager(
@@ -71,14 +73,16 @@ class EquipmentKeeper:
             ring_checker_fn=self.is_emergency_ring_on,
             toggle_frequency_sec=DEFAULT_EQUIP_FREQ,
         )
+        self.defensive_mode_manager = self.tank_mode_manager
 
     def handle_status_change(self, char_status: CharStatus):
         next_mode = self.get_next_mode()
-        if next_mode == EquipmentMode.EMERGENCY:
+        if next_mode is EquipmentMode.EMERGENCY:
             self.handle_emergency_status_change(char_status)
             self.prev_mode = next_mode
             return
-        elif self.prev_mode == EquipmentMode.EMERGENCY:
+
+        if self.prev_mode is EquipmentMode.EMERGENCY:
             if self.is_emergency_ring_on(char_status) or self.is_emergency_amulet_on(
                 char_status
             ):
@@ -87,10 +91,15 @@ class EquipmentKeeper:
                 self.prev_mode = next_mode
             return
 
-        if next_mode == EquipmentMode.TANK:  # implies prev_mode = NORMAL
+        if (
+            next_mode is EquipmentMode.TANK or next_mode is EquipmentMode.DEFENSIVE
+        ):  # implies prev_mode = NORMAL
             self.handle_tank_status_change(char_status)
             self.prev_mode = next_mode
-        elif self.prev_mode == EquipmentMode.TANK:  # implies next_mode = NORMAL
+        elif (
+            self.prev_mode is EquipmentMode.TANK
+            or self.prev_mode is EquipmentMode.DEFENSIVE
+        ):  # implies next_mode = NORMAL
             if self.is_tank_ring_on(char_status) or self.is_tank_amulet_on(char_status):
                 self.handle_tank_transition_change(char_status)
             else:
@@ -107,18 +116,18 @@ class EquipmentKeeper:
         self.handle_eat_food()
 
     def handle_emergency_transition_change(
-        self, char_status: CharStatus, next_mode: str
+        self, char_status: CharStatus, next_mode: EquipmentMode
     ):
         toggled_amulet = self.emergency_mode_manager.toggle_amulet_off(char_status)
         if not toggled_amulet:
-            if next_mode == EquipmentMode.TANK:
+            if next_mode is EquipmentMode.TANK or next_mode is EquipmentMode.DEFENSIVE:
                 self.tank_mode_manager.toggle_amulet_on(char_status)
             else:
                 self.normal_mode_manager.toggle_amulet_on(char_status)
 
         toggled_ring = self.emergency_mode_manager.toggle_ring_off(char_status)
         if not toggled_ring:
-            if next_mode == EquipmentMode.TANK:
+            if next_mode is EquipmentMode.TANK or next_mode is EquipmentMode.DEFENSIVE:
                 self.tank_mode_manager.toggle_ring_on(char_status)
             else:
                 self.normal_mode_manager.toggle_ring_on(char_status)
@@ -127,7 +136,7 @@ class EquipmentKeeper:
         if self.should_equip_amulet:
             mode_manager_for_amulet = self.emergency_mode_manager
             if char_status.emergency_action_amulet == AmuletName.UNKNOWN:
-                # Use tank -> normal amulets when we don't have emergency amulets
+                # Use tank -> normal amulets when we don't have emergency amulets.
                 if char_status.tank_action_amulet != AmuletName.UNKNOWN:
                     mode_manager_for_amulet = self.tank_mode_manager
                 else:
@@ -137,7 +146,7 @@ class EquipmentKeeper:
         if self.should_equip_ring:
             mode_manager_for_ring = self.emergency_mode_manager
             if char_status.emergency_action_ring == RingName.UNKNOWN:
-                # Use tank -> normal rings when we don't have emergency rings
+                # Use tank -> normal rings when we don't have emergency rings.
                 if char_status.tank_action_ring != AmuletName.UNKNOWN:
                     mode_manager_for_ring = self.tank_mode_manager
                 else:
@@ -221,11 +230,13 @@ class EquipmentKeeper:
     def timestamp_secs(self) -> float:
         return time.time()
 
-    def get_next_mode(self) -> str:
-        if self.emergency_reporter.is_in_emergency():
+    def get_next_mode(self) -> EquipmentMode:
+        if self.emergency_reporter.is_mode_on():
             return EquipmentMode.EMERGENCY
-        if self.tank_mode_reporter.is_tank_mode_on():
+        if self.tank_mode_reporter.is_mode_on():
             return EquipmentMode.TANK
+        if self.defensive_mode_reporter.is_mode_on():
+            return EquipmentMode.DEFENSIVE
         return EquipmentMode.NORMAL
 
 

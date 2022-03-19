@@ -7,7 +7,7 @@ from typing import Callable, Optional
 
 from tibia_terminator.interface.client_interface import ClientInterface
 from tibia_terminator.common.char_status import CharStatus
-from tibia_terminator.keeper.emergency_reporter import EmergencyReporter, TankModeReporter
+from tibia_terminator.keeper.emergency_reporter import SimpleModeReporter
 
 
 PROTECTOR_DURATION_SECS = 12
@@ -72,8 +72,8 @@ class EmergencyProtectorKeeper(ProtectorKeeper):
     def __init__(
             self,
             client: ClientInterface,
-            emergency_reporter: EmergencyReporter,
-            tank_mode_reporter: TankModeReporter,
+            emergency_reporter: SimpleModeReporter,
+            tank_mode_reporter: SimpleModeReporter,
             timestamp_sec_fn: Callable[[], float] = None,
     ):
         super().__init__(client, timestamp_sec_fn)
@@ -82,6 +82,6 @@ class EmergencyProtectorKeeper(ProtectorKeeper):
 
     def should_cast(self, _: Optional[CharStatus] = None) -> bool:
         return (
-            self.emergency_reporter.is_in_emergency() or
-            self.tank_mode_reporter.is_tank_mode_on()
+            self.emergency_reporter.is_mode_on() or
+            self.tank_mode_reporter.is_mode_on()
         ) and super().should_cast()

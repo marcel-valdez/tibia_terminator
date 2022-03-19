@@ -215,9 +215,8 @@ class RunView(View):
     EQUIPPED_AMULET_ROW = TANK_ACTION_RING_ROW + 1
     EQUIPPED_RING_ROW = EQUIPPED_AMULET_ROW + 1
     MAGIC_SHIELD_STATUS_ROW = EQUIPPED_RING_ROW + 1
-    EMERGENCY_STATUS_ROW = MAGIC_SHIELD_STATUS_ROW + 1
-    TANK_MODE_STATUS_ROW = EMERGENCY_STATUS_ROW + 1
-    DEBUG_ROW_1 = TANK_MODE_STATUS_ROW + 1
+    ACTIVE_MODE_ROW = MAGIC_SHIELD_STATUS_ROW + 1
+    DEBUG_ROW_1 = ACTIVE_MODE_ROW + 1
     DEBUG_ROW_2 = DEBUG_ROW_1 + 1
     LOG_ROW = DEBUG_ROW_2 + 1
     MAX_LOG_BUFFER = 10
@@ -238,8 +237,7 @@ class RunView(View):
         self.equipped_amulet = "N/A"
         self.equipped_ring = "N/A"
         self.magic_shield_status = "N/A"
-        self.emergency_status = "N/A"
-        self.tank_mode_status = "N/A"
+        self.active_mode = "N/A"
         self.debug_line_1 = ""
         self.debug_line_2 = ""
         self.action_log_queue = Queue()
@@ -291,6 +289,9 @@ class RunView(View):
 
     def set_magic_shield_status(self, value: Any = "N/A"):
         self.magic_shield_status = str(value)
+
+    def set_active_mode(self, value: Any = "N/A"):
+        self.active_mode = str(value)
 
     def render(self, cli_screen: CliScreen):
         self.render_header(cli_screen)
@@ -369,10 +370,7 @@ class RunView(View):
             RunView.MAGIC_SHIELD_STATUS_ROW,
         )
         cli_screen.print(
-            f"Emergency Status: {self.emergency_status}", RunView.EMERGENCY_STATUS_ROW
-        )
-        cli_screen.print(
-            f"Tank Status: {self.tank_mode_status}", RunView.TANK_MODE_STATUS_ROW
+            f"Active Mode: {self.active_mode}", RunView.ACTIVE_MODE_ROW
         )
 
     def render_debug_lines(self, cli_screen: CliScreen):

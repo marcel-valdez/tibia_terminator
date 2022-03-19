@@ -386,10 +386,7 @@ class TibiaTerminator:
         # implicitly waits for all FutureValue objects, since it
         # tries to fetch all values in order to print to screen
         view.set_char_stats(char_status)
-        is_in_emergency = self.char_keeper.emergency_reporter.is_in_emergency()
-        view.emergency_status = "ON" if is_in_emergency else "OFF"
-        is_tank_mode_on = self.char_keeper.tank_mode_reporter.is_tank_mode_on()
-        view.tank_mode_status = "ON" if is_tank_mode_on else "OFF"
+        view.set_active_mode(self.char_keeper.equipment_keeper.get_next_mode())
         end_ms = int(time.time() * 1000)
         self.add_elapsed_loop_time(view, end_ms - start_ms)
 

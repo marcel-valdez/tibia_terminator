@@ -100,7 +100,7 @@ class ResolvableMixin:
 
 
 class FactorySchema(Generic[N], Schema, ResolvableMixin):
-    def __init__(self, ctor: Type[N] = None, *args, **kwargs):
+    def __init__(self, *args, ctor: Type[N] = None, **kwargs):
         super().__init__(*args, **kwargs)
         if ctor is not None:
             self.ctor = ctor

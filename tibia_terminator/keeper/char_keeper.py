@@ -15,20 +15,16 @@ from tibia_terminator.schemas.item_crosshair_macro_config_schema import (
 )
 from tibia_terminator.common.char_status import CharStatus
 from tibia_terminator.interface.macro.cancel_emergency_macro import (
-    CancelEmergencyMacro,
-    CancelTankModeMacro,
+    CancelModeMacro,
 )
 from tibia_terminator.interface.macro.item_crosshair_macro import ItemCrosshairMacro
 from tibia_terminator.interface.macro.directional_macro import DirectionalMacro
 from tibia_terminator.interface.macro.macro import Macro
-from tibia_terminator.interface.macro.start_emergency_macro import (
-    StartEmergencyMacro,
-    StartTankModeMacro,
-)
+from tibia_terminator.interface.macro.start_emergency_macro import StartModeMacro
 from tibia_terminator.reader.equipment_reader import MagicShieldStatus
 from tibia_terminator.keeper.emergency_reporter import (
     EmergencyReporter,
-    TankModeReporter,
+    SimpleModeReporter,
 )
 from tibia_terminator.keeper.equipment_keeper import EquipmentKeeper
 from tibia_terminator.keeper.hp_keeper import HpKeeper
@@ -53,7 +49,8 @@ class CharKeeper:
         battle_config: BattleConfig,
         hotkeys_config: HotkeysConfig,
         emergency_reporter: Optional[EmergencyReporter] = None,
-        tank_mode_reporter: Optional[TankModeReporter] = None,
+        tank_mode_reporter: Optional[SimpleModeReporter] = None,
+        defensive_mode_reporter: Optional[SimpleModeReporter] = None,
         mana_keeper: Optional[Union[ManaKeeper, KnightPotionKeeper]] = None,
         hp_keeper: Optional[HpKeeper] = None,
         speed_keeper: Optional[SpeedKeeper] = None,
@@ -71,6 +68,7 @@ class CharKeeper:
         # load the first battle config from the first char config
         self.init_emergency_reporter(char_config, battle_config, emergency_reporter)
         self.init_tank_mode_reporter(tank_mode_reporter)
+        self.init_defensive_mode_reporter(defensive_mode_reporter)
         self.init_mana_keeper(client, char_config, battle_config, mana_keeper)
         self.init_hp_keeper(client, char_config, battle_config, hp_keeper)
         self.init_speed_keeper(client, char_config, battle_config, speed_keeper)
@@ -117,12 +115,21 @@ class CharKeeper:
 
     def init_tank_mode_reporter(
         self,
-        tank_mode_reporter: Optional[TankModeReporter] = None,
+        tank_mode_reporter: Optional[SimpleModeReporter] = None,
     ):
         if tank_mode_reporter is None:
-            self.tank_mode_reporter = TankModeReporter()
+            self.tank_mode_reporter = SimpleModeReporter()
         else:
             self.tank_mode_reporter = tank_mode_reporter
+
+    def init_defensive_mode_reporter(
+        self,
+        defensive_mode_reporter: Optional[SimpleModeReporter] = None,
+    ):
+        if defensive_mode_reporter is None:
+            self.defensive_mode_reporter = SimpleModeReporter()
+        else:
+            self.defensive_mode_reporter = defensive_mode_reporter
 
     def init_mana_keeper(
         self,
@@ -200,6 +207,7 @@ class CharKeeper:
                 client,
                 self.emergency_reporter,
                 self.tank_mode_reporter,
+                self.defensive_mode_reporter,
                 battle_config.should_equip_amulet,
                 battle_config.should_equip_ring,
                 battle_config.should_eat_food,
@@ -274,7 +282,7 @@ class CharKeeper:
     def init_drag_macros(
         self,
         macro_configs: List[DragMacroConfig] = [],
-        drag_macros: Optional[List[DragMacro]] = None
+        drag_macros: Optional[List[DragMacro]] = None,
     ):
         self.unload_drag_macros()
         if drag_macros is not None:
@@ -310,32 +318,65 @@ class CharKeeper:
         if core_macros is not None:
             self.core_macros = core_macros
         else:
+            emergency_override_reporter = (
+                self.emergency_reporter.gen_override_reporter()
+            )
             cancel_emergency_key = hotkeys_config.cancel_emergency
             if cancel_emergency_key:
                 self.core_macros.append(
-                    CancelEmergencyMacro(self.emergency_reporter, cancel_emergency_key)
+                    CancelModeMacro(
+                        emergency_override_reporter,
+                        cancel_emergency_key,
+                    )
                 )
             start_emergency_key = hotkeys_config.start_emergency
             if start_emergency_key:
                 self.core_macros.append(
-                    StartEmergencyMacro(
-                        self.emergency_reporter,
-                        self.tank_mode_reporter,
-                        start_emergency_key,
+                    StartModeMacro(
+                        mode_reporter=emergency_override_reporter,
+                        exclusive_mode_reporters=(
+                            self.tank_mode_reporter,
+                            self.defensive_mode_reporter,
+                        ),
+                        hotkey=start_emergency_key,
                     )
                 )
+
             cancel_tank_mode_key = hotkeys_config.cancel_tank_mode
             if cancel_tank_mode_key:
                 self.core_macros.append(
-                    CancelTankModeMacro(self.tank_mode_reporter, cancel_tank_mode_key)
+                    CancelModeMacro(self.tank_mode_reporter, cancel_tank_mode_key)
                 )
             start_tank_mode_key = hotkeys_config.start_tank_mode
             if start_tank_mode_key:
                 self.core_macros.append(
-                    StartTankModeMacro(
-                        self.tank_mode_reporter,
-                        self.emergency_reporter,
-                        start_tank_mode_key,
+                    StartModeMacro(
+                        mode_reporter=self.tank_mode_reporter,
+                        exclusive_mode_reporters=(
+                            emergency_override_reporter,
+                            self.defensive_mode_reporter,
+                        ),
+                        hotkey=start_tank_mode_key,
+                    )
+                )
+
+            cancel_defensive_mode_key = hotkeys_config.cancel_defensive_mode
+            if cancel_defensive_mode_key:
+                self.core_macros.append(
+                    CancelModeMacro(
+                        self.defensive_mode_reporter, cancel_defensive_mode_key
+                    )
+                )
+            start_defensive_mode_key = hotkeys_config.start_defensive_mode
+            if start_defensive_mode_key:
+                self.core_macros.append(
+                    StartModeMacro(
+                        mode_reporter=self.defensive_mode_reporter,
+                        exclusive_mode_reporters=[
+                            emergency_override_reporter,
+                            self.tank_mode_reporter,
+                        ],
+                        hotkey=start_defensive_mode_key,
                     )
                 )
 
@@ -393,11 +434,11 @@ class CharKeeper:
         self.handle_speed_change(char_status)
 
     def handle_emergency_status_change(self, char_status: CharStatus):
-        if self.emergency_reporter.in_emergency:
+        if self.emergency_reporter.is_mode_on():
             if self.emergency_reporter.should_stop_emergency(char_status):
-                self.emergency_reporter.stop_emergency()
+                self.emergency_reporter.stop_mode()
         elif self.emergency_reporter.is_emergency(char_status):
-            self.emergency_reporter.start_emergency()
+            self.emergency_reporter.start_mode()
 
     def handle_shield_change(self, char_status: CharStatus):
         self.magic_shield_keeper.handle_status_change(char_status)

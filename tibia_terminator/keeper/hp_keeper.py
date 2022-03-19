@@ -3,7 +3,7 @@
 from typing import Dict
 
 from tibia_terminator.keeper.common import ThresholdCalculator, RefillPriority, StatConfig
-from tibia_terminator.keeper.emergency_reporter import EmergencyReporter
+from tibia_terminator.keeper.emergency_reporter import SimpleModeReporter
 from tibia_terminator.common.char_status import CharStatus
 from tibia_terminator.interface.client_interface import ClientInterface
 
@@ -19,7 +19,7 @@ class HpKeeper:
     def __init__(
         self,
         client: ClientInterface,
-        emergency_reporter: EmergencyReporter,
+        emergency_reporter: SimpleModeReporter,
         total_hp: int,
         heal_at_missing: int,
         minor_heal: int,
@@ -52,7 +52,7 @@ class HpKeeper:
         if missing_hp >= self.heal_at_missing:
             # Always use strongest heal during emergencies, because by the time
             # the heal goes through, we've already received a several hits.
-            if self.emergency_reporter.in_emergency:
+            if self.emergency_reporter.is_mode_on():
                 critical_threshold_ms = HpKeeper.THRESHOLD_PRIORITY_MAP[
                     RefillPriority.CRITICAL]
                 self.client.cast_greater_heal(
