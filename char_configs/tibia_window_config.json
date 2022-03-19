@@ -187,49 +187,48 @@
                 ]
             },
             {
-                // Name to identify the item
                 "name": "might.ring",
                 "equipped_colors": [
                     {
                         "north": "e0bc4a",
                         "south": "000",
                         "left": "faed75",
-                        "right": "000"
-                    }
+                        "right": "000",
+                    },
                 ],
                 "action_bar_colors": [
                     {
                         "north": "9b8132",
                         "south": "d1af44",
                         "left": "faed75",
-                        "right": "d5b246"
-                    }
-                ]
+                        "right": "d5b246",
+                    },
+                ],
             },
             {
                 "name": "ring_of_healing.ring",
                 "equipped_colors": [
-                        {
-                            "north": "e0584a",
-                            "south": "000",
-                            "left": "fa9276",
-                            "right": "000"
-                        },
-                        {
-                            "north": "fbf36d",
-                            "south": "000",
-                            "left": "fa9276",
-                            "right": "000"
-                        }
+                    {
+                        "north": "e0584a",
+                        "south": "000",
+                        "left": "fa9276",
+                        "right": "000",
+                    },
+                    {
+                        "north": "fbf36d",
+                        "south": "000",
+                        "left": "fa9276",
+                        "right": "000",
+                    },
                 ],
                 "action_bar_colors": [
-                        {
-                            "north": "9b3d33",
-                            "south": "d25144",
-                            "left": "fa9276",
-                            "right": "d65446"
-                        }
-                ]
+                    {
+                        "north": "9b3d33",
+                        "south": "d25144",
+                        "left": "fa9276",
+                        "right": "d65446",
+                    },
+                ],
             },
             {
                 "name": "butterfly.ring",
@@ -238,60 +237,54 @@
                         "north": "9bb6cc",
                         "south": "000",
                         "left": "798faa",
-                        "right": "2d3453"
-                    }
+                        "right": "2d3453",
+                    },
                 ],
                 "action_bar_colors": [
                     {
                         "north": "000",
                         "south": "c9ecf7",
                         "left": "798faa",
-                        "right": "000"
-                    }
-                ]
+                        "right": "000",
+                    },
+                ],
             },
             {
                 "name": "prismatic.ring",
                 "equipped_colors": [
                     {
-                        "north": "66320",
+                        "north": "663200",
                         "south": "181919",
                         "left": "ededce",
-                        "right": "353636"
+                        "right": "353636",
                     },
                     {
-                        "north": "66320",
+                        "north": "663200",
                         "south": "181919",
-                        "left": "cc8fa",
-                        "right": "ffffab"
+                        "left": "cc8f0a",
+                        "right": "ffffab",
                     },
                     {
                         "north": "ededce",
                         "south": "181919",
-                        "left": "cc8fa",
-                        "right": "353636"
-                    }
+                        "left": "cc8f0a",
+                        "right": "353636",
+                    },
                 ],
                 "action_bar_colors": [
                     {
                         "north": "000",
                         "south": "454545",
-                        "left": "cc8fa",
-                        "right": "474747"
-                    },
-                    {
-                        "north": "000",
-                        "south": "454545",
-                        "left": "cc8fa",
-                        "right": "474747"
+                        "left": "cc8f0a",
+                        "right": "474747",
                     },
                     {
                         "north": "000",
                         "south": "454545",
                         "left": "ededce",
-                        "right": "ededce"
-                    }
-                ]
+                        "right": "ededce",
+                    },
+                ],
             },
             {
                 "name": "time.ring",
@@ -420,7 +413,7 @@
                 ],
                 "action_bar_colors": [
                     {
-                        "north": "4d170",
+                        "north": "4d1700",
                         "south": "1ad552",
                         "left": "d421d",
                         "right": "93215",
@@ -431,97 +424,94 @@
                 "name": "leviathan.amulet",
                 "equipped_colors": [
                     {
-                        "north": "252626",
-                        "south": "262627",
-                        "left": "252626",
-                        "right": "232424"
-                    }
+                        "north": "252625",
+                        "south": "1234",
+                        "left": "202020",
+                        "right": "202020",
+                    },
                 ],
                 "action_bar_colors": [
                     {
                         "north": "b4e2f0",
-                        "south": "032c1",
+                        "south": "32c1",
                         "left": "444444",
-                        "right": "454545"
-                    }
-                ]
+                        "right": "454545",
+                    },
+                ],
             },
             {
                 "name": "shockwave.amulet",
-                // You may specify multiple color profiles for items that have
-                // an animation while equipped or in the action bar (e.g.
-                // shockwave amulet, theurgic amulet, etc)
                 "equipped_colors": [
                     {
-                        "north": "252626",
-                        "south": "60719",
-                        "left": "91d28",
-                        "right": "232424"
+                        "north": "252625",
+                        "south": "242425",
+                        "left": "f4b6d1",
+                        "right": "202020",
                     },
                     {
-                        "north": "252626",
-                        "south": "6891a",
-                        "left": "7e61b",
-                        "right": "232424"
+                        "north": "252625",
+                        "south": "242425",
+                        "left": "f5c2d2",
+                        "right": "202020",
                     },
                     {
-                        "north": "252626",
-                        "south": "5a517",
-                        "left": "87b26",
-                        "right": "232424"
+                        "north": "252625",
+                        "south": "242425",
+                        "left": "f8ded8",
+                        "right": "202020",
                     },
                     {
-                        "north": "252626",
-                        "south": "60719",
-                        "left": "91d28",
-                        "right": "232424"
-                    }
+                        "north": "252625",
+                        "south": "242425",
+                        "left": "f6d2d7",
+                        "right": "202020",
+                    },
                 ],
                 "action_bar_colors": [
                     {
-                        "north": "61719",
+                        "north": "570311",
                         "south": "404040",
-                        "left": "89d27",
-                        "right": "54312"
+                        "left": "7b081c",
+                        "right": "5c0514",
                     },
                     {
-                        "north": "59515",
+                        "north": "610719",
                         "south": "404040",
-                        "left": "6f519",
-                        "right": "5d616"
+                        "left": "890d27",
+                        "right": "540312",
                     },
                     {
-                        "north": "68a1f",
+                        "north": "680a1f",
                         "south": "404040",
-                        "left": "7da24",
-                        "right": "5e719"
+                        "left": "7d0a24",
+                        "right": "5e0719",
                     },
                     {
-                        "north": "57311",
+                        "north": "590515",
                         "south": "404040",
-                        "left": "7b81c",
-                        "right": "5c514"
-                    }
-                ]
+                        "left": "6f0519",
+                        "right": "5d0616",
+                    },
+                ],
             },
             {
                 "name": "magma.amulet",
                 "equipped_colors": [
                     {
                         "north": "252625",
-                        "south": "51ee",
-                        "left": "964a0",
-                        "right": "000"
-                    }
+                        "south": "510e0e",
+                        "left": "964a00",
+                        "right": "000",
+                    },
                 ],
                 "action_bar_colors": [
                     {
                         "north": "4f4f4f",
-                        "south": "42f12",
+                        "south": "420f12",
                         "left": "444444",
-                        "right": "454545"
-                    }
-                ]
+                        "right": "454545",
+                    },
+                ],
             },
             {
                 "name": "theurgic.amulet",
@@ -617,17 +607,17 @@
                         "north": "252625",
                         "south": "a111b",
                         "left": "202020",
-                        "right": "202020"
-                    }
+                        "right": "202020",
+                    },
                 ],
                 "action_bar_colors": [
                     {
-                        "north": "1b1a0",
+                        "north": "1b1a00",
                         "south": "a111b",
                         "left": "444444",
-                        "right": "1b1a0"
-                    }
-                ]
+                        "right": "1b1a00",
+                    },
+                ],
             },
             {
                 "name": "glacier.amulet",
@@ -701,7 +691,7 @@
                         "north": "4f4f4f",
                         "south": "000",
                         "left": "000",
-                        "right": "7a33",
+                        "right": "7a0303",
                     },
                 ],
             },
