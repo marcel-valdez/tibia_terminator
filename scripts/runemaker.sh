@@ -8,6 +8,7 @@ PYTHONPATH="${PYTHONPATH}:${TERMINATOR_PATH}"
 REFILLER_FNS="${SCRIPT_PATH}/refiller_fns.sh"
 CHAR_READER_BIN="${SCRIPT_PATH}/char_reader.sh"
 EQUIPMENT_READER_BIN="${SCRIPT_PATH}/equipment_reader.sh"
+FIND_MEMORY_ADDRESS_BIN="${SCRIPT_PATH}/find_memory_addresses.sh"
 RECONNECTOR_BIN="${SCRIPT_PATH}/reconnector.sh"
 APP_CONFIG_PATH="${TERMINATOR_PATH}/app_config.json"
 CREDENTIALS_PATH="${TERMINATOR_PATH}/credentials.json"
@@ -520,7 +521,14 @@ function login {
     echo "Failed log back into the game." >&2
     echo "Runemaker is quitting." >&2
     exit 1
+  elif ! find_memory_addresses; then
+    echo "Can't make runes without memory addresses. Quitting now." >&2
+    exit 1
   fi
+}
+
+function find_memory_addresses {
+    "${FIND_MEMORY_ADDRESS_BIN}" "${tibia_pid}"
 }
 
 
@@ -844,7 +852,11 @@ function main() {
   tibia_wid="$(get_tibia_wid)"
   if [[ "${credentials_profile}" ]] && is_logged_out; then
       login
+  elif ! find_memory_addresses; then
+      echo "Unable to find memory addresses, can't runemake without those." >&2
+      exit 1
   fi
+
   if [[ ${refill_char} ]] || [[ ${use_mouse_for_mana_potion} ]]; then
       if lock_interaction; then
           if is_interaction_owner; then
