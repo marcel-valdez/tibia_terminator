@@ -14,6 +14,7 @@ from tibia_terminator.schemas.app_config_schema import AppConfig
 from tibia_terminator.schemas.hotkeys_config_schema import HotkeysConfig
 
 logger = logging.getLogger(__name__)
+SPEED_TO_MANA_MEMORY_OFFSET = 8
 
 
 class UnableToFindMemoryAddressException(Exception):
@@ -50,9 +51,9 @@ class AppConfigMemoryAddressFinder:
         retry_count = 3
         while retry_count > 0:
             addresses, better_rect = self.memory_address_finder.find_address(
-                [self.hotkeys_config.greater_heal for _ in range(6)],
-                self.mana_rect,
-                c_int,
+                update_keys=[self.hotkeys_config.minor_heal for _ in range(6)],
+                text_field_rectangle=self.mana_rect,
+                ctype_ctor=c_int,
             )
             self.mana_rect = better_rect
             if len(addresses) == 1:
@@ -61,89 +62,30 @@ class AppConfigMemoryAddressFinder:
 
         raise UnableToFindMemoryAddressException("Unable to determine mana address")
 
-    def find_speed_address(self) -> int:
-        # Try to wait for haste to wear off
-        keys = [
-            self.hotkeys_config.haste,
-            self.hotkeys_config.eat_food,
-            self.hotkeys_config.eat_food,
-            self.hotkeys_config.eat_food,
-            self.hotkeys_config.eat_food,
-        ]
-        addresses, better_rect = self.memory_address_finder.find_address(
-            keys, self.speed_rect, c_int16
-        )
-        self.speed_rect = better_rect
-        if len(addresses) == 1:
-            return addresses[0]
-
-        # If there is no magic shield hotkey setup, then it does not
-        # even matter.
-        if not self.hotkeys_config.magic_shield:
+    def find_speed_address(self, mana_address: int) -> int:
+        retry_count = 3
+        while retry_count > 0:
+            addresses, better_rect = self.memory_address_finder.find_address(
+                update_keys=[self.hotkeys_config.minor_heal for _ in range(6)],
+                text_field_rectangle=self.mana_rect,
+                ctype_ctor=c_int16,
+                stop_gap_matches=2
+            )
+            self.mana_rect = better_rect
+            if 1 <= len(addresses) <= 2:
+                if addresses[0] != mana_address:
+                    return addresses[0] + SPEED_TO_MANA_MEMORY_OFFSET
             if len(addresses) == 2:
-                return min(*addresses)
-            raise Exception("Unable to determine speed memory address.")
+                # mana_address is the c_int32 address we're not interested in
+                if addresses[1] != mana_address:
+                    return addresses[1] + SPEED_TO_MANA_MEMORY_OFFSET
+            retry_count -= 1
 
-        for address in addresses:
-            possible_magic_shield_address = address + MAGIC_SHIELD_TO_SPEED_OFFSET
-            magic_shield_value = ctype_to_int(
-                self.memory_address_finder.read_memory(
-                    possible_magic_shield_address, c_int16
-                )
-            )
-            # We haven't cast magic shield, magic shield value should be 0
-            if magic_shield_value != 0:
-                logger.info(
-                    "wrong magic_shield value: %s expected 0", magic_shield_value
-                )
-                continue
-
-            logger.info("possibly correct magic_shield value: %s", magic_shield_value)
-            tibia_wid = int(get_tibia_wid(self.tibia_pid))
-            time.sleep(1.75)  # Wait for cooldown of support spells
-            send_key(tibia_wid, self.hotkeys_config.magic_shield)
-            time.sleep(1)  # Wait for the spell to take effect
-            magic_shield_value = ctype_to_int(
-                self.memory_address_finder.read_memory(
-                    possible_magic_shield_address, c_int16
-                )
-            )
-            # the magic shield value should NOT be 0, skip this address if
-            # it is 0.
-            if magic_shield_value == 0:
-                logger.info(
-                    "wrong magic_shield value: %s expected >0", magic_shield_value
-                )
-                continue
-
-            logger.info("possibly correct magic_shield value: %s", magic_shield_value)
-            time.sleep(2.5)  # Wait for cooldown of support spells
-            send_key(tibia_wid, self.hotkeys_config.cancel_magic_shield)
-            time.sleep(1)  # Wait for spell to take effect
-            magic_shield_value = ctype_to_int(
-                self.memory_address_finder.read_memory(
-                    possible_magic_shield_address, c_int16
-                )
-            )
-            # After cancelling, magic shield value should be 0
-            if magic_shield_value == 0:
-                # Success
-                return address
-
-        # If they're playing on a Knight, magic shield may not be running
-        # and we don't really care about it in that scenario, either address
-        # works.
-        if len(addresses) == 2:
-            return min(*addresses)
-
-        raise UnableToFindMemoryAddressException(
-            "Unable to determine speed memory address"
-        )
+        raise UnableToFindMemoryAddressException("Unable to determine speed address")
 
     def build_app_config_entry(self) -> AppConfig:
         mana_address = self.find_mana_address()
-        time.sleep(1)
-        speed_address = self.find_speed_address()
+        speed_address = self.find_speed_address(mana_address)
         return AppConfig(
             pid=self.tibia_pid,
             mana_memory_address=hex(mana_address),

@@ -115,23 +115,29 @@ class MemoryAddressFinder:
         text_field_rectangle: Rect,
         ctype_ctor: Callable = c_int,
         initial_address_space: Optional[List[int]] = None,
+        stop_gap_matches: int = 1,
+        verbatim: bool = True,
     ) -> Tuple[List[int], Rect]:
         with ReadOnlyProcess(self.tibia_pid) as proc:
             prev_value = None
             tibia_wid = int(get_tibia_wid(self.tibia_pid))
             value, _, __ = self.read_ocr_value(text_field_rectangle, prev_value)
             if initial_address_space is None:
+                # never search all of the memory with verbatim False
                 addresses = proc.search_all_memory(
-                    ctype_ctor(value), writeable_only=True
+                    ctype_ctor(value), writeable_only=True, verbatim=True
                 )
             else:
-                addresses = proc.search_addresses(addresses, ctype_ctor(value))
+                use_verbatim = verbatim or len(addresses) > 250
+                addresses = proc.search_addresses(
+                    addresses, ctype_ctor(value), verbatim=use_verbatim
+                )
 
             logger.info("OCR Scan of %s: %s", text_field_rectangle, value)
             logger.info("Found %s matching.", len(addresses))
 
             for i, update_key in enumerate(update_keys):
-                if len(addresses) <= 1:
+                if len(addresses) <= stop_gap_matches:
                     return (addresses, text_field_rectangle)
 
                 if i > 0:

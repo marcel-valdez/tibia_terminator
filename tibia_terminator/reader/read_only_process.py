@@ -243,7 +243,6 @@ class ReadOnlyProcess(Process):
         read_buffer = copy.copy(needle_buffer)
 
         if verbatim:
-
             def compare(a, b):
                 return bytes(a) == bytes(b)
 
