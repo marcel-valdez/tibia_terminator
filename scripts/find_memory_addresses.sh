@@ -24,7 +24,7 @@ function clean_exit() {
     exit
 }
 
-pushd "${HOME}/projects/tibia_bot"
+pushd "${ROOT_PATH}"
 trap clean_exit SIGINT EXIT SIGKILL SIGTERM
 
 [[ -z "${PYTHON_BIN}" ]] && PYTHON_BIN="$(type -p python3.8)"
