@@ -9,6 +9,7 @@ from typing import Iterable, List
 
 import psutil
 import commentjson as json
+from tesserocr import PyTessBaseAPI
 
 from tibia_terminator.schemas.app_config_schema import (
     AppConfigsSchema,
@@ -29,7 +30,6 @@ from tibia_terminator.schemas.hotkeys_config_schema import (
 from tibia_terminator.reader.memory_address_finder import MemoryAddressFinder
 from tibia_terminator.reader.ocr_number_reader import OcrNumberReader
 from tibia_terminator.reader.window_utils import ScreenReader, get_tibia_wid
-from tesserocr import PyTessBaseAPI
 from tibia_terminator.schemas.common import to_dict
 
 
