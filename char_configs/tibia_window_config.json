@@ -643,19 +643,19 @@
                 "equipped_colors": [
                     {
                         "north": "252625",
-                        "south": "11a91",
+                        "south": "11a901",
                         "left": "202020",
-                        "right": "202020"
-                    }
+                        "right": "202020",
+                    },
                 ],
                 "action_bar_colors": [
                     {
-                        "north": "1d11f",
-                        "south": "11a91",
+                        "north": "1d011f",
+                        "south": "11a901",
                         "left": "444444",
-                        "right": "1d11f"
-                    }
-                ]
+                        "right": "1d011f",
+                    },
+                ],
             },
             {
                 "name": "koeshi.amulet",
